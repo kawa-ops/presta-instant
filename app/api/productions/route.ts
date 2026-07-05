@@ -101,23 +101,24 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const prod = await db.production.create({
-      data: {
-        title: title.trim(),
-        client: client.trim(),
-        brief: brief || null,
-        sourcesLink: sourcesLink || null,
-        deliveryLink: null,
-        priority: priority || 'normal',
-        status: status || 'a_faire',
-        price: price && price !== '' ? parseFloat(price) : undefined,
-        deadline: deadline ? new Date(deadline) : null,
-        productionDate: productionDate ? new Date(productionDate) : null,
-        internalNotes: internalNotes || null,
-        assignedToId: assignedToId || null,
-      },
-      include: { assignedTo: { select: { id: true, name: true, role: true } } },
-    })
+    const id = `prod_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+    await db.$executeRawUnsafe(
+      `INSERT INTO "Production" (id, title, client, brief, "sourcesLink", "deliveryLink", priority, status, price, deadline, "productionDate", "internalNotes", "assignedToId", archived, "createdAt", "updatedAt")
+       VALUES ($1,$2,$3,$4,$5,NULL,$6,$7,$8,$9,$10,$11,$12,false,NOW(),NOW())`,
+      id,
+      title.trim(),
+      client.trim(),
+      brief || null,
+      sourcesLink || null,
+      priority || 'normal',
+      status || 'a_faire',
+      price && price !== '' ? parseFloat(price) : null,
+      deadline ? new Date(deadline) : null,
+      productionDate ? new Date(productionDate) : null,
+      internalNotes || null,
+      assignedToId || null,
+    )
+    const prod = await db.production.findUnique({ where: { id }, include: { assignedTo: { select: { id: true, name: true, role: true } } } })
 
     await db.activityLog.create({ data: { actorName: session.user?.name || 'Admin', action: 'a créé la prestation', target: title } }).catch(() => {})
 
