@@ -102,9 +102,10 @@ export async function POST(req: NextRequest) {
 
   try {
     const id = `prod_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+    // Insert without productionDate first (avoids schema mismatch)
     await db.$executeRawUnsafe(
-      `INSERT INTO "Production" (id, title, client, brief, "sourcesLink", "deliveryLink", priority, status, price, deadline, "productionDate", "internalNotes", "assignedToId", archived, "createdAt", "updatedAt")
-       VALUES ($1,$2,$3,$4,$5,NULL,$6,$7,$8,$9,$10,$11,$12,false,NOW(),NOW())`,
+      `INSERT INTO "Production" (id, title, client, brief, "sourcesLink", priority, status, price, deadline, "internalNotes", "assignedToId", archived, "createdAt", "updatedAt")
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,false,NOW(),NOW())`,
       id,
       title.trim(),
       client.trim(),
@@ -114,10 +115,13 @@ export async function POST(req: NextRequest) {
       status || 'a_faire',
       price && price !== '' ? parseFloat(price) : null,
       deadline ? new Date(deadline) : null,
-      productionDate ? new Date(productionDate) : null,
       internalNotes || null,
       assignedToId || null,
     )
+    // Then set productionDate via UPDATE (column added via ALTER TABLE)
+    if (productionDate) {
+      await db.$executeRawUnsafe(`UPDATE "Production" SET "productionDate" = $1 WHERE id = $2`, new Date(productionDate), id).catch(() => {})
+    }
     const prod = await db.production.findUnique({ where: { id }, include: { assignedTo: { select: { id: true, name: true, role: true } } } })
 
     await db.activityLog.create({ data: { actorName: session.user?.name || 'Admin', action: 'a créé la prestation', target: title } }).catch(() => {})
