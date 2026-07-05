@@ -41,5 +41,23 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: true, sent: prods.length })
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 })
+  } finally {
+    // Nudge freelancers whose assigned task is still "À faire" 48h after creation
+    try {
+      const cutoff = new Date(Date.now() - 48 * 3600 * 1000)
+      const stale = await db.production.findMany({
+        where: { archived: false, status: 'a_faire', createdAt: { lt: cutoff }, assignedToId: { not: null } },
+        include: { assignedTo: { select: { id: true, email: true } } },
+      })
+      for (const p of stale) {
+        if (p.assignedTo?.email === 'lucas.rawinstant@gmail.com') continue
+        // One nudge per production max — skip if already sent
+        const already = await db.notification.findFirst({ where: { userId: p.assignedToId, type: 'nudge', message: { contains: p.title } } }).catch(() => null)
+        if (already) continue
+        await db.notification.create({
+          data: { userId: p.assignedToId, type: 'nudge', message: `Rappel : "${p.title}" n'a pas encore été démarré`, link: '/espace/prestations' },
+        }).catch(() => {})
+      }
+    } catch {}
   }
 }

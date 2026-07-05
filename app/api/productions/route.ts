@@ -56,7 +56,8 @@ export async function POST(req: NextRequest) {
   }
 
   // Auto-assign to Lucas if no freelancer selected
-  if (!assignedToId) assignedToId = await getLucasId()
+  const lucasId = await getLucasId()
+  if (!assignedToId) assignedToId = lucasId
 
   try {
     const prod = await db.production.create({
@@ -78,11 +79,9 @@ export async function POST(req: NextRequest) {
 
     // Fire-and-forget side effects (don't block the response)
     db.activityLog.create({ data: { actorName: session.user?.name || 'Admin', action: 'a créé la prestation', target: prod.title } }).catch(() => {})
-    getLucasId().then((lucasId: string | null) => {
-      if (assignedToId && assignedToId !== lucasId) {
-        db.notification.create({ data: { userId: assignedToId, type: 'new_task', message: `Nouvelle prestation assignée : ${prod.title}`, link: `/espace/prestations` } }).catch(() => {})
-      }
-    }).catch(() => {})
+    if (assignedToId && assignedToId !== lucasId) {
+      db.notification.create({ data: { userId: assignedToId, type: 'new_task', message: `Nouvelle prestation assignée : ${prod.title}`, link: `/espace/prestations` } }).catch(() => {})
+    }
 
     return NextResponse.json(prod, { status: 201 })
   } catch (e: any) {

@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react'
 
 const NAV = [
   { href: '/dashboard', label: 'Dashboard', icon: '◎' },
+  { href: '/semaine', label: 'Ma semaine', icon: '🗓️' },
   { href: '/productions', label: 'Post-productions', icon: '🎬' },
   { href: '/prestataires', label: 'Prestataires', icon: '👥' },
   { href: '/archives', label: 'Archives', icon: '📁' },

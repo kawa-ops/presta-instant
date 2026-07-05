@@ -63,8 +63,8 @@ function Confetti() {
   )
 }
 
-function ProdRow({ p, freelancers, onSave, onDelete, onComplete, saving, celebrating }: {
-  p: any; freelancers: any[]; onSave: (d: any) => void; onDelete: () => void; onComplete: () => void; saving: boolean; celebrating: boolean
+function ProdRow({ p, freelancers, onSave, onDelete, onComplete, onDuplicate, onQuickStatus, saving, celebrating }: {
+  p: any; freelancers: any[]; onSave: (d: any) => void; onDelete: () => void; onComplete: () => void; onDuplicate: () => void; onQuickStatus: (status: string) => void; saving: boolean; celebrating: boolean
 }) {
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState({
@@ -102,8 +102,19 @@ function ProdRow({ p, freelancers, onSave, onDelete, onComplete, saving, celebra
         </td>
         <td style={{ padding: '11px 14px', color: 'rgba(240,235,227,0.5)', fontSize: '0.75rem' }}>{p.assignedTo?.name || 'Lucas'}</td>
         <td style={{ padding: '11px 14px', color: p.price ? '#f0ebe3' : 'rgba(240,235,227,0.2)', fontSize: '0.75rem' }}>{p.price ? `${p.price.toLocaleString('fr-FR')} €` : '—'}</td>
-        <td style={{ padding: '11px 14px' }}>
-          <span style={{ background: `${sc(celebrating ? 'valide' : p.status)}15`, color: sc(celebrating ? 'valide' : p.status), padding: '2px 10px', borderRadius: 20, fontSize: '0.7rem', fontWeight: 600 }}>{celebrating ? 'Validé ✓' : sl(p.status)}</span>
+        <td style={{ padding: '11px 14px' }} onClick={e => e.stopPropagation()}>
+          {celebrating ? (
+            <span style={{ background: `${sc('valide')}15`, color: sc('valide'), padding: '2px 10px', borderRadius: 20, fontSize: '0.7rem', fontWeight: 600 }}>Validé ✓</span>
+          ) : (
+            // Quick status change without opening the row
+            <select
+              value={p.status}
+              onChange={e => onQuickStatus(e.target.value)}
+              style={{ background: `${sc(p.status)}15`, color: sc(p.status), padding: '3px 8px', borderRadius: 20, fontSize: '0.7rem', fontWeight: 600, border: 'none', cursor: 'pointer', appearance: 'none', WebkitAppearance: 'none' }}
+            >
+              {STATUSES.filter(s => s.value).map(s => <option key={s.value} value={s.value} style={{ background: '#141414', color: '#f0ebe3' }}>{s.label}</option>)}
+            </select>
+          )}
         </td>
         <td style={{ padding: '11px 14px' }}>
           {p.sourcesLink ? <a href={p.sourcesLink} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} style={{ color: '#3b82f6', fontSize: '0.72rem' }}>↗ Source</a> : <span style={{ color: 'rgba(240,235,227,0.15)', fontSize: '0.72rem' }}>—</span>}
@@ -118,6 +129,11 @@ function ProdRow({ p, freelancers, onSave, onDelete, onComplete, saving, celebra
               title="Marquer comme livré au client"
               style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 6, padding: '4px 9px', color: '#22c55e', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700 }}
             >✓</button>
+            <button
+              onClick={onDuplicate}
+              title="Dupliquer cette prestation"
+              style={{ background: 'rgba(240,235,227,0.05)', border: '1px solid #2a2a2a', borderRadius: 6, padding: '4px 8px', color: 'rgba(240,235,227,0.5)', cursor: 'pointer', fontSize: '0.7rem' }}
+            >⧉</button>
             <button onClick={onDelete} style={{ background: 'rgba(239,68,68,0.08)', border: 'none', borderRadius: 6, padding: '4px 8px', color: '#ef4444', cursor: 'pointer', fontSize: '0.7rem' }}>✕</button>
           </div>
         </td>
@@ -264,7 +280,33 @@ export default function ProductionsPage() {
     const prev = prods
     setProds(p => p.filter(x => x.id !== id))
     const res = await fetch(`/api/productions/${id}`, { method: 'DELETE' })
-    if (!res.ok) setProds(prev) // rollback on failure
+    if (!res.ok) setProds(() => prev) // rollback on failure
+  }
+
+  async function quickStatus(id: string, status: string) {
+    // Optimistic: change the pill immediately
+    setProds(prev => prev.map(p => p.id === id ? { ...p, status } : p))
+    fetch(`/api/productions/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) }).catch(() => {})
+  }
+
+  async function duplicateProd(p: any) {
+    const res = await fetch('/api/productions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: `${p.title} (copie)`,
+        client: p.client,
+        brief: p.brief || '',
+        sourcesLink: '',
+        priority: p.priority,
+        status: 'a_faire',
+        price: p.price?.toString() || '',
+        internalNotes: p.internalNotes || '',
+        assignedToId: p.assignedToId || '',
+      }),
+    })
+    const data = await res.json()
+    if (res.ok) setProds(prev => [data, ...prev])
   }
 
   async function completeProd(id: string) {
@@ -385,6 +427,8 @@ export default function ProductionsPage() {
                   onSave={data => updateProd(p.id, data)}
                   onDelete={() => deleteProd(p.id)}
                   onComplete={() => completeProd(p.id)}
+                  onDuplicate={() => duplicateProd(p)}
+                  onQuickStatus={status => quickStatus(p.id, status)}
                   saving={saving === p.id}
                   celebrating={celebrating === p.id}
                 />

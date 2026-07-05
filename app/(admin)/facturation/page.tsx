@@ -46,6 +46,9 @@ export default function AdminFacturationPage() {
     <div style={{ maxWidth: 900 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
         <h1 style={{ color: '#f0ebe3', fontSize: '1.4rem', fontWeight: 800 }}>Facturation</h1>
+        <a href="/api/facturation/export" style={{ background: 'rgba(240,235,227,0.05)', border: '1px solid #2a2a2a', borderRadius: 8, padding: '8px 16px', color: 'rgba(240,235,227,0.6)', fontSize: '0.78rem', fontWeight: 600, textDecoration: 'none' }}>
+          ⬇ Exporter CSV
+        </a>
       </div>
 
       {/* Summary */}

@@ -35,6 +35,28 @@ export function emailInvoicePaid(freelancerName: string, freelancerEmail: string
   })
 }
 
+export function emailWeeklyRecap(data: {
+  weekProjects: { title: string; client: string; assignee: string; deadline: string }[]
+  overdueCount: number
+  pendingInvoices: number
+}) {
+  const rows = data.weekProjects.length
+    ? `<ul>${data.weekProjects.map(p => `<li><strong>${p.title}</strong> (${p.client}) — ${p.assignee} — deadline ${p.deadline}</li>`).join('')}</ul>`
+    : '<p>Aucune deadline cette semaine 🎉</p>'
+  const html = `
+    <h2>Récap de la semaine — instant. production</h2>
+    <p><strong>${data.weekProjects.length}</strong> prestation${data.weekProjects.length > 1 ? 's' : ''} à livrer cette semaine :</p>
+    ${rows}
+    ${data.overdueCount > 0 ? `<p style="color:#ef4444">⚠ ${data.overdueCount} prestation${data.overdueCount > 1 ? 's' : ''} en retard</p>` : ''}
+    ${data.pendingInvoices > 0 ? `<p>📄 ${data.pendingInvoices} facture${data.pendingInvoices > 1 ? 's' : ''} en attente de paiement</p>` : ''}
+    <p><a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard">Ouvrir presta.instantmov.fr →</a></p>
+  `
+  return Promise.all([
+    sendEmail({ to: process.env.EMAIL_LUCAS!, subject: `📅 Récap semaine — ${data.weekProjects.length} deadline${data.weekProjects.length > 1 ? 's' : ''}`, html }),
+    sendEmail({ to: process.env.EMAIL_AXEL!, subject: `📅 Récap semaine — ${data.weekProjects.length} deadline${data.weekProjects.length > 1 ? 's' : ''}`, html }),
+  ])
+}
+
 export function emailDeadlineReminder(projects: { title: string; client: string; assignee: string }[]) {
   const rows = projects.map(p => `<li><strong>${p.title}</strong> (${p.client}) — ${p.assignee}</li>`).join('')
   return sendEmail({
