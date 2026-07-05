@@ -4,144 +4,181 @@ import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
 
 export const dynamic = 'force-dynamic'
-
-const STATUS_COLORS: Record<string, string> = {
-  a_faire: '#6b7280', en_cours: '#3b82f6', en_attente: '#eab308',
-  livre: '#a78bfa', valide: '#22c55e', archive: '#374151',
-}
-const STATUS_LABELS: Record<string, string> = {
-  a_faire: 'À faire', en_cours: 'En cours', en_attente: 'En attente',
-  livre: 'Livré', valide: 'Validé', archive: 'Archivé',
-}
+const db = prisma as any
 
 function fmt(d: Date | null) {
   if (!d) return '—'
   return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })
 }
 
+function IconClock() {
+  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+}
+function IconAlert() {
+  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+}
+function IconCalendar() {
+  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+}
+function IconCheck() {
+  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+}
+function IconUsers() {
+  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+}
+function IconTrendUp() {
+  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+}
+
 export default async function AdminDashboard() {
   const session = await getServerSession(authOptions)
-  const today = new Date(); today.setHours(23, 59, 59, 999)
-  const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1); tomorrow.setHours(23, 59, 59, 999)
-  const startToday = new Date(); startToday.setHours(0, 0, 0, 0)
-  const startTomorrow = new Date(); startTomorrow.setDate(startTomorrow.getDate() + 1); startTomorrow.setHours(0, 0, 0, 0)
-  const startMonth = new Date(); startMonth.setDate(1); startMonth.setHours(0, 0, 0, 0)
 
-  const db = prisma as any
+  const now = new Date()
+  const startToday = new Date(now); startToday.setHours(0, 0, 0, 0)
+  const endToday = new Date(now); endToday.setHours(23, 59, 59, 999)
+  const startTomorrow = new Date(startToday); startTomorrow.setDate(startTomorrow.getDate() + 1)
+  const endTomorrow = new Date(endToday); endTomorrow.setDate(endTomorrow.getDate() + 1)
+  const startMonth = new Date(now.getFullYear(), now.getMonth(), 1)
 
   const [
     inProgress, overdue, dueToday, dueTomorrow, completedMonth,
-    activeFreelancers, recentActivity, notifications, urgentProds
+    activeFreelancers, totalProds, recentActivity, urgentProds, recentProds
   ] = await Promise.all([
-    db.production.count({ where: { status: { in: ['en_cours', 'en_attente', 'a_faire'] } } }).catch(() => 0),
-    db.production.count({ where: { status: { notIn: ['valide', 'archive'] }, deadline: { lt: startToday } } }).catch(() => 0),
-    db.production.count({ where: { status: { notIn: ['valide', 'archive'] }, deadline: { gte: startToday, lte: today } } }).catch(() => 0),
-    db.production.count({ where: { status: { notIn: ['valide', 'archive'] }, deadline: { gte: startTomorrow, lte: tomorrow } } }).catch(() => 0),
+    db.production.count({ where: { archived: false, status: { in: ['en_cours', 'en_attente', 'a_faire'] } } }).catch(() => 0),
+    db.production.count({ where: { archived: false, status: { notIn: ['valide', 'archive'] }, deadline: { lt: startToday } } }).catch(() => 0),
+    db.production.count({ where: { archived: false, status: { notIn: ['valide', 'archive'] }, deadline: { gte: startToday, lte: endToday } } }).catch(() => 0),
+    db.production.count({ where: { archived: false, status: { notIn: ['valide', 'archive'] }, deadline: { gte: startTomorrow, lte: endTomorrow } } }).catch(() => 0),
     db.production.count({ where: { status: 'valide', updatedAt: { gte: startMonth } } }).catch(() => 0),
     db.user.count({ where: { role: 'freelancer', active: true } }).catch(() => 0),
-    db.activityLog.findMany({ orderBy: { createdAt: 'desc' }, take: 8 }).catch(() => []),
-    db.notification.findMany({ where: { read: false }, orderBy: { createdAt: 'desc' }, take: 5 }).catch(() => []),
-    db.production.findMany({ where: { status: { notIn: ['valide', 'archive'] }, deadline: { lt: today } }, orderBy: { deadline: 'asc' }, take: 5, include: { assignedTo: true } }).catch(() => []),
+    db.production.count({ where: { archived: false } }).catch(() => 0),
+    db.activityLog.findMany({ orderBy: { createdAt: 'desc' }, take: 6 }).catch(() => []),
+    db.production.findMany({ where: { archived: false, status: { notIn: ['valide'] }, deadline: { lt: endToday } }, orderBy: { deadline: 'asc' }, take: 6, include: { assignedTo: { select: { id: true, name: true } } } }).catch(() => []),
+    db.production.findMany({ where: { archived: false }, orderBy: { createdAt: 'desc' }, take: 5, include: { assignedTo: { select: { id: true, name: true } } } }).catch(() => []),
   ])
 
-  const stats = [
-    { label: 'En cours', value: inProgress, color: '#3b82f6', href: '/productions?status=en_cours' },
-    { label: 'En retard', value: overdue, color: '#ef4444', href: '/productions?overdue=true' },
-    { label: 'Pour aujourd\'hui', value: dueToday, color: '#eab308', href: '/productions?due=today' },
-    { label: 'Pour demain', value: dueTomorrow, color: '#f97316', href: '/productions?due=tomorrow' },
-    { label: 'Terminées ce mois', value: completedMonth, color: '#22c55e', href: '/archives' },
-    { label: 'Prestataires actifs', value: activeFreelancers, color: '#a78bfa', href: '/prestataires' },
+  const kpis = [
+    { label: 'Projets en cours', value: inProgress, sub: 'en production', color: '#3b82f6', bg: 'rgba(59,130,246,0.08)', border: 'rgba(59,130,246,0.2)', icon: <IconClock />, href: '/productions?status=en_cours' },
+    { label: 'Projets en retard', value: overdue, sub: 'dépassé la deadline', color: '#ef4444', bg: 'rgba(239,68,68,0.08)', border: 'rgba(239,68,68,0.2)', icon: <IconAlert />, href: '/productions?overdue=true' },
+    { label: 'À rendre aujourd\'hui', value: dueToday, sub: 'deadline ce jour', color: '#eab308', bg: 'rgba(234,179,8,0.08)', border: 'rgba(234,179,8,0.2)', icon: <IconCalendar />, href: '/productions?due=today' },
+    { label: 'À rendre demain', value: dueTomorrow, sub: 'deadline demain', color: '#f97316', bg: 'rgba(249,115,22,0.08)', border: 'rgba(249,115,22,0.2)', icon: <IconCalendar />, href: '/productions?due=tomorrow' },
+    { label: 'Terminés ce mois', value: completedMonth, sub: 'validés ce mois', color: '#22c55e', bg: 'rgba(34,197,94,0.08)', border: 'rgba(34,197,94,0.2)', icon: <IconCheck />, href: '/archives' },
+    { label: 'Prestataires actifs', value: activeFreelancers, sub: 'freelancers disponibles', color: '#a78bfa', bg: 'rgba(167,139,250,0.08)', border: 'rgba(167,139,250,0.2)', icon: <IconUsers />, href: '/prestataires' },
   ]
 
+  const STATUS_COLORS: Record<string, string> = { a_faire: '#6b7280', en_cours: '#3b82f6', en_attente: '#eab308', livre: '#a78bfa', valide: '#22c55e' }
+  const STATUS_LABELS: Record<string, string> = { a_faire: 'À faire', en_cours: 'En cours', en_attente: 'En attente', livre: 'Livré', valide: 'Validé' }
+
   return (
-    <div style={{ maxWidth: 1100 }}>
-      <div style={{ marginBottom: 32 }}>
-        <h1 style={{ color: '#f0ebe3', fontSize: '1.5rem', fontWeight: 800, fontFamily: 'var(--font-syne), sans-serif' }}>
-          Bonjour {session?.user?.name} 👋
-        </h1>
-        <p style={{ color: 'rgba(240,235,227,0.4)', fontSize: '0.82rem', marginTop: 4 }}>
-          {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
-        </p>
+    <div style={{ width: '100%', maxWidth: 1200 }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
+        <div>
+          <h1 style={{ color: '#f0ebe3', fontSize: '1.5rem', fontWeight: 800 }}>
+            Bonjour {session?.user?.name?.split(' ')[0]} 👋
+          </h1>
+          <p style={{ color: 'rgba(240,235,227,0.35)', fontSize: '0.8rem', marginTop: 3 }}>
+            {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+          </p>
+        </div>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <div style={{ background: '#141414', border: '1px solid #222', borderRadius: 10, padding: '8px 16px', textAlign: 'center' }}>
+            <p style={{ color: '#f0ebe3', fontSize: '1.1rem', fontWeight: 800 }}>{totalProds}</p>
+            <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.65rem' }}>prestations total</p>
+          </div>
+        </div>
       </div>
 
-      {/* Alerts */}
+      {/* Alerts banner */}
       {(overdue > 0 || dueToday > 0) && (
-        <div style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 12, padding: '14px 18px', marginBottom: 24, display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {overdue > 0 && <p style={{ color: '#ef4444', fontSize: '0.85rem' }}>⚠️ {overdue} prestation{overdue > 1 ? 's' : ''} en retard</p>}
-          {dueToday > 0 && <p style={{ color: '#eab308', fontSize: '0.85rem' }}>📅 {dueToday} prestation{dueToday > 1 ? 's' : ''} à livrer aujourd&apos;hui</p>}
-          {dueTomorrow > 0 && <p style={{ color: '#f97316', fontSize: '0.85rem' }}>📌 {dueTomorrow} prestation{dueTomorrow > 1 ? 's' : ''} à livrer demain</p>}
+        <div style={{ background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.15)', borderRadius: 10, padding: '12px 18px', marginBottom: 20, display: 'flex', gap: 20, flexWrap: 'wrap' }}>
+          {overdue > 0 && <p style={{ color: '#ef4444', fontSize: '0.82rem' }}>⚠ {overdue} prestation{overdue > 1 ? 's' : ''} en retard</p>}
+          {dueToday > 0 && <p style={{ color: '#eab308', fontSize: '0.82rem' }}>● {dueToday} prestation{dueToday > 1 ? 's' : ''} à livrer aujourd&apos;hui</p>}
         </div>
       )}
 
-      {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 28 }}>
-        {stats.map(s => (
-          <Link key={s.label} href={s.href} style={{ background: '#141414', border: `1px solid ${s.color}25`, borderRadius: 12, padding: '18px 20px', textDecoration: 'none', display: 'block' }}>
-            <p style={{ color: s.color, fontSize: '2rem', fontWeight: 800, lineHeight: 1 }}>{s.value}</p>
-            <p style={{ color: 'rgba(240,235,227,0.4)', fontSize: '0.75rem', marginTop: 6 }}>{s.label}</p>
+      {/* KPI Grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 24 }}>
+        {kpis.map(k => (
+          <Link key={k.label} href={k.href} style={{ background: k.bg, border: `1px solid ${k.border}`, borderRadius: 14, padding: '20px 22px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 16 }}>
+            <div style={{ width: 44, height: 44, background: `${k.color}20`, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', color: k.color, flexShrink: 0 }}>
+              {k.icon}
+            </div>
+            <div>
+              <p style={{ color: k.color, fontSize: '2rem', fontWeight: 800, lineHeight: 1 }}>{k.value}</p>
+              <p style={{ color: '#f0ebe3', fontSize: '0.78rem', fontWeight: 600, marginTop: 3 }}>{k.label}</p>
+              <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.68rem', marginTop: 1 }}>{k.sub}</p>
+            </div>
           </Link>
         ))}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 16 }}>
-        {/* Urgent productions */}
-        <div style={{ background: '#141414', border: '1px solid #222', borderRadius: 14, overflow: 'hidden' }}>
-          <div style={{ padding: '14px 20px', borderBottom: '1px solid #1e1e1e', display: 'flex', justifyContent: 'space-between' }}>
-            <p style={{ color: '#f0ebe3', fontSize: '0.85rem', fontWeight: 600 }}>Prestations urgentes</p>
-            <Link href="/productions" style={{ color: 'rgba(240,235,227,0.35)', fontSize: '0.75rem' }}>Tout voir →</Link>
-          </div>
-          {(urgentProds as any[]).length === 0 ? (
-            <p style={{ color: 'rgba(240,235,227,0.2)', padding: '28px 20px', textAlign: 'center', fontSize: '0.82rem' }}>Aucune prestation urgente ✓</p>
-          ) : (
-            (urgentProds as any[]).map((p: any) => (
-              <Link key={p.id} href={`/productions/${p.id}`} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 20px', borderBottom: '1px solid #1a1a1a', textDecoration: 'none' }}>
-                <div style={{ flex: 1 }}>
-                  <p style={{ color: '#f0ebe3', fontSize: '0.82rem', fontWeight: 600 }}>{p.title}</p>
-                  <p style={{ color: 'rgba(240,235,227,0.35)', fontSize: '0.72rem', marginTop: 2 }}>{p.client} · {p.assignedTo?.name ?? 'Non assigné'}</p>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <span style={{ color: '#ef4444', fontSize: '0.72rem', fontWeight: 600 }}>⚠ {fmt(p.deadline)}</span>
-                </div>
-              </Link>
-            ))
-          )}
-        </div>
-
-        {/* Activity + Notifications */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {/* Notifications */}
-          {(notifications as any[]).length > 0 && (
-            <div style={{ background: '#141414', border: '1px solid #222', borderRadius: 12, overflow: 'hidden' }}>
-              <div style={{ padding: '12px 16px', borderBottom: '1px solid #1e1e1e' }}>
-                <p style={{ color: '#f0ebe3', fontSize: '0.82rem', fontWeight: 600 }}>Notifications</p>
+      {/* Main grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 16 }}>
+        {/* Left: urgent + recent */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {/* Urgent */}
+          <div style={{ background: '#141414', border: '1px solid #222', borderRadius: 14, overflow: 'hidden' }}>
+            <div style={{ padding: '14px 20px', borderBottom: '1px solid #1e1e1e', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <p style={{ color: '#f0ebe3', fontSize: '0.85rem', fontWeight: 600 }}>Priorités du jour</p>
+              <Link href="/productions" style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.72rem', textDecoration: 'none' }}>Tout voir →</Link>
+            </div>
+            {(urgentProds as any[]).length === 0 ? (
+              <div style={{ padding: '28px 20px', textAlign: 'center' }}>
+                <p style={{ color: '#22c55e', fontSize: '0.82rem' }}>✓ Aucune urgence aujourd&apos;hui</p>
               </div>
-              {(notifications as any[]).map((n: any) => (
-                <div key={n.id} style={{ padding: '10px 16px', borderBottom: '1px solid #1a1a1a' }}>
-                  <p style={{ color: '#f0ebe3', fontSize: '0.75rem' }}>{n.message}</p>
-                  <p style={{ color: 'rgba(240,235,227,0.25)', fontSize: '0.65rem', marginTop: 2 }}>{fmt(n.createdAt)}</p>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Activity */}
-          <div style={{ background: '#141414', border: '1px solid #222', borderRadius: 12, overflow: 'hidden' }}>
-            <div style={{ padding: '12px 16px', borderBottom: '1px solid #1e1e1e' }}>
-              <p style={{ color: '#f0ebe3', fontSize: '0.82rem', fontWeight: 600 }}>Activité récente</p>
-            </div>
-            {(recentActivity as any[]).length === 0 ? (
-              <p style={{ color: 'rgba(240,235,227,0.2)', padding: '20px 16px', fontSize: '0.78rem', textAlign: 'center' }}>Aucune activité</p>
             ) : (
-              (recentActivity as any[]).map((a: any) => (
-                <div key={a.id} style={{ padding: '10px 16px', borderBottom: '1px solid #1a1a1a' }}>
-                  <p style={{ color: 'rgba(240,235,227,0.7)', fontSize: '0.75rem' }}>
-                    <strong style={{ color: '#f0ebe3' }}>{a.actorName}</strong> {a.action}{a.target ? ` — ${a.target}` : ''}
-                  </p>
-                  <p style={{ color: 'rgba(240,235,227,0.25)', fontSize: '0.65rem', marginTop: 2 }}>{fmt(a.createdAt)}</p>
-                </div>
-              ))
+              (urgentProds as any[]).map((p: any) => {
+                const isOverdue = p.deadline && new Date(p.deadline) < new Date()
+                return (
+                  <Link key={p.id} href="/productions" style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 12, padding: '11px 20px', borderBottom: '1px solid #191919', textDecoration: 'none', alignItems: 'center' }}>
+                    <div>
+                      <p style={{ color: '#f0ebe3', fontSize: '0.82rem', fontWeight: 600 }}>{p.title}</p>
+                      <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.7rem', marginTop: 1 }}>{p.client} · {p.assignedTo?.name || '—'}</p>
+                    </div>
+                    <span style={{ background: `${STATUS_COLORS[p.status] || '#6b7280'}15`, color: STATUS_COLORS[p.status] || '#6b7280', padding: '2px 8px', borderRadius: 20, fontSize: '0.68rem', fontWeight: 600, whiteSpace: 'nowrap' }}>{STATUS_LABELS[p.status] || p.status}</span>
+                    <span style={{ color: isOverdue ? '#ef4444' : '#eab308', fontSize: '0.72rem', fontWeight: 600, whiteSpace: 'nowrap' }}>{fmt(p.deadline)}</span>
+                  </Link>
+                )
+              })
             )}
           </div>
+
+          {/* Recent productions */}
+          <div style={{ background: '#141414', border: '1px solid #222', borderRadius: 14, overflow: 'hidden' }}>
+            <div style={{ padding: '14px 20px', borderBottom: '1px solid #1e1e1e', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <p style={{ color: '#f0ebe3', fontSize: '0.85rem', fontWeight: 600 }}>Dernières prestations</p>
+              <Link href="/productions" style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.72rem', textDecoration: 'none' }}>Tout voir →</Link>
+            </div>
+            {(recentProds as any[]).map((p: any) => (
+              <div key={p.id} style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 12, padding: '11px 20px', borderBottom: '1px solid #191919', alignItems: 'center' }}>
+                <div>
+                  <p style={{ color: '#f0ebe3', fontSize: '0.82rem', fontWeight: 500 }}>{p.title}</p>
+                  <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.7rem', marginTop: 1 }}>{p.client}</p>
+                </div>
+                <p style={{ color: 'rgba(240,235,227,0.35)', fontSize: '0.72rem' }}>{p.assignedTo?.name || '—'}</p>
+                <span style={{ background: `${STATUS_COLORS[p.status] || '#6b7280'}15`, color: STATUS_COLORS[p.status] || '#6b7280', padding: '2px 8px', borderRadius: 20, fontSize: '0.68rem', fontWeight: 600 }}>{STATUS_LABELS[p.status] || p.status}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Right: activity */}
+        <div style={{ background: '#141414', border: '1px solid #222', borderRadius: 14, overflow: 'hidden', alignSelf: 'start' }}>
+          <div style={{ padding: '14px 16px', borderBottom: '1px solid #1e1e1e' }}>
+            <p style={{ color: '#f0ebe3', fontSize: '0.85rem', fontWeight: 600 }}>Activité récente</p>
+          </div>
+          {(recentActivity as any[]).length === 0 ? (
+            <p style={{ color: 'rgba(240,235,227,0.2)', padding: '24px 16px', textAlign: 'center', fontSize: '0.78rem' }}>Aucune activité</p>
+          ) : (
+            (recentActivity as any[]).map((a: any, i: number) => (
+              <div key={a.id} style={{ padding: '10px 16px', borderBottom: i < recentActivity.length - 1 ? '1px solid #191919' : 'none' }}>
+                <p style={{ color: 'rgba(240,235,227,0.65)', fontSize: '0.75rem' }}>
+                  <strong style={{ color: '#f0ebe3' }}>{a.actorName}</strong>{' '}{a.action}{a.target ? <span style={{ color: 'rgba(240,235,227,0.4)' }}> — {a.target}</span> : null}
+                </p>
+                <p style={{ color: 'rgba(240,235,227,0.2)', fontSize: '0.65rem', marginTop: 2 }}>{fmt(a.createdAt)}</p>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>

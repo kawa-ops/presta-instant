@@ -2,10 +2,12 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { signOut, useSession } from 'next-auth/react'
+import { useEffect, useState } from 'react'
 
 const NAV = [
   { href: '/espace', label: 'Dashboard', icon: '◎' },
   { href: '/espace/prestations', label: 'Mes prestations', icon: '🎬' },
+  { href: '/espace/facturation', label: 'Facturation', icon: '💶' },
   { href: '/espace/archives', label: 'Archives', icon: '📁' },
   { href: '/espace/profil', label: 'Mon profil', icon: '👤' },
 ]
@@ -13,6 +15,14 @@ const NAV = [
 export default function FreelancerSidebar() {
   const pathname = usePathname()
   const { data: session } = useSession()
+  const [notifCount, setNotifCount] = useState(0)
+
+  useEffect(() => {
+    fetch('/api/notifications?unread=true')
+      .then(r => r.json())
+      .then(d => setNotifCount(Array.isArray(d) ? d.length : 0))
+      .catch(() => {})
+  }, [pathname])
 
   return (
     <aside style={{ position: 'fixed', left: 0, top: 0, height: '100vh', width: 220, background: '#0d0d0d', borderRight: '1px solid #1e1e1e', display: 'flex', flexDirection: 'column', zIndex: 40 }}>
@@ -29,7 +39,7 @@ export default function FreelancerSidebar() {
 
       <nav style={{ flex: 1, padding: '12px 10px' }}>
         {NAV.map(item => {
-          const active = pathname === item.href
+          const active = pathname === item.href || (item.href !== '/espace' && pathname.startsWith(item.href))
           return (
             <Link key={item.href} href={item.href} style={{
               display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px',
@@ -40,7 +50,12 @@ export default function FreelancerSidebar() {
               fontSize: '0.82rem', fontWeight: active ? 600 : 400,
             }}>
               <span style={{ fontSize: '0.9rem', width: 18, textAlign: 'center' }}>{item.icon}</span>
-              {item.label}
+              <span style={{ flex: 1 }}>{item.label}</span>
+              {item.href === '/espace' && notifCount > 0 && (
+                <span style={{ background: '#ef4444', color: '#fff', borderRadius: '50%', width: 18, height: 18, fontSize: '0.6rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {notifCount > 9 ? '9+' : notifCount}
+                </span>
+              )}
             </Link>
           )
         })}
