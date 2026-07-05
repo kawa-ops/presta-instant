@@ -3,25 +3,10 @@ import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { emailInvoiceUploaded, emailInvoicePaid } from '@/lib/mail'
+import { ensureSchema as ensureTable } from '@/lib/ensure'
 
 export const dynamic = 'force-dynamic'
 const db = prisma as any
-
-async function ensureTable() {
-  await db.$executeRawUnsafe(`
-    CREATE TABLE IF NOT EXISTS "Invoice" (
-      id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-      "freelancerId" TEXT NOT NULL REFERENCES "User"(id) ON DELETE CASCADE,
-      "productionId" TEXT REFERENCES "Production"(id) ON DELETE SET NULL,
-      "fileUrl" TEXT,
-      amount DOUBLE PRECISION,
-      status TEXT NOT NULL DEFAULT 'pending',
-      "paidAt" TIMESTAMP(3),
-      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT NOW(),
-      "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT NOW()
-    )
-  `).catch(() => {})
-}
 
 export async function GET(req: NextRequest) {
   await ensureTable()

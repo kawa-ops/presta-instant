@@ -1,28 +1,11 @@
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { ensureSchema } from '@/lib/ensure'
 import Link from 'next/link'
 
 export const dynamic = 'force-dynamic'
 const db = prisma as any
-
-async function ensureMonthlyPayoutTable() {
-  await db.$executeRawUnsafe(`
-    CREATE TABLE IF NOT EXISTS "MonthlyPayout" (
-      id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-      "freelancerId" TEXT NOT NULL REFERENCES "User"(id) ON DELETE CASCADE,
-      month TEXT NOT NULL,
-      "validatedAmount" DOUBLE PRECISION NOT NULL DEFAULT 0,
-      "projectCount" INT NOT NULL DEFAULT 0,
-      "invoiceUrl" TEXT,
-      "invoiceStatus" TEXT NOT NULL DEFAULT 'pending',
-      "paidAt" TIMESTAMP(3),
-      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT NOW(),
-      "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT NOW(),
-      UNIQUE("freelancerId", month)
-    )
-  `).catch(() => {})
-}
 
 function fmt(d: Date | null) { if (!d) return '—'; return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }) }
 
@@ -37,12 +20,12 @@ export default async function FreelancerDashboard() {
   const endTomorrow = new Date(endToday); endTomorrow.setDate(endTomorrow.getDate() + 1)
   const startMonth = new Date(now.getFullYear(), now.getMonth(), 1)
 
-  await ensureMonthlyPayoutTable()
+  await ensureSchema()
 
   const [myProds, notifications, payouts] = await Promise.all([
     db.production.findMany({ where: { assignedToId: userId, archived: false }, orderBy: { deadline: 'asc' } }).catch(() => []),
     db.notification.findMany({ where: { userId, read: false }, orderBy: { createdAt: 'desc' }, take: 5 }).catch(() => []),
-    db.$queryRawUnsafe(`SELECT * FROM "MonthlyPayout" WHERE "freelancerId" = $1`, userId).catch(() => []),
+    db.monthlyPayout.findMany({ where: { freelancerId: userId } }).catch(() => []),
   ])
 
   const active = (myProds as any[]).filter((p: any) => !['valide'].includes(p.status))

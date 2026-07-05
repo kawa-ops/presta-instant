@@ -19,11 +19,13 @@ model User {
   phone         String?
   siret         String?
   specialty     String?
+  address       String?
   profilePicUrl String?
   // Relations
   productions   Production[] @relation("AssignedTo")
   invoices      Invoice[]
   notifications Notification[]
+  payouts       MonthlyPayout[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
@@ -35,11 +37,13 @@ model Production {
   brief          String?
   sourcesLink    String?
   deliveryLink   String?
-  priority       String    @default("normale") // haute | normale | basse
-  status         String    @default("a_faire") // a_faire | en_cours | en_attente | livre | valide | archive
-  price          Float     @default(0)
+  priority       String    @default("normal") // urgent | high | normal | low
+  status         String    @default("a_faire") // a_faire | en_cours | en_attente | livre | valide
+  price          Float?
   deadline       DateTime?
+  productionDate DateTime?
   internalNotes  String?
+  archived       Boolean   @default(false)
   assignedToId   String?
   assignedTo     User?     @relation("AssignedTo", fields: [assignedToId], references: [id])
   invoices       Invoice[]
@@ -53,18 +57,34 @@ model Invoice {
   freelancer   User      @relation(fields: [freelancerId], references: [id])
   productionId String?
   production   Production? @relation(fields: [productionId], references: [id])
-  fileUrl      String
-  amount       Float     @default(0)
+  fileUrl      String?
+  amount       Float?
   status       String    @default("pending") // pending | paid
   paidAt       DateTime?
   createdAt    DateTime  @default(now())
+}
+
+model MonthlyPayout {
+  id              String    @id @default(cuid())
+  freelancerId    String
+  freelancer      User      @relation(fields: [freelancerId], references: [id], onDelete: Cascade)
+  month           String    // "2026-07"
+  validatedAmount Float     @default(0)
+  projectCount    Int       @default(0)
+  invoiceUrl      String?
+  invoiceStatus   String    @default("pending") // pending | uploaded | paid
+  paidAt          DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([freelancerId, month])
 }
 
 model Notification {
   id        String   @id @default(cuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id])
-  type      String   // task_completed | invoice_uploaded | invoice_paid | deadline_reminder | modification_requested
+  type      String   // task_completed | invoice_uploaded | invoice_paid | deadline_reminder | new_task
   message   String
   read      Boolean  @default(false)
   link      String?
