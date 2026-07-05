@@ -49,6 +49,15 @@ export default function PrestatairesPage() {
     load()
   }
 
+  async function changePassword(id: string) {
+    const pwd = prompt('Nouveau mot de passe pour ce prestataire (min 6 caractères) :')
+    if (!pwd) return
+    if (pwd.length < 6) { alert('Mot de passe trop court (min 6 caractères)'); return }
+    const res = await fetch(`/api/freelancers/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: pwd }) })
+    if (res.ok) alert('Mot de passe mis à jour ✓')
+    else alert('Erreur lors de la mise à jour')
+  }
+
   async function remove(id: string) {
     if (!confirm('Supprimer ce prestataire ?')) return
     await fetch(`/api/freelancers/${id}`, { method: 'DELETE' })
@@ -110,6 +119,7 @@ export default function PrestatairesPage() {
                 <button onClick={() => toggleActive(f.id, f.active)} style={{ flex: 1, background: 'rgba(240,235,227,0.05)', border: '1px solid #2a2a2a', borderRadius: 7, padding: '7px', color: 'rgba(240,235,227,0.5)', cursor: 'pointer', fontSize: '0.72rem' }}>
                   {f.active ? 'Désactiver' : 'Activer'}
                 </button>
+                <button onClick={() => changePassword(f.id)} style={{ background: 'rgba(240,235,227,0.05)', border: '1px solid #2a2a2a', borderRadius: 7, padding: '7px 12px', color: 'rgba(240,235,227,0.5)', cursor: 'pointer', fontSize: '0.72rem' }} title="Changer le mot de passe">🔑</button>
                 <button onClick={() => remove(f.id)} style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 7, padding: '7px 12px', color: '#ef4444', cursor: 'pointer', fontSize: '0.72rem' }}>✕</button>
               </div>
             </div>

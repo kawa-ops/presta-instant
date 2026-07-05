@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import bcrypt from 'bcryptjs'
 
 export const dynamic = 'force-dynamic'
 const db = prisma as any
@@ -17,6 +18,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (body.siret !== undefined) data.siret = body.siret
   if (body.specialty !== undefined) data.specialty = body.specialty
   if (body.active !== undefined) data.active = body.active
+  if (body.password) {
+    if (body.password.length < 6) return NextResponse.json({ error: 'Mot de passe trop court (min 6 caractères)' }, { status: 400 })
+    data.password = await bcrypt.hash(body.password, 10)
+  }
 
   try {
     const user = await db.user.update({ where: { id: params.id }, data, select: { id: true, name: true, email: true, phone: true, specialty: true, active: true } })

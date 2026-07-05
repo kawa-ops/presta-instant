@@ -12,41 +12,41 @@ function getMonths() {
   return months.reverse()
 }
 
-const IN: React.CSSProperties = { background: '#0f0f0f', border: '1px solid #2a2a2a', borderRadius: 8, padding: '8px 12px', color: '#f0ebe3', fontSize: '0.82rem', width: '100%', boxSizing: 'border-box' as const }
 const LA: React.CSSProperties = { display: 'block', color: 'rgba(240,235,227,0.4)', fontSize: '0.65rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' as const, marginBottom: 4 }
-
-function InvoiceUrlInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  return <input style={IN} value={value} onChange={e => onChange(e.target.value)} placeholder="Lien Google Drive, Dropbox vers le PDF…" />
-}
 
 export default function FreelancerFacturationPage() {
   const [payouts, setPayouts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState<string | null>(null)
-  const [invoiceUrls, setInvoiceUrls] = useState<Record<string, string>>({})
   const [success, setSuccess] = useState<string | null>(null)
+  const [uploadError, setUploadError] = useState<string | null>(null)
 
   async function load() {
     setLoading(true)
     const data = await fetch('/api/monthly-payouts').then(r => r.json()).catch(() => [])
     setPayouts(Array.isArray(data) ? data : [])
-    const urls: Record<string, string> = {}
-    if (Array.isArray(data)) data.forEach((p: any) => { urls[p.id] = p.invoiceUrl || '' })
-    setInvoiceUrls(urls)
     setLoading(false)
   }
 
   useEffect(() => { load() }, [])
 
-  async function depositInvoice(payoutId: string) {
-    const url = invoiceUrls[payoutId]
-    if (!url?.trim()) return
+  async function uploadInvoice(payoutId: string, file: File) {
+    setUploadError(null)
     setUploading(payoutId)
-    await fetch('/api/monthly-payouts', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: payoutId, invoiceUrl: url }) })
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const upRes = await fetch('/api/upload', { method: 'POST', body: fd })
+      const upData = await upRes.json()
+      if (!upRes.ok) { setUploadError(upData.error || 'Erreur upload'); setUploading(null); return }
+      await fetch('/api/monthly-payouts', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: payoutId, invoiceUrl: upData.url }) })
+      setSuccess(payoutId)
+      setTimeout(() => setSuccess(null), 3000)
+      load()
+    } catch {
+      setUploadError('Erreur réseau')
+    }
     setUploading(null)
-    setSuccess(payoutId)
-    setTimeout(() => setSuccess(null), 3000)
-    load()
   }
 
   async function ensureMonth(monthKey: string) {
@@ -137,24 +137,26 @@ export default function FreelancerFacturationPage() {
                     {success === payout.id && (
                       <p style={{ color: '#22c55e', fontSize: '0.75rem', marginBottom: 8 }}>✓ Facture déposée — Axel a été notifié</p>
                     )}
-                    <label style={LA}>Lien de la facture PDF</label>
-                    <div style={{ display: 'flex', gap: 8 }}>
-                      <div style={{ flex: 1 }}>
-                        <InvoiceUrlInput
-                          value={invoiceUrls[payout.id] || ''}
-                          onChange={v => setInvoiceUrls(u => ({ ...u, [payout.id]: v }))}
-                        />
-                      </div>
-                      <button
-                        onClick={() => depositInvoice(payout.id)}
+                    {uploadError && uploading === null && (
+                      <p style={{ color: '#ef4444', fontSize: '0.75rem', marginBottom: 8 }}>{uploadError}</p>
+                    )}
+                    <label style={LA}>{payout.invoiceUrl ? 'Remplacer la facture (PDF)' : 'Déposer une facture (PDF)'}</label>
+                    <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#f0ebe3', color: '#0a0a0a', borderRadius: 8, padding: '9px 18px', fontWeight: 700, cursor: uploading === payout.id ? 'default' : 'pointer', fontSize: '0.78rem', opacity: uploading === payout.id ? 0.6 : 1 }}>
+                      {uploading === payout.id ? 'Envoi en cours…' : '📄 Déposer une facture'}
+                      <input
+                        type="file"
+                        accept="application/pdf"
                         disabled={uploading === payout.id}
-                        style={{ background: '#f0ebe3', color: '#0a0a0a', border: 'none', borderRadius: 8, padding: '0 18px', fontWeight: 700, cursor: 'pointer', fontSize: '0.78rem', whiteSpace: 'nowrap', opacity: uploading === payout.id ? 0.6 : 1 }}
-                      >
-                        {uploading === payout.id ? 'Dépôt…' : 'Déposer la facture'}
-                      </button>
-                    </div>
+                        style={{ display: 'none' }}
+                        onChange={e => {
+                          const file = e.target.files?.[0]
+                          if (file) uploadInvoice(payout.id, file)
+                          e.target.value = ''
+                        }}
+                      />
+                    </label>
                     {payout.invoiceUrl && payout.invoiceStatus === 'uploaded' && (
-                      <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.7rem', marginTop: 6 }}>
+                      <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.7rem', marginTop: 8 }}>
                         Facture actuelle : <a href={payout.invoiceUrl} target="_blank" rel="noreferrer" style={{ color: '#3b82f6' }}>voir le document ↗</a>
                       </p>
                     )}

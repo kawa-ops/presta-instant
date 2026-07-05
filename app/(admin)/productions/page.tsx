@@ -129,6 +129,7 @@ export default function ProductionsPage() {
   const [showNew, setShowNew] = useState(false)
   const [saving, setSaving] = useState<string | null>(null)
   const [createError, setCreateError] = useState('')
+  const [search, setSearch] = useState('')
   const [sortBy, setSortBy] = useState('deadline')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
   const [form, setForm] = useState({ ...EMPTY_FORM })
@@ -195,6 +196,14 @@ export default function ProductionsPage() {
 
   const thStyle: React.CSSProperties = { padding: '10px 14px', color: 'rgba(240,235,227,0.25)', fontSize: '0.65rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', cursor: 'pointer', whiteSpace: 'nowrap', userSelect: 'none', textAlign: 'left' }
 
+  const q = search.trim().toLowerCase()
+  const visibleProds = q
+    ? prods.filter(p =>
+        p.title?.toLowerCase().includes(q) ||
+        p.client?.toLowerCase().includes(q) ||
+        p.assignedTo?.name?.toLowerCase().includes(q))
+    : prods
+
   return (
     <div style={{ width: '100%' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
@@ -202,7 +211,15 @@ export default function ProductionsPage() {
         <button onClick={() => { setShowNew(true); setCreateError('') }} style={{ background: '#f0ebe3', color: '#0a0a0a', border: 'none', borderRadius: 8, padding: '9px 18px', fontWeight: 700, cursor: 'pointer', fontSize: '0.82rem' }}>+ Nouvelle prestation</button>
       </div>
 
-      {/* Filters */}
+      {/* Search + Filters */}
+      <div style={{ marginBottom: 12 }}>
+        <input
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="🔍  Rechercher par titre, client ou prestataire…"
+          style={{ ...IN, maxWidth: 420, padding: '10px 14px' }}
+        />
+      </div>
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
         {STATUSES.map(s => (
           <button key={s.value} onClick={() => setFilterStatus(s.value)} style={{ padding: '5px 14px', borderRadius: 20, border: `1px solid ${filterStatus === s.value ? (s.color || '#f0ebe3') : '#2a2a2a'}`, background: filterStatus === s.value ? `${s.color || '#f0ebe3'}15` : 'transparent', color: filterStatus === s.value ? (s.color || '#f0ebe3') : 'rgba(240,235,227,0.4)', cursor: 'pointer', fontSize: '0.72rem' }}>
@@ -257,9 +274,9 @@ export default function ProductionsPage() {
       {/* Table */}
       {loading ? (
         <p style={{ color: 'rgba(240,235,227,0.2)', textAlign: 'center', padding: 48, fontSize: '0.82rem' }}>Chargement…</p>
-      ) : prods.length === 0 ? (
+      ) : visibleProds.length === 0 ? (
         <div style={{ background: '#141414', border: '1px solid #222', borderRadius: 14, padding: '40px 20px', textAlign: 'center' }}>
-          <p style={{ color: 'rgba(240,235,227,0.2)', fontSize: '0.82rem' }}>Aucune prestation</p>
+          <p style={{ color: 'rgba(240,235,227,0.2)', fontSize: '0.82rem' }}>{q ? `Aucun résultat pour « ${search} »` : 'Aucune prestation'}</p>
         </div>
       ) : (
         <div style={{ background: '#141414', border: '1px solid #222', borderRadius: 14, overflow: 'auto' }}>
@@ -279,7 +296,7 @@ export default function ProductionsPage() {
               </tr>
             </thead>
             <tbody>
-              {prods.map(p => (
+              {visibleProds.map(p => (
                 <ProdRow key={p.id} p={p} freelancers={freelancers} onSave={data => updateProd(p.id, data)} onDelete={() => deleteProd(p.id)} saving={saving === p.id} />
               ))}
             </tbody>
