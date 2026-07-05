@@ -42,7 +42,7 @@ export default async function FreelancerDashboard() {
   const [myProds, notifications, payouts] = await Promise.all([
     db.production.findMany({ where: { assignedToId: userId, archived: false }, orderBy: { deadline: 'asc' } }).catch(() => []),
     db.notification.findMany({ where: { userId, read: false }, orderBy: { createdAt: 'desc' }, take: 5 }).catch(() => []),
-    db.monthlyPayout.findMany({ where: { freelancerId: userId } }).catch(() => []),
+    db.$queryRawUnsafe(`SELECT * FROM "MonthlyPayout" WHERE "freelancerId" = $1`, userId).catch(() => []),
   ])
 
   const active = (myProds as any[]).filter((p: any) => !['valide'].includes(p.status))
