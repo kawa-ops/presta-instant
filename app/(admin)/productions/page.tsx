@@ -1,5 +1,6 @@
 'use client'
-import { useEffect, useState, useMemo, useCallback } from 'react'
+import { useState, useMemo } from 'react'
+import { useCached } from '@/lib/useCached'
 
 const STATUSES = [
   { value: '', label: 'Tous' },
@@ -167,10 +168,13 @@ function ProdRow({ p, freelancers, onSave, onDelete, onComplete, saving, celebra
 const EMPTY_FORM = { title: '', client: '', brief: '', sourcesLink: '', priority: 'normal', status: 'a_faire', price: '', deadline: '', productionDate: '', internalNotes: '', assignedToId: '' }
 
 export default function ProductionsPage() {
-  const [prods, setProds] = useState<any[]>([])
-  const [freelancers, setFreelancers] = useState<any[]>([])
+  // Instant paint from session cache + background revalidation
+  const { data: prodsData, loading, mutate } = useCached<any[]>('productions', '/api/productions')
+  const { data: freelancersData } = useCached<any[]>('freelancers', '/api/freelancers')
+  const prods = Array.isArray(prodsData) ? prodsData : []
+  const freelancers = Array.isArray(freelancersData) ? freelancersData : []
+
   const [filterStatus, setFilterStatus] = useState('')
-  const [loading, setLoading] = useState(true)
   const [showNew, setShowNew] = useState(false)
   const [saving, setSaving] = useState<string | null>(null)
   const [createError, setCreateError] = useState('')
@@ -180,18 +184,7 @@ export default function ProductionsPage() {
   const [celebrating, setCelebrating] = useState<string | null>(null)
   const [form, setForm] = useState({ ...EMPTY_FORM })
 
-  // Load everything ONCE — filtering/sorting/search are instant, done in memory
-  const load = useCallback(async () => {
-    const [p, f] = await Promise.all([
-      fetch('/api/productions', { cache: 'no-store' }).then(r => r.json()),
-      fetch('/api/freelancers', { cache: 'no-store' }).then(r => r.json()),
-    ])
-    setProds(Array.isArray(p) ? p : [])
-    setFreelancers(Array.isArray(f) ? f : [])
-    setLoading(false)
-  }, [])
-
-  useEffect(() => { load() }, [load])
+  const setProds = (updater: (prev: any[]) => any[]) => mutate(prev => updater(Array.isArray(prev) ? prev : []))
 
   function toggleSort(col: string) {
     if (sortBy === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc')

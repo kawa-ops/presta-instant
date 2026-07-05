@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
+import { ensureSchema } from '@/lib/ensure'
 
 export async function GET() {
   try {
+    await ensureSchema()
     // Create tables
     await prisma.$executeRawUnsafe(`
       CREATE TABLE IF NOT EXISTS "User" (

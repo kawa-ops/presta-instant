@@ -18,11 +18,14 @@ export default function FreelancerSidebar() {
   const [notifCount, setNotifCount] = useState(0)
 
   useEffect(() => {
-    fetch('/api/notifications?unread=true')
+    const load = () => fetch('/api/notifications?unread=true')
       .then(r => r.json())
       .then(d => setNotifCount(Array.isArray(d) ? d.length : 0))
       .catch(() => {})
-  }, [pathname])
+    load()
+    const interval = setInterval(load, 60000)
+    return () => clearInterval(interval)
+  }, [])
 
   return (
     <aside style={{ position: 'fixed', left: 0, top: 0, height: '100vh', width: 220, background: '#0d0d0d', borderRight: '1px solid #1e1e1e', display: 'flex', flexDirection: 'column', zIndex: 40 }}>

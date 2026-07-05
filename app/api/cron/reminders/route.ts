@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { emailDeadlineReminder } from '@/lib/mail'
-import { ensureSchema } from '@/lib/ensure'
 
 export const dynamic = 'force-dynamic'
 const db = prisma as any
 
 // Called by Vercel Cron every morning (see vercel.json)
 export async function GET(req: NextRequest) {
-  await ensureSchema()
 
   const startTomorrow = new Date()
   startTomorrow.setDate(startTomorrow.getDate() + 1)

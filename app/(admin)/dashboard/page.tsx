@@ -1,7 +1,8 @@
 'use client'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
+import { useCached } from '@/lib/useCached'
 
 function fmt(d: string | null) {
   if (!d) return '—'
@@ -29,20 +30,13 @@ const STATUS_LABELS: Record<string, string> = { a_faire: 'À faire', en_cours: '
 
 export default function AdminDashboard() {
   const { data: session } = useSession()
-  const [stats, setStats] = useState<any>(null)
-
-  const load = useCallback(async () => {
-    try {
-      const data = await fetch('/api/stats', { cache: 'no-store' }).then(r => r.json())
-      if (!data.error) setStats(data)
-    } catch {}
-  }, [])
+  // Paints instantly from session cache, refreshes in the background
+  const { data: stats, refresh } = useCached<any>('stats', '/api/stats')
 
   useEffect(() => {
-    load()
     // Auto-refresh: every 30s + when the tab regains focus
-    const interval = setInterval(load, 30000)
-    const onFocus = () => load()
+    const interval = setInterval(refresh, 30000)
+    const onFocus = () => refresh()
     window.addEventListener('focus', onFocus)
     document.addEventListener('visibilitychange', onFocus)
     return () => {
@@ -50,7 +44,7 @@ export default function AdminDashboard() {
       window.removeEventListener('focus', onFocus)
       document.removeEventListener('visibilitychange', onFocus)
     }
-  }, [load])
+  }, [refresh])
 
   const s = stats || { inProgress: '·', overdue: '·', dueToday: '·', dueTomorrow: '·', completedMonth: '·', activeFreelancers: '·', totalProds: '·', recentActivity: [], urgentProds: [], recentProds: [] }
 

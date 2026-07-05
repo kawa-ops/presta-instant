@@ -1,7 +1,6 @@
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { ensureSchema } from '@/lib/ensure'
 import Link from 'next/link'
 
 export const dynamic = 'force-dynamic'
@@ -18,7 +17,6 @@ export default async function FreelancerDashboard() {
   const startToday = new Date(now); startToday.setHours(0, 0, 0, 0)
   const currentMonth = now.toISOString().slice(0, 7)
 
-  await ensureSchema()
 
   const [myProds, notifications, payouts] = await Promise.all([
     db.production.findMany({ where: { assignedToId: userId }, orderBy: { deadline: 'asc' } }).catch(() => []),

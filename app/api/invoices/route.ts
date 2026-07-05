@@ -3,13 +3,11 @@ import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { emailInvoiceUploaded, emailInvoicePaid } from '@/lib/mail'
-import { ensureSchema as ensureTable } from '@/lib/ensure'
 
 export const dynamic = 'force-dynamic'
 const db = prisma as any
 
 export async function GET(req: NextRequest) {
-  await ensureTable()
   const session = await getServerSession(authOptions)
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -33,7 +31,6 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  await ensureTable()
   const session = await getServerSession(authOptions)
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 

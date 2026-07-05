@@ -2,13 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { ensureSchema, getLucasId } from '@/lib/ensure'
+import { getLucasId } from '@/lib/ensure'
 
 export const dynamic = 'force-dynamic'
 const db = prisma as any
 
 export async function GET(req: NextRequest) {
-  await ensureSchema()
   const { searchParams } = new URL(req.url)
   const status = searchParams.get('status')
   const assignedToId = searchParams.get('assignedToId')
@@ -45,7 +44,6 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  await ensureSchema()
   const session = await getServerSession(authOptions)
   if (!session || (session.user as any).role !== 'admin') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
