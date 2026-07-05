@@ -110,7 +110,7 @@ export async function POST(req: NextRequest) {
         deliveryLink: null,
         priority: priority || 'normal',
         status: status || 'a_faire',
-        price: price ? parseFloat(price) : null,
+        price: price && price !== '' ? parseFloat(price) : undefined,
         deadline: deadline ? new Date(deadline) : null,
         productionDate: productionDate ? new Date(productionDate) : null,
         internalNotes: internalNotes || null,
