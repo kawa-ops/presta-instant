@@ -1,0 +1,80 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  password      String
+  role          String    @default("freelancer") // admin | freelancer
+  active        Boolean   @default(true)
+  // Freelancer fields
+  phone         String?
+  siret         String?
+  specialty     String?
+  profilePicUrl String?
+  // Relations
+  productions   Production[] @relation("AssignedTo")
+  invoices      Invoice[]
+  notifications Notification[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Production {
+  id             String    @id @default(cuid())
+  title          String
+  client         String
+  brief          String?
+  sourcesLink    String?
+  deliveryLink   String?
+  priority       String    @default("normale") // haute | normale | basse
+  status         String    @default("a_faire") // a_faire | en_cours | en_attente | livre | valide | archive
+  price          Float     @default(0)
+  deadline       DateTime?
+  internalNotes  String?
+  assignedToId   String?
+  assignedTo     User?     @relation("AssignedTo", fields: [assignedToId], references: [id])
+  invoices       Invoice[]
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+model Invoice {
+  id           String    @id @default(cuid())
+  freelancerId String
+  freelancer   User      @relation(fields: [freelancerId], references: [id])
+  productionId String?
+  production   Production? @relation(fields: [productionId], references: [id])
+  fileUrl      String
+  amount       Float     @default(0)
+  status       String    @default("pending") // pending | paid
+  paidAt       DateTime?
+  createdAt    DateTime  @default(now())
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  type      String   // task_completed | invoice_uploaded | invoice_paid | deadline_reminder | modification_requested
+  message   String
+  read      Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+}
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  actorName String
+  action    String
+  target    String?
+  createdAt DateTime @default(now())
+}

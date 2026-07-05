@@ -1,0 +1,61 @@
+'use client'
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { signOut, useSession } from 'next-auth/react'
+
+const NAV = [
+  { href: '/espace', label: 'Dashboard', icon: '◎' },
+  { href: '/espace/prestations', label: 'Mes prestations', icon: '🎬' },
+  { href: '/espace/archives', label: 'Archives', icon: '📁' },
+  { href: '/espace/profil', label: 'Mon profil', icon: '👤' },
+]
+
+export default function FreelancerSidebar() {
+  const pathname = usePathname()
+  const { data: session } = useSession()
+
+  return (
+    <aside style={{ position: 'fixed', left: 0, top: 0, height: '100vh', width: 220, background: '#0d0d0d', borderRight: '1px solid #1e1e1e', display: 'flex', flexDirection: 'column', zIndex: 40 }}>
+      <div style={{ padding: '20px 20px 16px', borderBottom: '1px solid #1e1e1e' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <svg viewBox="0 0 100 100" width="18" height="18" fill="#f0ebe3">
+            <path d="M12,52 C12,52 48,46 58,22 C58,22 54,50 78,42 C78,42 60,52 68,76 C68,76 52,58 28,72 C28,72 42,52 12,52 Z"/>
+            <path d="M74,26 C74,26 79,22 83,18 C83,18 81,24 87,22 C87,22 81,27 83,33 C83,33 77,27 71,31 C71,31 75,26 74,26 Z"/>
+          </svg>
+          <span style={{ color: '#f0ebe3', fontWeight: 800, fontSize: '1rem', fontFamily: 'var(--font-syne), sans-serif' }}>instant.</span>
+        </div>
+        <p style={{ color: 'rgba(240,235,227,0.25)', fontSize: '0.65rem', marginTop: 3, marginLeft: 26 }}>espace prestataire</p>
+      </div>
+
+      <nav style={{ flex: 1, padding: '12px 10px' }}>
+        {NAV.map(item => {
+          const active = pathname === item.href
+          return (
+            <Link key={item.href} href={item.href} style={{
+              display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px',
+              borderRadius: 8, marginBottom: 2, textDecoration: 'none',
+              color: active ? '#f0ebe3' : 'rgba(240,235,227,0.4)',
+              background: active ? 'rgba(240,235,227,0.07)' : 'transparent',
+              borderLeft: active ? '2px solid #f0ebe3' : '2px solid transparent',
+              fontSize: '0.82rem', fontWeight: active ? 600 : 400,
+            }}>
+              <span style={{ fontSize: '0.9rem', width: 18, textAlign: 'center' }}>{item.icon}</span>
+              {item.label}
+            </Link>
+          )
+        })}
+      </nav>
+
+      <div style={{ padding: '12px 10px', borderTop: '1px solid #1e1e1e' }}>
+        <div style={{ padding: '8px 12px', marginBottom: 4 }}>
+          <p style={{ color: '#f0ebe3', fontSize: '0.78rem', fontWeight: 600 }}>{session?.user?.name}</p>
+          <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.68rem' }}>Prestataire</p>
+        </div>
+        <button onClick={() => signOut({ callbackUrl: '/login' })} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'none', border: 'none', color: 'rgba(240,235,227,0.3)', cursor: 'pointer', fontSize: '0.75rem', borderRadius: 6 }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Déconnexion
+        </button>
+      </div>
+    </aside>
+  )
+}

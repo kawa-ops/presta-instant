@@ -1,0 +1,121 @@
+'use client'
+import { useEffect, useState } from 'react'
+
+const IN: React.CSSProperties = { background: '#0f0f0f', border: '1px solid #2a2a2a', borderRadius: 8, padding: '8px 12px', color: '#f0ebe3', fontSize: '0.82rem', width: '100%' }
+const LA: React.CSSProperties = { display: 'block', color: 'rgba(240,235,227,0.4)', fontSize: '0.65rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }
+
+function NameInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return <input style={IN} value={value} onChange={e => onChange(e.target.value)} placeholder="Prénom Nom" />
+}
+function EmailInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return <input type="email" style={IN} value={value} onChange={e => onChange(e.target.value)} placeholder="email@exemple.com" />
+}
+function PassInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return <input type="password" style={IN} value={value} onChange={e => onChange(e.target.value)} placeholder="Mot de passe" />
+}
+function PhoneInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return <input style={IN} value={value} onChange={e => onChange(e.target.value)} placeholder="06 12 34 56 78" />
+}
+function SpecialtyInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return <input style={IN} value={value} onChange={e => onChange(e.target.value)} placeholder="Montage, motion design…" />
+}
+
+export default function PrestatairesPage() {
+  const [freelancers, setFreelancers] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [showNew, setShowNew] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [newForm, setNewForm] = useState({ name: '', email: '', password: '', phone: '', siret: '', specialty: '' })
+
+  async function load() {
+    setLoading(true)
+    const data = await fetch('/api/freelancers').then(r => r.json())
+    setFreelancers(Array.isArray(data) ? data : [])
+    setLoading(false)
+  }
+
+  useEffect(() => { load() }, [])
+
+  async function create() {
+    if (!newForm.name || !newForm.email || !newForm.password) return
+    setSaving(true)
+    const res = await fetch('/api/freelancers', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newForm) })
+    setSaving(false)
+    if (res.ok) { setShowNew(false); setNewForm({ name: '', email: '', password: '', phone: '', siret: '', specialty: '' }); load() }
+  }
+
+  async function toggleActive(id: string, active: boolean) {
+    await fetch(`/api/freelancers/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ active: !active }) })
+    load()
+  }
+
+  async function remove(id: string) {
+    if (!confirm('Supprimer ce prestataire ?')) return
+    await fetch(`/api/freelancers/${id}`, { method: 'DELETE' })
+    load()
+  }
+
+  return (
+    <div style={{ maxWidth: 900 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+        <h1 style={{ color: '#f0ebe3', fontSize: '1.4rem', fontWeight: 800 }}>Prestataires</h1>
+        <button onClick={() => setShowNew(true)} style={{ background: '#f0ebe3', color: '#0a0a0a', border: 'none', borderRadius: 8, padding: '9px 18px', fontWeight: 700, cursor: 'pointer', fontSize: '0.82rem' }}>+ Créer un compte</button>
+      </div>
+
+      {showNew && (
+        <div style={{ background: '#141414', border: '1px solid #2a2a2a', borderRadius: 16, padding: 24, marginBottom: 24 }}>
+          <p style={{ color: '#f0ebe3', fontWeight: 700, marginBottom: 16 }}>Nouveau prestataire</p>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div><label style={LA}>Nom *</label><NameInput value={newForm.name} onChange={v => setNewForm(f => ({ ...f, name: v }))} /></div>
+            <div><label style={LA}>Email *</label><EmailInput value={newForm.email} onChange={v => setNewForm(f => ({ ...f, email: v }))} /></div>
+            <div><label style={LA}>Mot de passe *</label><PassInput value={newForm.password} onChange={v => setNewForm(f => ({ ...f, password: v }))} /></div>
+            <div><label style={LA}>Téléphone</label><PhoneInput value={newForm.phone} onChange={v => setNewForm(f => ({ ...f, phone: v }))} /></div>
+            <div><label style={LA}>Spécialité</label><SpecialtyInput value={newForm.specialty} onChange={v => setNewForm(f => ({ ...f, specialty: v }))} /></div>
+            <div><label style={LA}>SIRET</label><input style={IN} value={newForm.siret} onChange={e => setNewForm(f => ({ ...f, siret: e.target.value }))} placeholder="000 000 000 00000" /></div>
+          </div>
+          <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+            <button onClick={create} disabled={saving} style={{ background: '#f0ebe3', color: '#0a0a0a', border: 'none', borderRadius: 8, padding: '9px 20px', fontWeight: 700, cursor: 'pointer', fontSize: '0.82rem' }}>
+              {saving ? 'Création…' : 'Créer'}
+            </button>
+            <button onClick={() => setShowNew(false)} style={{ background: 'transparent', color: 'rgba(240,235,227,0.4)', border: '1px solid #2a2a2a', borderRadius: 8, padding: '9px 16px', cursor: 'pointer', fontSize: '0.82rem' }}>Annuler</button>
+          </div>
+        </div>
+      )}
+
+      {loading ? (
+        <p style={{ color: 'rgba(240,235,227,0.2)', textAlign: 'center', padding: 40, fontSize: '0.82rem' }}>Chargement…</p>
+      ) : freelancers.length === 0 ? (
+        <p style={{ color: 'rgba(240,235,227,0.2)', textAlign: 'center', padding: 40, fontSize: '0.82rem' }}>Aucun prestataire. Créez le premier compte ci-dessus.</p>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
+          {freelancers.map(f => (
+            <div key={f.id} style={{ background: '#141414', border: '1px solid #222', borderRadius: 14, padding: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'start', justifyContent: 'space-between', marginBottom: 12 }}>
+                <div>
+                  <p style={{ color: '#f0ebe3', fontWeight: 700, fontSize: '0.9rem' }}>{f.name}</p>
+                  {f.specialty && <p style={{ color: 'rgba(240,235,227,0.4)', fontSize: '0.72rem', marginTop: 2 }}>{f.specialty}</p>}
+                </div>
+                <span style={{ background: f.active ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)', color: f.active ? '#22c55e' : '#ef4444', padding: '3px 10px', borderRadius: 20, fontSize: '0.65rem', fontWeight: 600 }}>
+                  {f.active ? 'Actif' : 'Inactif'}
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginBottom: 16 }}>
+                <p style={{ color: 'rgba(240,235,227,0.5)', fontSize: '0.75rem' }}>✉ {f.email}</p>
+                {f.phone && <p style={{ color: 'rgba(240,235,227,0.5)', fontSize: '0.75rem' }}>📱 {f.phone}</p>}
+                {f.siret && <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.7rem' }}>SIRET : {f.siret}</p>}
+              </div>
+
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button onClick={() => toggleActive(f.id, f.active)} style={{ flex: 1, background: 'rgba(240,235,227,0.05)', border: '1px solid #2a2a2a', borderRadius: 7, padding: '7px', color: 'rgba(240,235,227,0.5)', cursor: 'pointer', fontSize: '0.72rem' }}>
+                  {f.active ? 'Désactiver' : 'Activer'}
+                </button>
+                <button onClick={() => remove(f.id)} style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 7, padding: '7px 12px', color: '#ef4444', cursor: 'pointer', fontSize: '0.72rem' }}>✕</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
