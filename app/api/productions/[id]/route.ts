@@ -47,6 +47,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 
   try {
+    // Read previous status to avoid double-counting payouts on repeated validation
+    const before = await db.production.findUnique({ where: { id: params.id }, select: { status: true } })
+
     const prod = await db.production.update({
       where: { id: params.id },
       data,
@@ -67,7 +70,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     }
 
     // Accumulate into monthly payout when admin validates a freelancer's paid production
-    if (body.status === 'valide' && prod.assignedToId && prod.price) {
+    // (only on transition to 'valide', never twice)
+    if (body.status === 'valide' && before?.status !== 'valide' && prod.assignedToId && prod.price) {
       const lucasId = await getLucasId()
       if (prod.assignedToId !== lucasId) {
         const month = new Date().toISOString().slice(0, 7)

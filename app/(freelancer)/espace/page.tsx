@@ -5,6 +5,7 @@ import { ensureSchema } from '@/lib/ensure'
 import Link from 'next/link'
 
 export const dynamic = 'force-dynamic'
+export const revalidate = 0
 const db = prisma as any
 
 function fmt(d: Date | null) { if (!d) return '—'; return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }) }
@@ -15,39 +16,42 @@ export default async function FreelancerDashboard() {
 
   const now = new Date()
   const startToday = new Date(now); startToday.setHours(0, 0, 0, 0)
-  const endToday = new Date(now); endToday.setHours(23, 59, 59, 999)
-  const startTomorrow = new Date(startToday); startTomorrow.setDate(startTomorrow.getDate() + 1)
-  const endTomorrow = new Date(endToday); endTomorrow.setDate(endTomorrow.getDate() + 1)
-  const startMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+  const currentMonth = now.toISOString().slice(0, 7)
 
   await ensureSchema()
 
   const [myProds, notifications, payouts] = await Promise.all([
-    db.production.findMany({ where: { assignedToId: userId, archived: false }, orderBy: { deadline: 'asc' } }).catch(() => []),
+    db.production.findMany({ where: { assignedToId: userId }, orderBy: { deadline: 'asc' } }).catch(() => []),
     db.notification.findMany({ where: { userId, read: false }, orderBy: { createdAt: 'desc' }, take: 5 }).catch(() => []),
     db.monthlyPayout.findMany({ where: { freelancerId: userId } }).catch(() => []),
   ])
 
-  const active = (myProds as any[]).filter((p: any) => !['valide'].includes(p.status))
-  const overdue = active.filter((p: any) => p.deadline && new Date(p.deadline) < startToday)
-  const dueToday = active.filter((p: any) => p.deadline && new Date(p.deadline) >= startToday && new Date(p.deadline) <= endToday)
-  const dueTomorrow = active.filter((p: any) => p.deadline && new Date(p.deadline) >= startTomorrow && new Date(p.deadline) <= endTomorrow)
-  const validated = (myProds as any[]).filter((p: any) => p.status === 'valide')
+  const all = myProds as any[]
+  const enCours = all.filter((p: any) => ['a_faire', 'en_cours'].includes(p.status) && !p.archived)
+  const enAttente = all.filter((p: any) => p.status === 'en_attente' && !p.archived)
+  const livres = all.filter((p: any) => p.status === 'livre')
+  const valides = all.filter((p: any) => p.status === 'valide')
+  const overdue = all.filter((p: any) => p.deadline && new Date(p.deadline) < startToday && !['valide'].includes(p.status) && !p.archived)
+  const activeList = all.filter((p: any) => !['valide'].includes(p.status) && !p.archived)
 
-  // Financial
-  const pendingAmount = (payouts as any[]).filter((p: any) => p.invoiceStatus !== 'paid').reduce((a: number, p: any) => a + (p.validatedAmount || 0), 0)
-  const validatedAmount = (payouts as any[]).filter((p: any) => p.invoiceStatus === 'paid').reduce((a: number, p: any) => a + (p.validatedAmount || 0), 0)
+  // Financial workflow:
+  // - "Montant en attente" = prices of delivered (livre) projects, not yet validated by admin
+  // - "Montant validé" = current month accumulated payouts (validated by admin)
+  // - "Solde total" = lifetime accumulated payouts
+  const pendingAmount = livres.reduce((a: number, p: any) => a + (p.price || 0), 0)
+  const monthPayout = (payouts as any[]).find((p: any) => p.month === currentMonth)
+  const validatedAmount = monthPayout?.validatedAmount || 0
   const totalBalance = (payouts as any[]).reduce((a: number, p: any) => a + (p.validatedAmount || 0), 0)
-  const thisMonthAmount = (payouts as any[]).find((p: any) => p.month === now.toISOString().slice(0, 7))?.validatedAmount || 0
 
   const STATUS_COLORS: Record<string, string> = { a_faire: '#6b7280', en_cours: '#3b82f6', en_attente: '#eab308', livre: '#a78bfa', valide: '#22c55e' }
   const STATUS_LABELS: Record<string, string> = { a_faire: 'À faire', en_cours: 'En cours', en_attente: 'En attente', livre: 'Livré', valide: 'Validé' }
 
   const kpis = [
-    { label: 'Prestations en cours', value: active.length, color: '#3b82f6', bg: 'rgba(59,130,246,0.08)', border: 'rgba(59,130,246,0.2)' },
-    { label: 'En retard', value: overdue.length, color: '#ef4444', bg: 'rgba(239,68,68,0.08)', border: 'rgba(239,68,68,0.2)' },
-    { label: 'À rendre aujourd\'hui', value: dueToday.length, color: '#eab308', bg: 'rgba(234,179,8,0.08)', border: 'rgba(234,179,8,0.2)' },
-    { label: 'À rendre demain', value: dueTomorrow.length, color: '#f97316', bg: 'rgba(249,115,22,0.08)', border: 'rgba(249,115,22,0.2)' },
+    { label: 'Projets en cours', value: enCours.length, color: '#3b82f6', bg: 'rgba(59,130,246,0.08)', border: 'rgba(59,130,246,0.2)' },
+    { label: 'En attente de validation', value: enAttente.length, color: '#eab308', bg: 'rgba(234,179,8,0.08)', border: 'rgba(234,179,8,0.2)' },
+    { label: 'Projets livrés', value: livres.length, color: '#a78bfa', bg: 'rgba(167,139,250,0.08)', border: 'rgba(167,139,250,0.2)' },
+    { label: 'Projets validés', value: valides.length, color: '#22c55e', bg: 'rgba(34,197,94,0.08)', border: 'rgba(34,197,94,0.2)' },
+    { label: 'Projets en retard', value: overdue.length, color: '#ef4444', bg: 'rgba(239,68,68,0.08)', border: 'rgba(239,68,68,0.2)' },
   ]
 
   return (
@@ -59,19 +63,18 @@ export default async function FreelancerDashboard() {
         </p>
       </div>
 
-      {(overdue.length > 0 || dueToday.length > 0) && (
-        <div style={{ background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.15)', borderRadius: 10, padding: '11px 16px', marginBottom: 18, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-          {overdue.length > 0 && <p style={{ color: '#ef4444', fontSize: '0.8rem' }}>⚠ {overdue.length} prestation{overdue.length > 1 ? 's' : ''} en retard</p>}
-          {dueToday.length > 0 && <p style={{ color: '#eab308', fontSize: '0.8rem' }}>● {dueToday.length} prestation{dueToday.length > 1 ? 's' : ''} à livrer aujourd&apos;hui</p>}
+      {overdue.length > 0 && (
+        <div style={{ background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.15)', borderRadius: 10, padding: '11px 16px', marginBottom: 18 }}>
+          <p style={{ color: '#ef4444', fontSize: '0.8rem' }}>⚠ {overdue.length} prestation{overdue.length > 1 ? 's' : ''} en retard — priorité absolue</p>
         </div>
       )}
 
-      {/* Production KPIs */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 18 }}>
+      {/* Status KPIs */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10, marginBottom: 18 }}>
         {kpis.map(k => (
-          <Link key={k.label} href="/espace/prestations" style={{ background: k.bg, border: `1px solid ${k.border}`, borderRadius: 12, padding: '16px 18px', textDecoration: 'none', display: 'block' }}>
-            <p style={{ color: k.color, fontSize: '1.8rem', fontWeight: 800, lineHeight: 1 }}>{k.value}</p>
-            <p style={{ color: 'rgba(240,235,227,0.5)', fontSize: '0.7rem', marginTop: 5 }}>{k.label}</p>
+          <Link key={k.label} href="/espace/prestations" style={{ background: k.bg, border: `1px solid ${k.border}`, borderRadius: 12, padding: '14px 16px', textDecoration: 'none', display: 'block' }}>
+            <p style={{ color: k.color, fontSize: '1.7rem', fontWeight: 800, lineHeight: 1 }}>{k.value}</p>
+            <p style={{ color: 'rgba(240,235,227,0.5)', fontSize: '0.67rem', marginTop: 5, lineHeight: 1.3 }}>{k.label}</p>
           </Link>
         ))}
       </div>
@@ -81,17 +84,17 @@ export default async function FreelancerDashboard() {
         <div style={{ background: '#141414', border: '1px solid #222', borderRadius: 12, padding: '16px 18px' }}>
           <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.65rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Montant en attente</p>
           <p style={{ color: '#eab308', fontSize: '1.6rem', fontWeight: 800, lineHeight: 1 }}>{pendingAmount.toLocaleString('fr-FR')} €</p>
-          <p style={{ color: 'rgba(240,235,227,0.25)', fontSize: '0.68rem', marginTop: 4 }}>validé, facture en attente</p>
+          <p style={{ color: 'rgba(240,235,227,0.25)', fontSize: '0.68rem', marginTop: 4 }}>livré, en attente de validation</p>
         </div>
         <div style={{ background: '#141414', border: '1px solid #222', borderRadius: 12, padding: '16px 18px' }}>
           <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.65rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Montant validé</p>
           <p style={{ color: '#22c55e', fontSize: '1.6rem', fontWeight: 800, lineHeight: 1 }}>{validatedAmount.toLocaleString('fr-FR')} €</p>
-          <p style={{ color: 'rgba(240,235,227,0.25)', fontSize: '0.68rem', marginTop: 4 }}>factures payées</p>
+          <p style={{ color: 'rgba(240,235,227,0.25)', fontSize: '0.68rem', marginTop: 4 }}>ce mois-ci</p>
         </div>
         <div style={{ background: '#141414', border: '1px solid #222', borderRadius: 12, padding: '16px 18px' }}>
           <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.65rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Solde total</p>
           <p style={{ color: '#a78bfa', fontSize: '1.6rem', fontWeight: 800, lineHeight: 1 }}>{totalBalance.toLocaleString('fr-FR')} €</p>
-          <p style={{ color: 'rgba(240,235,227,0.25)', fontSize: '0.68rem', marginTop: 4 }}>depuis le début</p>
+          <p style={{ color: 'rgba(240,235,227,0.25)', fontSize: '0.68rem', marginTop: 4 }}>gagné depuis le début</p>
         </div>
       </div>
 
@@ -102,10 +105,10 @@ export default async function FreelancerDashboard() {
             <p style={{ color: '#f0ebe3', fontSize: '0.82rem', fontWeight: 600 }}>Mes prestations</p>
             <Link href="/espace/prestations" style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.72rem', textDecoration: 'none' }}>Tout voir →</Link>
           </div>
-          {active.length === 0 ? (
+          {activeList.length === 0 ? (
             <p style={{ color: 'rgba(240,235,227,0.2)', padding: '24px 18px', textAlign: 'center', fontSize: '0.8rem' }}>Aucune prestation en cours ✓</p>
           ) : (
-            active.slice(0, 6).map((p: any) => {
+            activeList.slice(0, 6).map((p: any) => {
               const isOverdue = p.deadline && new Date(p.deadline) < startToday
               return (
                 <Link key={p.id} href="/espace/prestations" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 18px', borderBottom: '1px solid #191919', textDecoration: 'none' }}>
@@ -113,6 +116,7 @@ export default async function FreelancerDashboard() {
                     <p style={{ color: '#f0ebe3', fontSize: '0.8rem', fontWeight: 600 }}>{p.title}</p>
                     <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.68rem', marginTop: 1 }}>{p.client} · {fmt(p.deadline)}</p>
                   </div>
+                  {p.price ? <span style={{ color: '#f0ebe3', fontSize: '0.75rem', fontWeight: 700 }}>{p.price.toLocaleString('fr-FR')} €</span> : null}
                   <span style={{ background: `${STATUS_COLORS[p.status] || '#6b7280'}15`, color: STATUS_COLORS[p.status] || '#6b7280', padding: '2px 8px', borderRadius: 20, fontSize: '0.65rem', fontWeight: 600 }}>{STATUS_LABELS[p.status] || p.status}</span>
                   {isOverdue && <span style={{ color: '#ef4444', fontSize: '0.65rem', fontWeight: 700 }}>⚠</span>}
                 </Link>
@@ -124,7 +128,7 @@ export default async function FreelancerDashboard() {
         {/* Notifications */}
         <div style={{ background: '#141414', border: '1px solid #222', borderRadius: 14, overflow: 'hidden', alignSelf: 'start' }}>
           <div style={{ padding: '13px 16px', borderBottom: '1px solid #1e1e1e' }}>
-            <p style={{ color: '#f0ebe3', fontSize: '0.82rem', fontWeight: 600 }}>Notifications {(notifications as any[]).length > 0 && <span style={{ background: '#ef4444', color: '#fff', borderRadius: '50%', width: 16, height: 16, fontSize: '0.6rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginLeft: 6 }}>{(notifications as any[]).length}</span>}</p>
+            <p style={{ color: '#f0ebe3', fontSize: '0.82rem', fontWeight: 600 }}>Notifications</p>
           </div>
           {(notifications as any[]).length === 0 ? (
             <p style={{ color: 'rgba(240,235,227,0.2)', padding: '20px 16px', fontSize: '0.75rem', textAlign: 'center' }}>Aucune notification</p>

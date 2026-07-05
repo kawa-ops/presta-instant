@@ -2,72 +2,92 @@
 import { useEffect, useState } from 'react'
 
 const MONTHS_FR = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
+const LA: React.CSSProperties = { display: 'block', color: 'rgba(240,235,227,0.4)', fontSize: '0.65rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' as const, marginBottom: 6 }
 
-function getMonths() {
-  const months = []
-  for (let m = 0; m < 12; m++) {
-    const key = `2026-${String(m + 1).padStart(2, '0')}`
-    months.push({ key, label: `${MONTHS_FR[m]} 2026` })
-  }
-  return months.reverse()
+type MonthState = {
+  key: string
+  label: string
+  status: 'past' | 'current' | 'future' | 'uploaded' | 'paid'
+  payout: any | null
 }
-
-const LA: React.CSSProperties = { display: 'block', color: 'rgba(240,235,227,0.4)', fontSize: '0.65rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' as const, marginBottom: 4 }
 
 export default function FreelancerFacturationPage() {
   const [payouts, setPayouts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [uploading, setUploading] = useState<string | null>(null)
-  const [success, setSuccess] = useState<string | null>(null)
+  const [openMonth, setOpenMonth] = useState<string | null>(null)
+  const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
+  const [success, setSuccess] = useState(false)
+
+  const currentMonth = new Date().toISOString().slice(0, 7)
 
   async function load() {
-    setLoading(true)
-    const data = await fetch('/api/monthly-payouts').then(r => r.json()).catch(() => [])
+    const data = await fetch('/api/monthly-payouts', { cache: 'no-store' }).then(r => r.json()).catch(() => [])
     setPayouts(Array.isArray(data) ? data : [])
     setLoading(false)
   }
 
   useEffect(() => { load() }, [])
 
-  async function uploadInvoice(payoutId: string, file: File) {
+  const payoutMap: Record<string, any> = {}
+  payouts.forEach(p => { payoutMap[p.month] = p })
+
+  const months: MonthState[] = Array.from({ length: 12 }, (_, m) => {
+    const key = `2026-${String(m + 1).padStart(2, '0')}`
+    const payout = payoutMap[key] || null
+    let status: MonthState['status']
+    if (payout?.invoiceStatus === 'paid') status = 'paid'
+    else if (payout?.invoiceStatus === 'uploaded') status = 'uploaded'
+    else if (key === currentMonth) status = 'current'
+    else if (key < currentMonth) status = 'past'
+    else status = 'future'
+    return { key, label: MONTHS_FR[m], status, payout }
+  })
+
+  const STYLES: Record<MonthState['status'], { border: string; bg: string; dot: string; label: string }> = {
+    past:     { border: 'rgba(34,197,94,0.2)',   bg: 'rgba(34,197,94,0.04)',   dot: '#22c55e', label: 'Terminé' },
+    paid:     { border: 'rgba(34,197,94,0.3)',   bg: 'rgba(34,197,94,0.07)',   dot: '#22c55e', label: 'Payé ✓' },
+    uploaded: { border: 'rgba(249,115,22,0.3)',  bg: 'rgba(249,115,22,0.06)',  dot: '#f97316', label: 'En attente de validation' },
+    current:  { border: 'rgba(167,139,250,0.35)', bg: 'rgba(167,139,250,0.07)', dot: '#a78bfa', label: 'Mois en cours' },
+    future:   { border: '#222',                  bg: 'transparent',            dot: '#333',    label: 'À venir' },
+  }
+
+  async function handleUpload(monthKey: string, file: File) {
     setUploadError(null)
-    setUploading(payoutId)
+    setUploading(true)
     try {
+      let payout = payoutMap[monthKey]
+      // Create the month row if it doesn't exist yet
+      if (!payout) {
+        const created = await fetch('/api/monthly-payouts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ month: monthKey }) }).then(r => r.json())
+        if (created.error) { setUploadError(created.error); setUploading(false); return }
+        payout = created
+      }
       const fd = new FormData()
       fd.append('file', file)
       const upRes = await fetch('/api/upload', { method: 'POST', body: fd })
       const upData = await upRes.json()
-      if (!upRes.ok) { setUploadError(upData.error || 'Erreur upload'); setUploading(null); return }
-      await fetch('/api/monthly-payouts', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: payoutId, invoiceUrl: upData.url }) })
-      setSuccess(payoutId)
-      setTimeout(() => setSuccess(null), 3000)
-      load()
+      if (!upRes.ok) { setUploadError(upData.error || 'Erreur upload'); setUploading(false); return }
+      await fetch('/api/monthly-payouts', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: payout.id, invoiceUrl: upData.url }) })
+      setSuccess(true)
+      setTimeout(() => setSuccess(false), 3500)
+      await load()
     } catch {
       setUploadError('Erreur réseau')
     }
-    setUploading(null)
+    setUploading(false)
   }
-
-  async function ensureMonth(monthKey: string) {
-    await fetch('/api/monthly-payouts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ month: monthKey }) })
-    load()
-  }
-
-  const months = getMonths()
-  const currentMonth = new Date().toISOString().slice(0, 7)
-
-  const payoutMap: Record<string, any> = {}
-  payouts.forEach(p => { payoutMap[p.month] = p })
 
   const totalEarned = payouts.reduce((a, p) => a + (p.validatedAmount || 0), 0)
   const totalPaid = payouts.filter(p => p.invoiceStatus === 'paid').reduce((a, p) => a + (p.validatedAmount || 0), 0)
 
+  const openData = openMonth ? months.find(m => m.key === openMonth) : null
+
   return (
-    <div style={{ maxWidth: 800 }}>
+    <div style={{ maxWidth: 820 }}>
       <div style={{ marginBottom: 24 }}>
         <h1 style={{ color: '#f0ebe3', fontSize: '1.4rem', fontWeight: 800 }}>Facturation</h1>
-        <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.78rem', marginTop: 4 }}>Déposez vos factures mensuelles ici. Axel sera notifié à chaque dépôt.</p>
+        <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.78rem', marginTop: 4 }}>Cliquez sur un mois pour voir le détail et déposer votre facture.</p>
       </div>
 
       {/* Summary */}
@@ -89,90 +109,92 @@ export default function FreelancerFacturationPage() {
       {loading ? (
         <p style={{ color: 'rgba(240,235,227,0.2)', textAlign: 'center', padding: 40, fontSize: '0.82rem' }}>Chargement…</p>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {months.map(({ key, label }) => {
-            const payout = payoutMap[key]
-            const isCurrent = key === currentMonth
-            const isPast = key < currentMonth
-            const hasActivity = payout && (payout.validatedAmount > 0 || payout.invoiceUrl)
-
-            if (!hasActivity && !isCurrent && !isPast) return null
-
-            return (
-              <div key={key} style={{ background: '#141414', border: `1px solid ${isCurrent ? 'rgba(167,139,250,0.25)' : '#222'}`, borderRadius: 14, overflow: 'hidden' }}>
-                <div style={{ padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 16 }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <p style={{ color: '#f0ebe3', fontSize: '0.88rem', fontWeight: 700 }}>{label}</p>
-                      {isCurrent && <span style={{ background: 'rgba(167,139,250,0.12)', color: '#a78bfa', padding: '1px 8px', borderRadius: 20, fontSize: '0.62rem', fontWeight: 600 }}>Ce mois</span>}
-                    </div>
-                    <div style={{ display: 'flex', gap: 20, marginTop: 6, flexWrap: 'wrap' }}>
-                      <p style={{ color: payout?.validatedAmount > 0 ? '#22c55e' : 'rgba(240,235,227,0.25)', fontSize: '0.78rem' }}>
-                        Montant validé : <strong>{(payout?.validatedAmount || 0).toLocaleString('fr-FR')} €</strong>
-                      </p>
-                      <p style={{ color: 'rgba(240,235,227,0.35)', fontSize: '0.78rem' }}>
-                        Prestations : <strong>{payout?.projectCount || 0}</strong>
-                      </p>
-                    </div>
+        <>
+          {/* Month grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 16 }}>
+            {months.map(m => {
+              const st = STYLES[m.status]
+              const isOpen = openMonth === m.key
+              const clickable = m.status !== 'future'
+              return (
+                <button
+                  key={m.key}
+                  onClick={() => clickable && setOpenMonth(isOpen ? null : m.key)}
+                  style={{
+                    background: st.bg, border: `1px solid ${isOpen ? st.dot : st.border}`, borderRadius: 12,
+                    padding: '14px 16px', textAlign: 'left', cursor: clickable ? 'pointer' : 'default',
+                    opacity: m.status === 'future' ? 0.4 : 1, transition: 'border-color 0.15s',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 6 }}>
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: st.dot, flexShrink: 0 }} />
+                    <p style={{ color: '#f0ebe3', fontSize: '0.82rem', fontWeight: 700 }}>{m.label}</p>
                   </div>
+                  <p style={{ color: st.dot, fontSize: '0.68rem', fontWeight: 600 }}>{st.label}</p>
+                  <p style={{ color: 'rgba(240,235,227,0.45)', fontSize: '0.78rem', fontWeight: 700, marginTop: 4 }}>
+                    {(m.payout?.validatedAmount || 0).toLocaleString('fr-FR')} €
+                  </p>
+                </button>
+              )
+            })}
+          </div>
 
-                  <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                    {/* Invoice status */}
-                    {payout?.invoiceStatus === 'paid' ? (
-                      <div style={{ textAlign: 'right' }}>
-                        <span style={{ background: 'rgba(34,197,94,0.1)', color: '#22c55e', padding: '4px 12px', borderRadius: 20, fontSize: '0.72rem', fontWeight: 600 }}>✓ Payée</span>
-                        {payout.paidAt && <p style={{ color: 'rgba(240,235,227,0.25)', fontSize: '0.65rem', marginTop: 3 }}>{new Date(payout.paidAt).toLocaleDateString('fr-FR')}</p>}
-                      </div>
-                    ) : payout?.invoiceStatus === 'uploaded' ? (
-                      <span style={{ background: 'rgba(59,130,246,0.1)', color: '#3b82f6', padding: '4px 12px', borderRadius: 20, fontSize: '0.72rem', fontWeight: 600 }}>● Facture déposée</span>
-                    ) : payout?.validatedAmount > 0 ? (
-                      <span style={{ background: 'rgba(234,179,8,0.08)', color: '#eab308', padding: '4px 12px', borderRadius: 20, fontSize: '0.72rem', fontWeight: 600 }}>○ Facture à déposer</span>
-                    ) : null}
-                  </div>
-                </div>
-
-                {/* Invoice upload section */}
-                {payout && payout.invoiceStatus !== 'paid' && payout.validatedAmount > 0 && (
-                  <div style={{ padding: '0 20px 16px', borderTop: '1px solid #1a1a1a', paddingTop: 14 }}>
-                    {success === payout.id && (
-                      <p style={{ color: '#22c55e', fontSize: '0.75rem', marginBottom: 8 }}>✓ Facture déposée — Axel a été notifié</p>
-                    )}
-                    {uploadError && uploading === null && (
-                      <p style={{ color: '#ef4444', fontSize: '0.75rem', marginBottom: 8 }}>{uploadError}</p>
-                    )}
-                    <label style={LA}>{payout.invoiceUrl ? 'Remplacer la facture (PDF)' : 'Déposer une facture (PDF)'}</label>
-                    <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#f0ebe3', color: '#0a0a0a', borderRadius: 8, padding: '9px 18px', fontWeight: 700, cursor: uploading === payout.id ? 'default' : 'pointer', fontSize: '0.78rem', opacity: uploading === payout.id ? 0.6 : 1 }}>
-                      {uploading === payout.id ? 'Envoi en cours…' : '📄 Déposer une facture'}
-                      <input
-                        type="file"
-                        accept="application/pdf"
-                        disabled={uploading === payout.id}
-                        style={{ display: 'none' }}
-                        onChange={e => {
-                          const file = e.target.files?.[0]
-                          if (file) uploadInvoice(payout.id, file)
-                          e.target.value = ''
-                        }}
-                      />
-                    </label>
-                    {payout.invoiceUrl && payout.invoiceStatus === 'uploaded' && (
-                      <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.7rem', marginTop: 8 }}>
-                        Facture actuelle : <a href={payout.invoiceUrl} target="_blank" rel="noreferrer" style={{ color: '#3b82f6' }}>voir le document ↗</a>
-                      </p>
-                    )}
-                  </div>
-                )}
-
-                {/* No payout yet for current month — create it */}
-                {!payout && isCurrent && (
-                  <div style={{ padding: '0 20px 14px' }}>
-                    <p style={{ color: 'rgba(240,235,227,0.2)', fontSize: '0.75rem' }}>Aucune prestation validée ce mois pour l&apos;instant.</p>
-                  </div>
-                )}
+          {/* Detail panel */}
+          {openData && (
+            <div style={{ background: '#141414', border: `1px solid ${STYLES[openData.status].dot}40`, borderRadius: 14, padding: 22 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                <p style={{ color: '#f0ebe3', fontSize: '1rem', fontWeight: 800 }}>{openData.label} 2026</p>
+                <button onClick={() => setOpenMonth(null)} style={{ background: 'none', border: 'none', color: 'rgba(240,235,227,0.3)', cursor: 'pointer', fontSize: '1rem' }}>✕</button>
               </div>
-            )
-          })}
-        </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 18 }}>
+                <div>
+                  <p style={LA}>Montant validé</p>
+                  <p style={{ color: '#22c55e', fontSize: '1.3rem', fontWeight: 800 }}>{(openData.payout?.validatedAmount || 0).toLocaleString('fr-FR')} €</p>
+                </div>
+                <div>
+                  <p style={LA}>Prestations réalisées</p>
+                  <p style={{ color: '#f0ebe3', fontSize: '1.3rem', fontWeight: 800 }}>{openData.payout?.projectCount || 0}</p>
+                </div>
+                <div>
+                  <p style={LA}>Statut</p>
+                  <p style={{ color: STYLES[openData.status].dot, fontSize: '0.85rem', fontWeight: 700, marginTop: 6 }}>{STYLES[openData.status].label}</p>
+                  {openData.payout?.paidAt && <p style={{ color: 'rgba(240,235,227,0.25)', fontSize: '0.68rem', marginTop: 2 }}>payé le {new Date(openData.payout.paidAt).toLocaleDateString('fr-FR')}</p>}
+                </div>
+              </div>
+
+              {success && <p style={{ color: '#22c55e', fontSize: '0.78rem', marginBottom: 10 }}>✓ Facture déposée — Axel a été notifié</p>}
+              {uploadError && <p style={{ color: '#ef4444', fontSize: '0.78rem', marginBottom: 10 }}>{uploadError}</p>}
+
+              {openData.status !== 'paid' && (
+                <div>
+                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#f0ebe3', color: '#0a0a0a', borderRadius: 8, padding: '10px 20px', fontWeight: 700, cursor: uploading ? 'default' : 'pointer', fontSize: '0.8rem', opacity: uploading ? 0.6 : 1 }}>
+                    {uploading ? 'Envoi en cours…' : openData.payout?.invoiceUrl ? '📄 Remplacer la facture' : '📄 Déposer une facture'}
+                    <input
+                      type="file"
+                      accept="application/pdf"
+                      disabled={uploading}
+                      style={{ display: 'none' }}
+                      onChange={e => {
+                        const file = e.target.files?.[0]
+                        if (file) handleUpload(openData.key, file)
+                        e.target.value = ''
+                      }}
+                    />
+                  </label>
+                  {openData.payout?.invoiceUrl && (
+                    <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.72rem', marginTop: 10 }}>
+                      Facture actuelle : <a href={openData.payout.invoiceUrl} target="_blank" rel="noreferrer" style={{ color: '#3b82f6' }}>voir le document ↗</a>
+                    </p>
+                  )}
+                </div>
+              )}
+              {openData.status === 'paid' && openData.payout?.invoiceUrl && (
+                <a href={openData.payout.invoiceUrl} target="_blank" rel="noreferrer" style={{ color: '#3b82f6', fontSize: '0.78rem' }}>📄 Voir la facture ↗</a>
+              )}
+            </div>
+          )}
+        </>
       )}
     </div>
   )

@@ -1,12 +1,9 @@
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
+'use client'
+import { useEffect, useState, useCallback } from 'react'
+import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 
-export const dynamic = 'force-dynamic'
-const db = prisma as any
-
-function fmt(d: Date | null) {
+function fmt(d: string | null) {
   if (!d) return '—'
   return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })
 }
@@ -26,47 +23,45 @@ function IconCheck() {
 function IconUsers() {
   return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
 }
-function IconTrendUp() {
-  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-}
 
-export default async function AdminDashboard() {
-  const session = await getServerSession(authOptions)
+const STATUS_COLORS: Record<string, string> = { a_faire: '#6b7280', en_cours: '#3b82f6', en_attente: '#eab308', livre: '#a78bfa', valide: '#22c55e' }
+const STATUS_LABELS: Record<string, string> = { a_faire: 'À faire', en_cours: 'En cours', en_attente: 'En attente', livre: 'Livré', valide: 'Validé' }
 
-  const now = new Date()
-  const startToday = new Date(now); startToday.setHours(0, 0, 0, 0)
-  const endToday = new Date(now); endToday.setHours(23, 59, 59, 999)
-  const startTomorrow = new Date(startToday); startTomorrow.setDate(startTomorrow.getDate() + 1)
-  const endTomorrow = new Date(endToday); endTomorrow.setDate(endTomorrow.getDate() + 1)
-  const startMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+export default function AdminDashboard() {
+  const { data: session } = useSession()
+  const [stats, setStats] = useState<any>(null)
 
-  const [
-    inProgress, overdue, dueToday, dueTomorrow, completedMonth,
-    activeFreelancers, totalProds, recentActivity, urgentProds, recentProds
-  ] = await Promise.all([
-    db.production.count({ where: { archived: false, status: { in: ['en_cours', 'en_attente', 'a_faire'] } } }).catch(() => 0),
-    db.production.count({ where: { archived: false, status: { notIn: ['valide', 'archive'] }, deadline: { lt: startToday } } }).catch(() => 0),
-    db.production.count({ where: { archived: false, status: { notIn: ['valide', 'archive'] }, deadline: { gte: startToday, lte: endToday } } }).catch(() => 0),
-    db.production.count({ where: { archived: false, status: { notIn: ['valide', 'archive'] }, deadline: { gte: startTomorrow, lte: endTomorrow } } }).catch(() => 0),
-    db.production.count({ where: { status: 'valide', updatedAt: { gte: startMonth } } }).catch(() => 0),
-    db.user.count({ where: { role: 'freelancer', active: true } }).catch(() => 0),
-    db.production.count({ where: { archived: false } }).catch(() => 0),
-    db.activityLog.findMany({ orderBy: { createdAt: 'desc' }, take: 6 }).catch(() => []),
-    db.production.findMany({ where: { archived: false, status: { notIn: ['valide'] }, deadline: { lt: endToday } }, orderBy: { deadline: 'asc' }, take: 6, include: { assignedTo: { select: { id: true, name: true } } } }).catch(() => []),
-    db.production.findMany({ where: { archived: false }, orderBy: { createdAt: 'desc' }, take: 5, include: { assignedTo: { select: { id: true, name: true } } } }).catch(() => []),
-  ])
+  const load = useCallback(async () => {
+    try {
+      const data = await fetch('/api/stats', { cache: 'no-store' }).then(r => r.json())
+      if (!data.error) setStats(data)
+    } catch {}
+  }, [])
+
+  useEffect(() => {
+    load()
+    // Auto-refresh: every 30s + when the tab regains focus
+    const interval = setInterval(load, 30000)
+    const onFocus = () => load()
+    window.addEventListener('focus', onFocus)
+    document.addEventListener('visibilitychange', onFocus)
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener('focus', onFocus)
+      document.removeEventListener('visibilitychange', onFocus)
+    }
+  }, [load])
+
+  const s = stats || { inProgress: '·', overdue: '·', dueToday: '·', dueTomorrow: '·', completedMonth: '·', activeFreelancers: '·', totalProds: '·', recentActivity: [], urgentProds: [], recentProds: [] }
 
   const kpis = [
-    { label: 'Projets en cours', value: inProgress, sub: 'en production', color: '#3b82f6', bg: 'rgba(59,130,246,0.08)', border: 'rgba(59,130,246,0.2)', icon: <IconClock />, href: '/productions?status=en_cours' },
-    { label: 'Projets en retard', value: overdue, sub: 'dépassé la deadline', color: '#ef4444', bg: 'rgba(239,68,68,0.08)', border: 'rgba(239,68,68,0.2)', icon: <IconAlert />, href: '/productions?overdue=true' },
-    { label: 'À rendre aujourd\'hui', value: dueToday, sub: 'deadline ce jour', color: '#eab308', bg: 'rgba(234,179,8,0.08)', border: 'rgba(234,179,8,0.2)', icon: <IconCalendar />, href: '/productions?due=today' },
-    { label: 'À rendre demain', value: dueTomorrow, sub: 'deadline demain', color: '#f97316', bg: 'rgba(249,115,22,0.08)', border: 'rgba(249,115,22,0.2)', icon: <IconCalendar />, href: '/productions?due=tomorrow' },
-    { label: 'Terminés ce mois', value: completedMonth, sub: 'validés ce mois', color: '#22c55e', bg: 'rgba(34,197,94,0.08)', border: 'rgba(34,197,94,0.2)', icon: <IconCheck />, href: '/archives' },
-    { label: 'Prestataires actifs', value: activeFreelancers, sub: 'freelancers disponibles', color: '#a78bfa', bg: 'rgba(167,139,250,0.08)', border: 'rgba(167,139,250,0.2)', icon: <IconUsers />, href: '/prestataires' },
+    { label: 'Projets en cours', value: s.inProgress, sub: 'en production', color: '#3b82f6', bg: 'rgba(59,130,246,0.08)', border: 'rgba(59,130,246,0.2)', icon: <IconClock />, href: '/productions?status=en_cours' },
+    { label: 'Projets en retard', value: s.overdue, sub: 'deadline dépassée', color: '#ef4444', bg: 'rgba(239,68,68,0.08)', border: 'rgba(239,68,68,0.2)', icon: <IconAlert />, href: '/productions?overdue=true' },
+    { label: 'À rendre aujourd\'hui', value: s.dueToday, sub: 'deadline ce jour', color: '#eab308', bg: 'rgba(234,179,8,0.08)', border: 'rgba(234,179,8,0.2)', icon: <IconCalendar />, href: '/productions?due=today' },
+    { label: 'À rendre demain', value: s.dueTomorrow, sub: 'deadline demain', color: '#f97316', bg: 'rgba(249,115,22,0.08)', border: 'rgba(249,115,22,0.2)', icon: <IconCalendar />, href: '/productions?due=tomorrow' },
+    { label: 'Terminés ce mois', value: s.completedMonth, sub: 'validés ce mois', color: '#22c55e', bg: 'rgba(34,197,94,0.08)', border: 'rgba(34,197,94,0.2)', icon: <IconCheck />, href: '/archives' },
+    { label: 'Prestataires actifs', value: s.activeFreelancers, sub: 'freelancers disponibles', color: '#a78bfa', bg: 'rgba(167,139,250,0.08)', border: 'rgba(167,139,250,0.2)', icon: <IconUsers />, href: '/prestataires' },
   ]
-
-  const STATUS_COLORS: Record<string, string> = { a_faire: '#6b7280', en_cours: '#3b82f6', en_attente: '#eab308', livre: '#a78bfa', valide: '#22c55e' }
-  const STATUS_LABELS: Record<string, string> = { a_faire: 'À faire', en_cours: 'En cours', en_attente: 'En attente', livre: 'Livré', valide: 'Validé' }
 
   return (
     <div style={{ width: '100%', maxWidth: 1200 }}>
@@ -80,26 +75,25 @@ export default async function AdminDashboard() {
             {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
           </p>
         </div>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <div style={{ background: '#141414', border: '1px solid #222', borderRadius: 10, padding: '8px 16px', textAlign: 'center' }}>
-            <p style={{ color: '#f0ebe3', fontSize: '1.1rem', fontWeight: 800 }}>{totalProds}</p>
-            <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.65rem' }}>prestations total</p>
-          </div>
+        <div style={{ background: '#141414', border: '1px solid #222', borderRadius: 10, padding: '8px 16px', textAlign: 'center' }}>
+          <p style={{ color: '#f0ebe3', fontSize: '1.1rem', fontWeight: 800 }}>{s.totalProds}</p>
+          <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.65rem' }}>prestations actives</p>
         </div>
       </div>
 
-      {/* Alerts banner */}
-      {(overdue > 0 || dueToday > 0) && (
+      {/* Alerts */}
+      {stats && (s.overdue > 0 || s.dueToday > 0) && (
         <div style={{ background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.15)', borderRadius: 10, padding: '12px 18px', marginBottom: 20, display: 'flex', gap: 20, flexWrap: 'wrap' }}>
-          {overdue > 0 && <p style={{ color: '#ef4444', fontSize: '0.82rem' }}>⚠ {overdue} prestation{overdue > 1 ? 's' : ''} en retard</p>}
-          {dueToday > 0 && <p style={{ color: '#eab308', fontSize: '0.82rem' }}>● {dueToday} prestation{dueToday > 1 ? 's' : ''} à livrer aujourd&apos;hui</p>}
+          {s.overdue > 0 && <p style={{ color: '#ef4444', fontSize: '0.82rem' }}>⚠ {s.overdue} prestation{s.overdue > 1 ? 's' : ''} en retard</p>}
+          {s.dueToday > 0 && <p style={{ color: '#eab308', fontSize: '0.82rem' }}>● {s.dueToday} prestation{s.dueToday > 1 ? 's' : ''} à livrer aujourd&apos;hui</p>}
+          {s.dueTomorrow > 0 && <p style={{ color: '#f97316', fontSize: '0.82rem' }}>◐ {s.dueTomorrow} à livrer demain</p>}
         </div>
       )}
 
       {/* KPI Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 24 }}>
         {kpis.map(k => (
-          <Link key={k.label} href={k.href} style={{ background: k.bg, border: `1px solid ${k.border}`, borderRadius: 14, padding: '20px 22px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 16 }}>
+          <Link key={k.label} href={k.href} style={{ background: k.bg, border: `1px solid ${k.border}`, borderRadius: 14, padding: '20px 22px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 16, transition: 'transform 0.15s', opacity: stats ? 1 : 0.5 }}>
             <div style={{ width: 44, height: 44, background: `${k.color}20`, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', color: k.color, flexShrink: 0 }}>
               {k.icon}
             </div>
@@ -114,7 +108,6 @@ export default async function AdminDashboard() {
 
       {/* Main grid */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 16 }}>
-        {/* Left: urgent + recent */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {/* Urgent */}
           <div style={{ background: '#141414', border: '1px solid #222', borderRadius: 14, overflow: 'hidden' }}>
@@ -122,12 +115,12 @@ export default async function AdminDashboard() {
               <p style={{ color: '#f0ebe3', fontSize: '0.85rem', fontWeight: 600 }}>Priorités du jour</p>
               <Link href="/productions" style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.72rem', textDecoration: 'none' }}>Tout voir →</Link>
             </div>
-            {(urgentProds as any[]).length === 0 ? (
+            {(s.urgentProds as any[]).length === 0 ? (
               <div style={{ padding: '28px 20px', textAlign: 'center' }}>
                 <p style={{ color: '#22c55e', fontSize: '0.82rem' }}>✓ Aucune urgence aujourd&apos;hui</p>
               </div>
             ) : (
-              (urgentProds as any[]).map((p: any) => {
+              (s.urgentProds as any[]).map((p: any) => {
                 const isOverdue = p.deadline && new Date(p.deadline) < new Date()
                 return (
                   <Link key={p.id} href="/productions" style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 12, padding: '11px 20px', borderBottom: '1px solid #191919', textDecoration: 'none', alignItems: 'center' }}>
@@ -143,13 +136,13 @@ export default async function AdminDashboard() {
             )}
           </div>
 
-          {/* Recent productions */}
+          {/* Recent */}
           <div style={{ background: '#141414', border: '1px solid #222', borderRadius: 14, overflow: 'hidden' }}>
             <div style={{ padding: '14px 20px', borderBottom: '1px solid #1e1e1e', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <p style={{ color: '#f0ebe3', fontSize: '0.85rem', fontWeight: 600 }}>Dernières prestations</p>
               <Link href="/productions" style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.72rem', textDecoration: 'none' }}>Tout voir →</Link>
             </div>
-            {(recentProds as any[]).map((p: any) => (
+            {(s.recentProds as any[]).map((p: any) => (
               <div key={p.id} style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 12, padding: '11px 20px', borderBottom: '1px solid #191919', alignItems: 'center' }}>
                 <div>
                   <p style={{ color: '#f0ebe3', fontSize: '0.82rem', fontWeight: 500 }}>{p.title}</p>
@@ -162,16 +155,16 @@ export default async function AdminDashboard() {
           </div>
         </div>
 
-        {/* Right: activity */}
+        {/* Activity */}
         <div style={{ background: '#141414', border: '1px solid #222', borderRadius: 14, overflow: 'hidden', alignSelf: 'start' }}>
           <div style={{ padding: '14px 16px', borderBottom: '1px solid #1e1e1e' }}>
             <p style={{ color: '#f0ebe3', fontSize: '0.85rem', fontWeight: 600 }}>Activité récente</p>
           </div>
-          {(recentActivity as any[]).length === 0 ? (
+          {(s.recentActivity as any[]).length === 0 ? (
             <p style={{ color: 'rgba(240,235,227,0.2)', padding: '24px 16px', textAlign: 'center', fontSize: '0.78rem' }}>Aucune activité</p>
           ) : (
-            (recentActivity as any[]).map((a: any, i: number) => (
-              <div key={a.id} style={{ padding: '10px 16px', borderBottom: i < recentActivity.length - 1 ? '1px solid #191919' : 'none' }}>
+            (s.recentActivity as any[]).map((a: any, i: number) => (
+              <div key={a.id} style={{ padding: '10px 16px', borderBottom: i < s.recentActivity.length - 1 ? '1px solid #191919' : 'none' }}>
                 <p style={{ color: 'rgba(240,235,227,0.65)', fontSize: '0.75rem' }}>
                   <strong style={{ color: '#f0ebe3' }}>{a.actorName}</strong>{' '}{a.action}{a.target ? <span style={{ color: 'rgba(240,235,227,0.4)' }}> — {a.target}</span> : null}
                 </p>
