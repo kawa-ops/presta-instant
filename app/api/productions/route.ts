@@ -36,6 +36,15 @@ async function ensureTable() {
     `ALTER TABLE "Production" ADD COLUMN IF NOT EXISTS "internalNotes" TEXT`,
     `ALTER TABLE "Production" ADD COLUMN IF NOT EXISTS price DOUBLE PRECISION`,
     `ALTER TABLE "Production" ADD COLUMN IF NOT EXISTS "productionDate" TIMESTAMP(3)`,
+    // Force optional columns to be nullable (in case original setup made them NOT NULL)
+    `ALTER TABLE "Production" ALTER COLUMN brief DROP NOT NULL`,
+    `ALTER TABLE "Production" ALTER COLUMN "sourcesLink" DROP NOT NULL`,
+    `ALTER TABLE "Production" ALTER COLUMN "deliveryLink" DROP NOT NULL`,
+    `ALTER TABLE "Production" ALTER COLUMN "internalNotes" DROP NOT NULL`,
+    `ALTER TABLE "Production" ALTER COLUMN price DROP NOT NULL`,
+    `ALTER TABLE "Production" ALTER COLUMN deadline DROP NOT NULL`,
+    `ALTER TABLE "Production" ALTER COLUMN "productionDate" DROP NOT NULL`,
+    `ALTER TABLE "Production" ALTER COLUMN "assignedToId" DROP NOT NULL`,
   ]
   for (const s of cols) { try { await db.$executeRawUnsafe(s) } catch {} }
 }
