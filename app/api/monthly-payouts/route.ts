@@ -35,6 +35,14 @@ export async function PATCH(req: NextRequest) {
   const { id, invoiceUrl, invoiceStatus, paidAt } = body
   const isAdmin = (session.user as any).role === 'admin'
 
+  // Freelancers may only touch their own payout rows
+  if (!isAdmin) {
+    const owned = await db.monthlyPayout.findUnique({ where: { id }, select: { freelancerId: true } }).catch(() => null)
+    if (!owned || owned.freelancerId !== (session.user as any).id) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+  }
+
   const data: any = {}
   if (invoiceUrl !== undefined) data.invoiceUrl = invoiceUrl
   if (invoiceUrl && !isAdmin) data.invoiceStatus = 'uploaded'

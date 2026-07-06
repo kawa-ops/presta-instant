@@ -8,6 +8,8 @@ export const dynamic = 'force-dynamic'
 const db = prisma as any
 
 export async function GET() {
+  const session = await getServerSession(authOptions)
+  if (!session || (session.user as any).role !== 'admin') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   try {
     const users = await db.user.findMany({
       where: { role: 'freelancer' },

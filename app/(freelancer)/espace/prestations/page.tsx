@@ -45,6 +45,10 @@ export default function MesPrestationsPage() {
   }
 
   async function saveDelivery(id: string) {
+    if (!deliveryLinks[id]?.trim()) {
+      alert('Ajoute le lien de livraison (Drive, Dropbox, WeTransfer…) avant de marquer comme livré.')
+      return
+    }
     setSaving(id + '_d')
     await fetch(`/api/productions/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ deliveryLink: deliveryLinks[id], status: 'livre' }) })
     setSaving(null)

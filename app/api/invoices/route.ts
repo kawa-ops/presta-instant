@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
       data: { freelancerId, productionId: productionId || null, fileUrl: fileUrl || null, amount: amount ? parseFloat(amount) : null, status: 'pending' },
       include: { freelancer: { select: { name: true } }, production: { select: { title: true } } },
     })
-    emailInvoiceUploaded(invoice.freelancer.name, invoice.production?.title || 'prestation').catch(() => {})
+    emailInvoiceUploaded(invoice.freelancer.name, new Date().toISOString().slice(0, 7)).catch(() => {})
     return NextResponse.json(invoice, { status: 201 })
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 })

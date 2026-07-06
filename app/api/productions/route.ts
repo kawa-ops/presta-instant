@@ -8,9 +8,15 @@ export const dynamic = 'force-dynamic'
 const db = prisma as any
 
 export async function GET(req: NextRequest) {
+  const session = await getServerSession(authOptions)
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const isAdmin = (session.user as any).role === 'admin'
+  const userId = (session.user as any).id
+
   const { searchParams } = new URL(req.url)
   const status = searchParams.get('status')
-  const assignedToId = searchParams.get('assignedToId')
+  // Freelancers can only ever see their own productions
+  const assignedToId = isAdmin ? searchParams.get('assignedToId') : userId
   const overdue = searchParams.get('overdue')
   const archived = searchParams.get('archived') === 'true'
   const sortBy = searchParams.get('sortBy') || 'deadline'
@@ -32,11 +38,15 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const data = await db.production.findMany({
+    let data = await db.production.findMany({
       where,
       orderBy,
       include: { assignedTo: { select: { id: true, name: true, email: true, role: true } } },
     })
+    // Internal notes are admin-only — never sent to freelancers
+    if (!isAdmin) {
+      data = data.map(({ internalNotes, ...rest }: any) => rest)
+    }
     return NextResponse.json(data)
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 })

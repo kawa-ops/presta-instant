@@ -371,6 +371,8 @@ export default function ProductionsPage() {
   }
 
   async function quickStatus(id: string, status: string) {
+    // "Terminé" always goes through the completion flow (archive + confetti)
+    if (status === 'valide') { completeProd(id); return }
     setProds(prev => prev.map(p => p.id === id ? { ...p, status } : p))
     fetch(`/api/productions/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) }).catch(() => {})
   }

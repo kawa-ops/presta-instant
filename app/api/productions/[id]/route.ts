@@ -9,12 +9,21 @@ export const dynamic = 'force-dynamic'
 const db = prisma as any
 
 export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
+  const session = await getServerSession(authOptions)
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const isAdmin = (session.user as any).role === 'admin'
+  const userId = (session.user as any).id
   try {
     const prod = await db.production.findUnique({
       where: { id: params.id },
       include: { assignedTo: { select: { id: true, name: true, email: true, role: true } } },
     })
     if (!prod) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    if (!isAdmin) {
+      if (prod.assignedToId !== userId) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      const { internalNotes, ...rest } = prod
+      return NextResponse.json(rest)
+    }
     return NextResponse.json(prod)
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 })
@@ -27,7 +36,21 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   const body = await req.json()
   const isAdmin = (session.user as any).role === 'admin'
+  const userId = (session.user as any).id
   const data: any = {}
+
+  // Freelancers may only touch productions assigned to them, and only
+  // move them through their own workflow steps.
+  if (!isAdmin) {
+    const owned = await db.production.findUnique({ where: { id: params.id }, select: { assignedToId: true } })
+    if (!owned || owned.assignedToId !== userId) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+    const ALLOWED_FREELANCER_STATUSES = ['en_cours', 'livre']
+    if (body.status !== undefined && !ALLOWED_FREELANCER_STATUSES.includes(body.status)) {
+      return NextResponse.json({ error: 'Statut non autorisé' }, { status: 403 })
+    }
+  }
 
   if (isAdmin) {
     const fields = ['title', 'client', 'brief', 'sourcesLink', 'deliveryLink', 'priority', 'status', 'internalNotes', 'archived']
@@ -89,7 +112,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
     // Accumulate into monthly payout when admin validates a freelancer's paid production
     // (only on transition to 'valide', never twice)
-    if (body.status === 'valide' && before?.status !== 'valide' && prod.assignedToId && prod.price) {
+    // Payout credit requires an ADMIN validation — never a self-set status
+    if (isAdmin && body.status === 'valide' && before?.status !== 'valide' && prod.assignedToId && prod.price) {
       const lucasId = lucasIdForNotif
       if (prod.assignedToId !== lucasId) {
         const month = new Date().toISOString().slice(0, 7)
