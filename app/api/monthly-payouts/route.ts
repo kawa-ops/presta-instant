@@ -33,7 +33,7 @@ export async function PATCH(req: NextRequest) {
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await req.json()
-  const { id, invoiceUrl, invoiceStatus, paidAt } = body
+  const { id, invoiceUrl, invoiceStatus, paidAt, requestPayment } = body
   const isAdmin = (session.user as any).role === 'admin'
 
   // Freelancers may only touch their own payout rows
@@ -47,6 +47,8 @@ export async function PATCH(req: NextRequest) {
   const data: any = {}
   if (invoiceUrl !== undefined) data.invoiceUrl = invoiceUrl
   if (invoiceUrl && !isAdmin) data.invoiceStatus = 'uploaded'
+  // Payment request without an invoice (freelancer confirmed they have none)
+  if (requestPayment && !isAdmin) data.invoiceStatus = 'uploaded'
   if (isAdmin && invoiceStatus !== undefined) {
     data.invoiceStatus = invoiceStatus
     if (invoiceStatus === 'paid') data.paidAt = new Date()
@@ -63,9 +65,12 @@ export async function PATCH(req: NextRequest) {
       waFreelancer(row.freelancer.phone, `💰 Bonjour ${row.freelancer.name}, votre facture de ${row.month} a été payée par instant. (${(row.validatedAmount || 0).toLocaleString('fr-FR')} €).`).catch(() => {})
     }
 
-    if (!isAdmin && invoiceUrl) {
+    if (!isAdmin && (invoiceUrl || requestPayment)) {
+      const label = invoiceUrl
+        ? `📄 ${row.freelancer.name} a déposé sa facture de ${row.month} — à valider.`
+        : `📄 ${row.freelancer.name} demande le paiement de ${row.month} (sans facture).`
       emailInvoiceUploaded(row.freelancer.name, row.month).catch(() => {})
-      waAccounting(`📄 ${row.freelancer.name} a déposé sa facture de ${row.month} — à valider.`).catch(() => {})
+      waAccounting(label).catch(() => {})
       db.user.findMany({ where: { role: 'admin' } }).then((admins: any[]) => {
         for (const a of admins) {
           db.notification.create({ data: { userId: a.id, type: 'invoice_uploaded', message: `${row.freelancer.name} a déposé sa facture de ${row.month}`, link: '/facturation' } }).catch(() => {})

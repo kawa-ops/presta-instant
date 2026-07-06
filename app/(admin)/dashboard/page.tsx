@@ -1,8 +1,30 @@
 'use client'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 import { useCached } from '@/lib/useCached'
+
+// Small confetti burst rendered inside a notification row on dismiss
+function MiniConfetti() {
+  const colors = ['#22c55e', '#a78bfa', '#eab308', '#3b82f6', '#f0ebe3']
+  const dots = Array.from({ length: 14 }, (_, i) => ({
+    left: 10 + Math.random() * 80, delay: Math.random() * 0.1,
+    color: colors[i % colors.length], tx: (Math.random() - 0.5) * 100, size: 3 + Math.random() * 4,
+  }))
+  return (
+    <div style={{ position: 'absolute', inset: 0, overflow: 'visible', pointerEvents: 'none' }}>
+      <style>{`@keyframes notif-pop { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-50px) translateX(var(--tx)) scale(0.3); opacity: 0; } }`}</style>
+      {dots.map((d, i) => (
+        <span key={i} style={{
+          position: 'absolute', bottom: 4, left: `${d.left}%`, width: d.size, height: d.size,
+          background: d.color, borderRadius: '50%',
+          animation: `notif-pop 0.7s ease-out ${d.delay}s forwards`,
+          ['--tx' as any]: `${d.tx}px`,
+        }} />
+      ))}
+    </div>
+  )
+}
 
 function fmt(d: string | null) {
   if (!d) return '—'
@@ -31,7 +53,8 @@ const STATUS_LABELS: Record<string, string> = { a_faire: 'À faire', en_cours: '
 export default function AdminDashboard() {
   const { data: session } = useSession()
   // Paints instantly from session cache, refreshes in the background
-  const { data: stats, refresh } = useCached<any>('stats', '/api/stats')
+  const { data: stats, refresh, mutate } = useCached<any>('stats', '/api/stats')
+  const [poppingNotif, setPoppingNotif] = useState<string | null>(null)
 
   useEffect(() => {
     // Auto-refresh: every 15s, on tab focus, and instantly on live events
@@ -48,9 +71,14 @@ export default function AdminDashboard() {
     }
   }, [refresh])
 
-  async function dismissNotif(id: string) {
-    await fetch('/api/notifications', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) })
-    refresh()
+  function dismissNotif(id: string) {
+    // Instant: confetti burst, then remove locally — server sync in background
+    setPoppingNotif(id)
+    fetch('/api/notifications', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) }).catch(() => {})
+    setTimeout(() => {
+      mutate(prev => prev ? { ...prev, notifications: (prev.notifications || []).filter((n: any) => n.id !== id) } : prev)
+      setPoppingNotif(null)
+    }, 550)
   }
 
   const s = stats || { inProgress: '·', overdue: '·', dueToday: '·', dueTomorrow: '·', completedMonth: '·', activeFreelancers: '·', totalProds: '·', recentActivity: [], urgentProds: [], recentProds: [] }
@@ -87,12 +115,23 @@ export default function AdminDashboard() {
         <div style={{ background: 'rgba(167,139,250,0.05)', border: '1px solid rgba(167,139,250,0.2)', borderRadius: 12, padding: '14px 18px', marginBottom: 16 }}>
           <p style={{ color: '#a78bfa', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>🔔 À traiter</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {(s.notifications as any[]).map((n: any) => (
-              <div key={n.id} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <p style={{ color: '#f0ebe3', fontSize: '0.8rem', flex: 1 }}>{n.message}</p>
-                <button onClick={() => dismissNotif(n.id)} title="Marquer comme lu" style={{ background: 'rgba(240,235,227,0.05)', border: '1px solid #2a2a2a', borderRadius: 6, padding: '3px 10px', color: 'rgba(240,235,227,0.4)', cursor: 'pointer', fontSize: '0.68rem' }}>✓</button>
-              </div>
-            ))}
+            {(s.notifications as any[]).map((n: any) => {
+              const popping = poppingNotif === n.id
+              return (
+                <div key={n.id} style={{
+                  display: 'flex', alignItems: 'center', gap: 10, position: 'relative',
+                  background: popping ? 'rgba(34,197,94,0.1)' : 'transparent',
+                  borderRadius: 6, padding: '3px 6px',
+                  opacity: popping ? 0.4 : 1,
+                  transform: popping ? 'translateX(12px)' : 'none',
+                  transition: 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
+                }}>
+                  {popping && <MiniConfetti />}
+                  <p style={{ color: '#f0ebe3', fontSize: '0.8rem', flex: 1 }}>{n.message}</p>
+                  <button onClick={() => dismissNotif(n.id)} disabled={popping} title="Marquer comme traité" style={{ background: popping ? 'rgba(34,197,94,0.2)' : 'rgba(240,235,227,0.05)', border: `1px solid ${popping ? 'rgba(34,197,94,0.4)' : '#2a2a2a'}`, borderRadius: 6, padding: '3px 10px', color: popping ? '#22c55e' : 'rgba(240,235,227,0.4)', cursor: 'pointer', fontSize: '0.68rem' }}>✓</button>
+                </div>
+              )
+            })}
           </div>
         </div>
       )}

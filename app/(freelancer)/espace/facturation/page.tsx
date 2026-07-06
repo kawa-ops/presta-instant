@@ -11,6 +11,27 @@ type MonthState = {
   payout: any | null
 }
 
+// Option 2: request payment while confirming no invoice will be provided
+function NoInvoiceOption({ onConfirm, disabled }: { onConfirm: () => void; disabled: boolean }) {
+  const [checked, setChecked] = useState(false)
+  return (
+    <div style={{ background: 'rgba(240,235,227,0.03)', border: '1px solid #242424', borderRadius: 10, padding: '12px 14px', maxWidth: 420 }}>
+      <p style={{ color: 'rgba(240,235,227,0.5)', fontSize: '0.75rem', marginBottom: 8 }}>Je n&apos;ai pas de facture à déposer</p>
+      <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer', marginBottom: 10 }}>
+        <input type="checkbox" checked={checked} onChange={e => setChecked(e.target.checked)} style={{ marginTop: 2, accentColor: '#a78bfa' }} />
+        <span style={{ color: 'rgba(240,235,227,0.6)', fontSize: '0.72rem', lineHeight: 1.4 }}>Je confirme ne pas avoir de facture à fournir pour ce mois.</span>
+      </label>
+      <button
+        onClick={onConfirm}
+        disabled={!checked || disabled}
+        style={{ background: checked ? 'rgba(167,139,250,0.15)' : 'rgba(240,235,227,0.04)', border: `1px solid ${checked ? 'rgba(167,139,250,0.4)' : '#2a2a2a'}`, borderRadius: 8, padding: '8px 16px', color: checked ? '#a78bfa' : 'rgba(240,235,227,0.25)', cursor: checked && !disabled ? 'pointer' : 'default', fontSize: '0.75rem', fontWeight: 700 }}
+      >
+        Envoyer la demande de paiement
+      </button>
+    </div>
+  )
+}
+
 export default function FreelancerFacturationPage() {
   const [payouts, setPayouts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -52,17 +73,21 @@ export default function FreelancerFacturationPage() {
     future:   { border: '#222',                  bg: 'transparent',            dot: '#333',    label: 'À venir' },
   }
 
+  async function ensurePayout(monthKey: string) {
+    let payout = payoutMap[monthKey]
+    if (!payout) {
+      const created = await fetch('/api/monthly-payouts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ month: monthKey }) }).then(r => r.json())
+      if (created.error) throw new Error(created.error)
+      payout = created
+    }
+    return payout
+  }
+
   async function handleUpload(monthKey: string, file: File) {
     setUploadError(null)
     setUploading(true)
     try {
-      let payout = payoutMap[monthKey]
-      // Create the month row if it doesn't exist yet
-      if (!payout) {
-        const created = await fetch('/api/monthly-payouts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ month: monthKey }) }).then(r => r.json())
-        if (created.error) { setUploadError(created.error); setUploading(false); return }
-        payout = created
-      }
+      const payout = await ensurePayout(monthKey)
       const fd = new FormData()
       fd.append('file', file)
       const upRes = await fetch('/api/upload', { method: 'POST', body: fd })
@@ -72,8 +97,24 @@ export default function FreelancerFacturationPage() {
       setSuccess(true)
       setTimeout(() => setSuccess(false), 3500)
       await load()
-    } catch {
-      setUploadError('Erreur réseau')
+    } catch (e: any) {
+      setUploadError(e.message || 'Erreur réseau')
+    }
+    setUploading(false)
+  }
+
+  // Payment request WITHOUT an invoice (freelancer confirmed they have none)
+  async function requestWithoutInvoice(monthKey: string) {
+    setUploadError(null)
+    setUploading(true)
+    try {
+      const payout = await ensurePayout(monthKey)
+      await fetch('/api/monthly-payouts', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: payout.id, requestPayment: true }) })
+      setSuccess(true)
+      setTimeout(() => setSuccess(false), 3500)
+      await load()
+    } catch (e: any) {
+      setUploadError(e.message || 'Erreur réseau')
     }
     setUploading(false)
   }
@@ -163,29 +204,41 @@ export default function FreelancerFacturationPage() {
                 </div>
               </div>
 
-              {success && <p style={{ color: '#22c55e', fontSize: '0.78rem', marginBottom: 10 }}>✓ Facture déposée — Axel a été notifié</p>}
+              {success && <p style={{ color: '#22c55e', fontSize: '0.78rem', marginBottom: 10 }}>✓ Demande envoyée — Axel a été notifié</p>}
               {uploadError && <p style={{ color: '#ef4444', fontSize: '0.78rem', marginBottom: 10 }}>{uploadError}</p>}
 
               {openData.status !== 'paid' && (
                 <div>
-                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#f0ebe3', color: '#0a0a0a', borderRadius: 8, padding: '10px 20px', fontWeight: 700, cursor: uploading ? 'default' : 'pointer', fontSize: '0.8rem', opacity: uploading ? 0.6 : 1 }}>
-                    {uploading ? 'Envoi en cours…' : openData.payout?.invoiceUrl ? '📄 Remplacer la facture' : '📄 Déposer une facture'}
-                    <input
-                      type="file"
-                      accept="application/pdf"
-                      disabled={uploading}
-                      style={{ display: 'none' }}
-                      onChange={e => {
-                        const file = e.target.files?.[0]
-                        if (file) handleUpload(openData.key, file)
-                        e.target.value = ''
-                      }}
-                    />
-                  </label>
+                  <p style={{ color: 'rgba(240,235,227,0.4)', fontSize: '0.72rem', marginBottom: 10 }}>Demander le paiement — deux options :</p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {/* Option 1: upload the invoice */}
+                    <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#f0ebe3', color: '#0a0a0a', borderRadius: 8, padding: '10px 20px', fontWeight: 700, cursor: uploading ? 'default' : 'pointer', fontSize: '0.8rem', opacity: uploading ? 0.6 : 1, alignSelf: 'flex-start' }}>
+                      {uploading ? 'Envoi en cours…' : openData.payout?.invoiceUrl ? '📄 Remplacer la facture' : '📄 Déposer une facture (PDF ou image)'}
+                      <input
+                        type="file"
+                        accept="application/pdf,image/png,image/jpeg"
+                        disabled={uploading}
+                        style={{ display: 'none' }}
+                        onChange={e => {
+                          const file = e.target.files?.[0]
+                          if (file) handleUpload(openData.key, file)
+                          e.target.value = ''
+                        }}
+                      />
+                    </label>
+
+                    {/* Option 2: no invoice to provide */}
+                    {!openData.payout?.invoiceUrl && openData.status !== 'uploaded' && (
+                      <NoInvoiceOption disabled={uploading} onConfirm={() => requestWithoutInvoice(openData.key)} />
+                    )}
+                  </div>
                   {openData.payout?.invoiceUrl && (
                     <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.72rem', marginTop: 10 }}>
                       Facture actuelle : <a href={openData.payout.invoiceUrl} target="_blank" rel="noreferrer" style={{ color: '#3b82f6' }}>voir le document ↗</a>
                     </p>
+                  )}
+                  {openData.status === 'uploaded' && !openData.payout?.invoiceUrl && (
+                    <p style={{ color: '#f97316', fontSize: '0.72rem', marginTop: 10 }}>Demande de paiement envoyée sans facture — en attente de validation.</p>
                   )}
                 </div>
               )}

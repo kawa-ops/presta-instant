@@ -16,8 +16,9 @@ export async function POST(req: NextRequest) {
   const formData = await req.formData()
   const file = formData.get('file') as File | null
   if (!file) return NextResponse.json({ error: 'Aucun fichier' }, { status: 400 })
-  if (file.type !== 'application/pdf') return NextResponse.json({ error: 'Seuls les PDF sont acceptés' }, { status: 400 })
-  if (file.size > 10 * 1024 * 1024) return NextResponse.json({ error: 'Fichier trop lourd (max 10 Mo)' }, { status: 400 })
+  const ALLOWED = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg']
+  if (!ALLOWED.includes(file.type)) return NextResponse.json({ error: 'Formats acceptés : PDF, PNG, JPG' }, { status: 400 })
+  if (file.size > 4 * 1024 * 1024) return NextResponse.json({ error: 'Fichier trop lourd (max 4 Mo)' }, { status: 400 })
 
   try {
     const userId = (session.user as any).id

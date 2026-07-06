@@ -27,11 +27,11 @@ export async function GET() {
         orderBy: { deadline: 'asc' },
         include: { assignedTo: { select: { name: true } } },
       }),
-      // Next 4 weeks after the current one — for capacity planning
+      // Next 4 weeks after the current one — full detail for the planning grid
       db.production.findMany({
         where: { archived: false, status: { notIn: ['valide'] }, deadline: { gt: end, lte: horizon } },
         orderBy: { deadline: 'asc' },
-        select: { id: true, title: true, client: true, deadline: true, status: true },
+        include: { assignedTo: { select: { name: true } } },
       }),
     ])
     return NextResponse.json({ thisWeek, overdue, upcoming }, { headers: { 'Cache-Control': 'no-store' } })
