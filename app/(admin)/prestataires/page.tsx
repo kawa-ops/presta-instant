@@ -25,7 +25,54 @@ const RATE_TYPES = [
   { key: 'editing', label: 'Montage' },
   { key: 'filming_editing', label: 'Tournage + Montage' },
   { key: 'retouche', label: 'Retouche photo' },
+  { key: 'hourly', label: 'Taux horaire (€/h)' },
 ]
+
+// Full profile editor — opened via the pencil button on a freelancer card
+function EditProfileForm({ freelancer, onSaved, onCancel }: { freelancer: any; onSaved: () => void; onCancel: () => void }) {
+  const [form, setForm] = useState({
+    name: freelancer.name || '', email: freelancer.email || '', phone: freelancer.phone || '',
+    siret: freelancer.siret || '', specialty: freelancer.specialty || '', address: freelancer.address || '',
+  })
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  const s = (k: string) => (v: string) => setForm(f => ({ ...f, [k]: v }))
+
+  async function save() {
+    setError('')
+    if (!form.name.trim() || !form.email.trim()) { setError('Nom et email requis'); return }
+    setSaving(true)
+    const res = await fetch(`/api/freelancers/${freelancer.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) })
+    setSaving(false)
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}))
+      setError(d.error || 'Erreur lors de la mise à jour')
+      return
+    }
+    onSaved()
+  }
+
+  return (
+    <div style={{ borderTop: '1px solid #1e1e1e', paddingTop: 12, marginTop: 12 }}>
+      <p style={{ color: 'rgba(240,235,227,0.35)', fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Modifier le profil</p>
+      {error && <p style={{ color: '#ef4444', fontSize: '0.72rem', marginBottom: 8 }}>{error}</p>}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div><label style={LA}>Nom</label><NameInput value={form.name} onChange={s('name')} /></div>
+        <div><label style={LA}>Email (identifiant de connexion)</label><EmailInput value={form.email} onChange={s('email')} /></div>
+        <div><label style={LA}>Téléphone</label><PhoneInput value={form.phone} onChange={s('phone')} /></div>
+        <div><label style={LA}>Spécialité</label><SpecialtyInput value={form.specialty} onChange={s('specialty')} /></div>
+        <div><label style={LA}>SIRET / TVA</label><input style={IN} value={form.siret} onChange={e => s('siret')(e.target.value)} placeholder="000 000 000 00000" /></div>
+        <div><label style={LA}>Adresse</label><input style={IN} value={form.address} onChange={e => s('address')(e.target.value)} placeholder="12 rue de la Paix, 31000 Toulouse" /></div>
+      </div>
+      <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+        <button onClick={save} disabled={saving} style={{ flex: 1, background: '#f0ebe3', color: '#0a0a0a', border: 'none', borderRadius: 7, padding: '8px', fontWeight: 700, cursor: 'pointer', fontSize: '0.75rem' }}>
+          {saving ? 'Enregistrement…' : 'Enregistrer'}
+        </button>
+        <button onClick={onCancel} style={{ background: 'transparent', border: '1px solid #2a2a2a', borderRadius: 7, padding: '8px 14px', color: 'rgba(240,235,227,0.4)', cursor: 'pointer', fontSize: '0.75rem' }}>Annuler</button>
+      </div>
+    </div>
+  )
+}
 
 // Negotiated pricing editor — one per freelancer card
 function RatesEditor({ freelancer, onSaved }: { freelancer: any; onSaved: () => void }) {
@@ -81,6 +128,7 @@ export default function PrestatairesPage() {
   const [freelancers, setFreelancers] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [showNew, setShowNew] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [newForm, setNewForm] = useState({ name: '', email: '', password: '', phone: '', siret: '', specialty: '' })
 
@@ -176,9 +224,14 @@ export default function PrestatairesPage() {
                 <button onClick={() => toggleActive(f.id, f.active)} style={{ flex: 1, background: 'rgba(240,235,227,0.05)', border: '1px solid #2a2a2a', borderRadius: 7, padding: '7px', color: 'rgba(240,235,227,0.5)', cursor: 'pointer', fontSize: '0.72rem' }}>
                   {f.active ? 'Désactiver' : 'Activer'}
                 </button>
+                <button onClick={() => setEditingId(editingId === f.id ? null : f.id)} style={{ background: editingId === f.id ? 'rgba(167,139,250,0.12)' : 'rgba(240,235,227,0.05)', border: `1px solid ${editingId === f.id ? 'rgba(167,139,250,0.3)' : '#2a2a2a'}`, borderRadius: 7, padding: '7px 12px', color: editingId === f.id ? '#a78bfa' : 'rgba(240,235,227,0.5)', cursor: 'pointer', fontSize: '0.72rem' }} title="Modifier le profil">✏️</button>
                 <button onClick={() => changePassword(f.id)} style={{ background: 'rgba(240,235,227,0.05)', border: '1px solid #2a2a2a', borderRadius: 7, padding: '7px 12px', color: 'rgba(240,235,227,0.5)', cursor: 'pointer', fontSize: '0.72rem' }} title="Changer le mot de passe">🔑</button>
                 <button onClick={() => remove(f.id)} style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 7, padding: '7px 12px', color: '#ef4444', cursor: 'pointer', fontSize: '0.72rem' }}>✕</button>
               </div>
+
+              {editingId === f.id && (
+                <EditProfileForm freelancer={f} onSaved={() => { setEditingId(null); load() }} onCancel={() => setEditingId(null)} />
+              )}
 
               <RatesEditor freelancer={f} onSaved={load} />
             </div>

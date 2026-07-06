@@ -21,7 +21,7 @@ const PRIORITIES = [
 ]
 const PRIORITY_ORDER: Record<string, number> = { urgent: 0, high: 1, normal: 2, low: 3 }
 
-export const RATE_TYPES = [
+const RATE_TYPES = [
   { key: 'filming', label: 'Tournage' },
   { key: 'editing', label: 'Montage' },
   { key: 'filming_editing', label: 'Tournage + Montage' },
@@ -52,33 +52,63 @@ function SortIcon({ col, sortBy, sortDir }: { col: string; sortBy: string; sortD
   return <span style={{ color: '#f0ebe3', fontSize: '0.6rem', marginLeft: 3 }}>{sortDir === 'asc' ? '↑' : '↓'}</span>
 }
 
-// Price selector: negotiated rates dropdown + custom price fallback
+// Price selector: negotiated rates dropdown + hourly mode + custom price fallback
 function PriceSelect({ freelancer, price, onChange }: { freelancer: any; price: string; onChange: (v: string) => void }) {
   const rates = parseRates(freelancer)
   const entries = RATE_TYPES.filter(rt => rates[rt.key])
+  const hourlyRate = rates['hourly']
   const matched = entries.find(rt => rates[rt.key]?.toString() === price)
-  const [custom, setCustom] = useState(!matched && price !== '')
+  const [mode, setMode] = useState<string>(matched ? matched.key : price !== '' ? '__custom' : '')
+  const [hours, setHours] = useState('')
 
-  if (entries.length === 0) {
+  if (entries.length === 0 && !hourlyRate) {
     return <F type="number" value={price} onChange={onChange} placeholder="0" />
   }
+
+  const hourlyTotal = hourlyRate && hours ? Math.round(parseFloat(hours) * hourlyRate * 100) / 100 : 0
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
       <select
         style={IN}
-        value={custom ? '__custom' : (matched ? matched.key : '')}
+        value={mode}
         onChange={e => {
-          if (e.target.value === '__custom') { setCustom(true); return }
-          setCustom(false)
-          const rate = rates[e.target.value]
+          const v = e.target.value
+          setMode(v)
+          if (v === '__custom') { onChange(''); return }
+          if (v === '__hourly') { setHours(''); onChange(''); return }
+          const rate = rates[v]
           onChange(rate ? rate.toString() : '')
         }}
       >
         <option value="">— Choisir un tarif —</option>
         {entries.map(rt => <option key={rt.key} value={rt.key}>{rt.label} ({rates[rt.key]} €)</option>)}
+        {hourlyRate && <option value="__hourly">Taux horaire ({hourlyRate} €/h)</option>}
         <option value="__custom">Prix personnalisé…</option>
       </select>
-      {custom && <F type="number" value={price} onChange={onChange} placeholder="Montant personnalisé (€)" />}
+
+      {mode === '__hourly' && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <input
+            type="number"
+            style={{ ...IN, width: 90 }}
+            value={hours}
+            min="0"
+            step="0.5"
+            onChange={e => {
+              setHours(e.target.value)
+              const h = parseFloat(e.target.value)
+              onChange(!isNaN(h) && h > 0 ? (Math.round(h * hourlyRate * 100) / 100).toString() : '')
+            }}
+            placeholder="Heures"
+          />
+          <span style={{ color: 'rgba(240,235,227,0.4)', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
+            h × {hourlyRate} € = <strong style={{ color: '#22c55e' }}>{hourlyTotal.toLocaleString('fr-FR')} €</strong>
+          </span>
+        </div>
+      )}
+
+      {mode === '__custom' && <F type="number" value={price} onChange={onChange} placeholder="Montant personnalisé (€)" />}
     </div>
   )
 }

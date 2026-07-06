@@ -17,7 +17,15 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (body.phone !== undefined) data.phone = body.phone
   if (body.siret !== undefined) data.siret = body.siret
   if (body.specialty !== undefined) data.specialty = body.specialty
+  if (body.address !== undefined) data.address = body.address
   if (body.active !== undefined) data.active = body.active
+  // Email change: also the login — checked for uniqueness first
+  if (body.email !== undefined && body.email.trim()) {
+    const email = body.email.trim().toLowerCase()
+    const taken = await db.user.findFirst({ where: { email, id: { not: params.id } } }).catch(() => null)
+    if (taken) return NextResponse.json({ error: 'Cet email est déjà utilisé par un autre compte' }, { status: 400 })
+    data.email = email
+  }
   if (body.rates !== undefined) data.rates = typeof body.rates === 'string' ? body.rates : JSON.stringify(body.rates)
   if (body.password) {
     if (body.password.length < 6) return NextResponse.json({ error: 'Mot de passe trop court (min 6 caractères)' }, { status: 400 })

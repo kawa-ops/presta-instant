@@ -13,6 +13,7 @@ export default function SemainePage() {
   const { data } = useCached<any>('semaine', '/api/semaine')
   const thisWeek: any[] = data?.thisWeek || []
   const overdue: any[] = data?.overdue || []
+  const upcoming: any[] = data?.upcoming || []
 
   // Build 7 day-columns starting today
   const today = new Date(); today.setHours(0, 0, 0, 0)
@@ -45,8 +46,8 @@ export default function SemainePage() {
   return (
     <div style={{ width: '100%', maxWidth: 1200 }}>
       <div style={{ marginBottom: 24 }}>
-        <h1 style={{ color: '#f0ebe3', fontSize: '1.5rem', fontWeight: 800 }}>Ma semaine</h1>
-        <p style={{ color: 'rgba(240,235,227,0.35)', fontSize: '0.8rem', marginTop: 3 }}>Les prestations à livrer sur les 7 prochains jours</p>
+        <h1 style={{ color: '#f0ebe3', fontSize: '1.5rem', fontWeight: 800 }}>Mon planning</h1>
+        <p style={{ color: 'rgba(240,235,227,0.35)', fontSize: '0.8rem', marginTop: 3 }}>La semaine en cours en détail, et la charge du mois à venir</p>
       </div>
 
       {/* Overdue banner */}
@@ -83,6 +84,45 @@ export default function SemainePage() {
             </div>
           )
         })}
+      </div>
+
+      {/* Capacity planning — next 4 weeks */}
+      <div style={{ marginTop: 28 }}>
+        <p style={{ color: 'rgba(240,235,227,0.4)', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 }}>Charge des semaines à venir</p>
+        <div style={{ background: '#141414', border: '1px solid #222', borderRadius: 14, padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {Array.from({ length: 4 }, (_, w) => {
+            const weekStart = new Date(today); weekStart.setDate(weekStart.getDate() + 7 * (w + 1))
+            const weekEnd = new Date(weekStart); weekEnd.setDate(weekEnd.getDate() + 6)
+            const items = upcoming.filter(p => {
+              if (!p.deadline) return false
+              const d = new Date(p.deadline)
+              return d >= weekStart && d <= new Date(weekEnd.getTime() + 86399999)
+            })
+            const count = items.length
+            // Bar scaled against a "comfortable" load of 8 deadlines/week
+            const pct = Math.min(100, (count / 8) * 100)
+            const barColor = count >= 8 ? '#ef4444' : count >= 5 ? '#f97316' : count >= 1 ? '#a78bfa' : '#2a2a2a'
+            const label = `${weekStart.getDate()} ${MONTHS[weekStart.getMonth()]} → ${weekEnd.getDate()} ${MONTHS[weekEnd.getMonth()]}`
+            return (
+              <div key={w}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 5 }}>
+                  <p style={{ color: '#f0ebe3', fontSize: '0.78rem', fontWeight: 700 }}>Semaine +{w + 1} <span style={{ color: 'rgba(240,235,227,0.3)', fontWeight: 400, fontSize: '0.68rem' }}>· {label}</span></p>
+                  <p style={{ color: barColor === '#2a2a2a' ? 'rgba(240,235,227,0.25)' : barColor, fontSize: '0.75rem', fontWeight: 800 }}>
+                    {count} deadline{count > 1 ? 's' : ''}{count >= 8 ? ' — surchargée, à déléguer' : count >= 5 ? ' — chargée' : ''}
+                  </p>
+                </div>
+                <div style={{ height: 8, background: '#1c1c1c', borderRadius: 6, overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${Math.max(pct, count > 0 ? 6 : 0)}%`, background: `linear-gradient(90deg, ${barColor}90, ${barColor})`, borderRadius: 6, transition: 'width 0.6s cubic-bezier(0.16, 1, 0.3, 1)' }} />
+                </div>
+                {count > 0 && (
+                  <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.66rem', marginTop: 4, lineHeight: 1.5 }}>
+                    {items.slice(0, 4).map(p => p.title).join(' · ')}{count > 4 ? ` · +${count - 4} autres` : ''}
+                  </p>
+                )}
+              </div>
+            )
+          })}
+        </div>
       </div>
     </div>
   )

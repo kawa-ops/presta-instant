@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { emailTaskCompleted } from '@/lib/mail'
+import { waProduction } from '@/lib/whatsapp'
 import { getLucasId } from '@/lib/ensure'
 
 export const dynamic = 'force-dynamic'
@@ -87,6 +88,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
     if (body.status === 'livre') {
       emailTaskCompleted(prod.title, prod.assignedTo?.name || 'Prestataire').catch(() => {})
+      waProduction(`🎬 ${prod.assignedTo?.name || 'Un prestataire'} a livré "${prod.title}" — en attente de ta validation.`).catch(() => {})
       // Notify admins in-app
       db.user.findMany({ where: { role: 'admin' } }).then((admins: any[]) => {
         for (const a of admins) {
@@ -108,6 +110,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       notifyFreelancer(`✓ "${prod.title}" a été approuvé et envoyé au client`)
     } else if (isAdmin && body.status === 'retours_client') {
       notifyFreelancer(`💬 Retours client reçus sur "${prod.title}"`)
+      waProduction(`💬 Retours client reçus sur "${prod.title}".`).catch(() => {})
     }
 
     // Accumulate into monthly payout when admin validates a freelancer's paid production

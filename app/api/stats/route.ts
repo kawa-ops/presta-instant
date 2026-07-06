@@ -18,11 +18,12 @@ export async function GET() {
   const startMonth = new Date(now.getFullYear(), now.getMonth(), 1)
 
   const activeWhere = { archived: false, status: { notIn: ['valide'] } }
+  const adminId = (session.user as any).id
 
   try {
     const [
       inProgress, overdue, dueToday, dueTomorrow, completedMonth,
-      activeFreelancers, totalProds, recentActivity, urgentProds, recentProds
+      activeFreelancers, totalProds, recentActivity, urgentProds, recentProds, notifications
     ] = await Promise.all([
       db.production.count({ where: activeWhere }),
       db.production.count({ where: { ...activeWhere, deadline: { lt: startToday } } }),
@@ -34,10 +35,11 @@ export async function GET() {
       db.activityLog.findMany({ orderBy: { createdAt: 'desc' }, take: 6 }),
       db.production.findMany({ where: { ...activeWhere, deadline: { lte: endToday } }, orderBy: { deadline: 'asc' }, take: 6, include: { assignedTo: { select: { id: true, name: true } } } }),
       db.production.findMany({ where: { archived: false }, orderBy: { createdAt: 'desc' }, take: 5, include: { assignedTo: { select: { id: true, name: true } } } }),
+      db.notification.findMany({ where: { userId: adminId, read: false }, orderBy: { createdAt: 'desc' }, take: 8 }),
     ])
 
     return NextResponse.json(
-      { inProgress, overdue, dueToday, dueTomorrow, completedMonth, activeFreelancers, totalProds, recentActivity, urgentProds, recentProds },
+      { inProgress, overdue, dueToday, dueTomorrow, completedMonth, activeFreelancers, totalProds, recentActivity, urgentProds, recentProds, notifications },
       { headers: { 'Cache-Control': 'no-store' } }
     )
   } catch (e: any) {

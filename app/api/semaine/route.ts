@@ -13,9 +13,10 @@ export async function GET() {
   const now = new Date()
   const start = new Date(now); start.setHours(0, 0, 0, 0)
   const end = new Date(start); end.setDate(end.getDate() + 7); end.setHours(23, 59, 59, 999)
+  const horizon = new Date(start); horizon.setDate(horizon.getDate() + 35); horizon.setHours(23, 59, 59, 999)
 
   try {
-    const [thisWeek, overdue] = await Promise.all([
+    const [thisWeek, overdue, upcoming] = await Promise.all([
       db.production.findMany({
         where: { archived: false, status: { notIn: ['valide'] }, deadline: { gte: start, lte: end } },
         orderBy: { deadline: 'asc' },
@@ -26,8 +27,14 @@ export async function GET() {
         orderBy: { deadline: 'asc' },
         include: { assignedTo: { select: { name: true } } },
       }),
+      // Next 4 weeks after the current one — for capacity planning
+      db.production.findMany({
+        where: { archived: false, status: { notIn: ['valide'] }, deadline: { gt: end, lte: horizon } },
+        orderBy: { deadline: 'asc' },
+        select: { id: true, title: true, client: true, deadline: true, status: true },
+      }),
     ])
-    return NextResponse.json({ thisWeek, overdue }, { headers: { 'Cache-Control': 'no-store' } })
+    return NextResponse.json({ thisWeek, overdue, upcoming }, { headers: { 'Cache-Control': 'no-store' } })
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 })
   }

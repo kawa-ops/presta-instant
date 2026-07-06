@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { emailInvoiceUploaded, emailInvoicePaid } from '@/lib/mail'
+import { waAccounting, waFreelancer } from '@/lib/whatsapp'
 
 export const dynamic = 'force-dynamic'
 const db = prisma as any
@@ -53,15 +54,18 @@ export async function PATCH(req: NextRequest) {
   if (isAdmin && paidAt !== undefined) data.paidAt = paidAt ? new Date(paidAt) : null
 
   try {
-    const row = await db.monthlyPayout.update({ where: { id }, data, include: { freelancer: { select: { name: true, email: true } } } })
+    const row = await db.monthlyPayout.update({ where: { id }, data, include: { freelancer: { select: { name: true, email: true, phone: true } } } })
 
     if (isAdmin && invoiceStatus === 'paid') {
       db.notification.create({ data: { userId: row.freelancerId, type: 'invoice_paid', message: `Votre facture de ${row.month} a été payée`, link: '/espace/facturation' } }).catch(() => {})
       emailInvoicePaid(row.freelancer.name, row.freelancer.email, row.validatedAmount).catch(() => {})
+      waAccounting(`💰 Facture de ${row.freelancer.name} (${row.month}) marquée payée — ${(row.validatedAmount || 0).toLocaleString('fr-FR')} €.`).catch(() => {})
+      waFreelancer(row.freelancer.phone, `💰 Bonjour ${row.freelancer.name}, votre facture de ${row.month} a été payée par instant. (${(row.validatedAmount || 0).toLocaleString('fr-FR')} €).`).catch(() => {})
     }
 
     if (!isAdmin && invoiceUrl) {
       emailInvoiceUploaded(row.freelancer.name, row.month).catch(() => {})
+      waAccounting(`📄 ${row.freelancer.name} a déposé sa facture de ${row.month} — à valider.`).catch(() => {})
       db.user.findMany({ where: { role: 'admin' } }).then((admins: any[]) => {
         for (const a of admins) {
           db.notification.create({ data: { userId: a.id, type: 'invoice_uploaded', message: `${row.freelancer.name} a déposé sa facture de ${row.month}`, link: '/facturation' } }).catch(() => {})

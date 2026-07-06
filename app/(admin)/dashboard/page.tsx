@@ -34,17 +34,24 @@ export default function AdminDashboard() {
   const { data: stats, refresh } = useCached<any>('stats', '/api/stats')
 
   useEffect(() => {
-    // Auto-refresh: every 30s + when the tab regains focus
-    const interval = setInterval(refresh, 30000)
+    // Auto-refresh: every 15s, on tab focus, and instantly on live events
+    const interval = setInterval(refresh, 15000)
     const onFocus = () => refresh()
     window.addEventListener('focus', onFocus)
     document.addEventListener('visibilitychange', onFocus)
+    window.addEventListener('live-refresh', onFocus)
     return () => {
       clearInterval(interval)
       window.removeEventListener('focus', onFocus)
       document.removeEventListener('visibilitychange', onFocus)
+      window.removeEventListener('live-refresh', onFocus)
     }
   }, [refresh])
+
+  async function dismissNotif(id: string) {
+    await fetch('/api/notifications', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) })
+    refresh()
+  }
 
   const s = stats || { inProgress: '·', overdue: '·', dueToday: '·', dueTomorrow: '·', completedMonth: '·', activeFreelancers: '·', totalProds: '·', recentActivity: [], urgentProds: [], recentProds: [] }
 
@@ -74,6 +81,21 @@ export default function AdminDashboard() {
           <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.65rem' }}>prestations actives</p>
         </div>
       </div>
+
+      {/* Live notifications requiring attention */}
+      {stats && (s.notifications || []).length > 0 && (
+        <div style={{ background: 'rgba(167,139,250,0.05)', border: '1px solid rgba(167,139,250,0.2)', borderRadius: 12, padding: '14px 18px', marginBottom: 16 }}>
+          <p style={{ color: '#a78bfa', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>🔔 À traiter</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {(s.notifications as any[]).map((n: any) => (
+              <div key={n.id} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <p style={{ color: '#f0ebe3', fontSize: '0.8rem', flex: 1 }}>{n.message}</p>
+                <button onClick={() => dismissNotif(n.id)} title="Marquer comme lu" style={{ background: 'rgba(240,235,227,0.05)', border: '1px solid #2a2a2a', borderRadius: 6, padding: '3px 10px', color: 'rgba(240,235,227,0.4)', cursor: 'pointer', fontSize: '0.68rem' }}>✓</button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Alerts */}
       {stats && (s.overdue > 0 || s.dueToday > 0) && (
