@@ -18,6 +18,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (body.siret !== undefined) data.siret = body.siret
   if (body.specialty !== undefined) data.specialty = body.specialty
   if (body.active !== undefined) data.active = body.active
+  if (body.rates !== undefined) data.rates = typeof body.rates === 'string' ? body.rates : JSON.stringify(body.rates)
   if (body.password) {
     if (body.password.length < 6) return NextResponse.json({ error: 'Mot de passe trop court (min 6 caractères)' }, { status: 400 })
     data.password = await bcrypt.hash(body.password, 10)

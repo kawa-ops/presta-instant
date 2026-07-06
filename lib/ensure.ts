@@ -15,6 +15,8 @@ export async function ensureSchema() {
     `ALTER TABLE "Production" ALTER COLUMN price DROP DEFAULT`,
     // User columns
     `ALTER TABLE "User" ADD COLUMN IF NOT EXISTS address TEXT`,
+    `ALTER TABLE "User" ADD COLUMN IF NOT EXISTS rates TEXT`,
+    `ALTER TABLE "Production" ADD COLUMN IF NOT EXISTS "lastFeedback" TEXT`,
     // Invoice columns
     `ALTER TABLE "Invoice" ALTER COLUMN "fileUrl" DROP NOT NULL`,
     `ALTER TABLE "Invoice" ALTER COLUMN amount DROP NOT NULL`,

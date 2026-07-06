@@ -20,6 +20,63 @@ function SpecialtyInput({ value, onChange }: { value: string; onChange: (v: stri
   return <input style={IN} value={value} onChange={e => onChange(e.target.value)} placeholder="Montage, motion design…" />
 }
 
+const RATE_TYPES = [
+  { key: 'filming', label: 'Tournage' },
+  { key: 'editing', label: 'Montage' },
+  { key: 'filming_editing', label: 'Tournage + Montage' },
+  { key: 'retouche', label: 'Retouche photo' },
+]
+
+// Negotiated pricing editor — one per freelancer card
+function RatesEditor({ freelancer, onSaved }: { freelancer: any; onSaved: () => void }) {
+  const initial: Record<string, string> = {}
+  try {
+    const parsed = freelancer.rates ? JSON.parse(freelancer.rates) : {}
+    RATE_TYPES.forEach(rt => { initial[rt.key] = parsed[rt.key]?.toString() || '' })
+  } catch { RATE_TYPES.forEach(rt => { initial[rt.key] = '' }) }
+
+  const [rates, setRates] = useState(initial)
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+
+  async function save() {
+    setSaving(true)
+    const clean: Record<string, number> = {}
+    RATE_TYPES.forEach(rt => { const v = parseFloat(rates[rt.key]); if (!isNaN(v) && v > 0) clean[rt.key] = v })
+    await fetch(`/api/freelancers/${freelancer.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rates: clean }) })
+    setSaving(false)
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2500)
+    onSaved()
+  }
+
+  return (
+    <div style={{ borderTop: '1px solid #1e1e1e', paddingTop: 12, marginTop: 12 }}>
+      <p style={{ color: 'rgba(240,235,227,0.35)', fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
+        Tarifs négociés {saved && <span style={{ color: '#22c55e' }}>✓ enregistrés</span>}
+      </p>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+        {RATE_TYPES.map(rt => (
+          <div key={rt.key} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ color: 'rgba(240,235,227,0.45)', fontSize: '0.68rem', flex: 1 }}>{rt.label}</span>
+            <input
+              type="number"
+              value={rates[rt.key]}
+              onChange={e => setRates(r => ({ ...r, [rt.key]: e.target.value }))}
+              placeholder="—"
+              style={{ ...IN, width: 64, padding: '5px 8px', fontSize: '0.72rem', textAlign: 'right' }}
+            />
+            <span style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.68rem' }}>€</span>
+          </div>
+        ))}
+      </div>
+      <button onClick={save} disabled={saving} style={{ marginTop: 10, width: '100%', background: 'rgba(240,235,227,0.05)', border: '1px solid #2a2a2a', borderRadius: 7, padding: '7px', color: 'rgba(240,235,227,0.6)', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 600 }}>
+        {saving ? 'Enregistrement…' : 'Enregistrer les tarifs'}
+      </button>
+    </div>
+  )
+}
+
 export default function PrestatairesPage() {
   const [freelancers, setFreelancers] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -122,6 +179,8 @@ export default function PrestatairesPage() {
                 <button onClick={() => changePassword(f.id)} style={{ background: 'rgba(240,235,227,0.05)', border: '1px solid #2a2a2a', borderRadius: 7, padding: '7px 12px', color: 'rgba(240,235,227,0.5)', cursor: 'pointer', fontSize: '0.72rem' }} title="Changer le mot de passe">🔑</button>
                 <button onClick={() => remove(f.id)} style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 7, padding: '7px 12px', color: '#ef4444', cursor: 'pointer', fontSize: '0.72rem' }}>✕</button>
               </div>
+
+              <RatesEditor freelancer={f} onSaved={load} />
             </div>
           ))}
         </div>

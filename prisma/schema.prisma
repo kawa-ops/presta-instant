@@ -21,6 +21,7 @@ model User {
   specialty     String?
   address       String?
   profilePicUrl String?
+  rates         String?   // JSON: negotiated rates per service type
   // Relations
   productions   Production[] @relation("AssignedTo")
   invoices      Invoice[]
@@ -43,6 +44,7 @@ model Production {
   deadline       DateTime?
   productionDate DateTime?
   internalNotes  String?
+  lastFeedback   String?   // Latest revision comments from Lucas
   archived       Boolean   @default(false)
   assignedToId   String?
   assignedTo     User?     @relation("AssignedTo", fields: [assignedToId], references: [id])

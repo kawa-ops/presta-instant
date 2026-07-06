@@ -11,7 +11,7 @@ export async function GET() {
   try {
     const users = await db.user.findMany({
       where: { role: 'freelancer' },
-      select: { id: true, name: true, email: true, phone: true, siret: true, specialty: true, profilePicUrl: true, active: true, createdAt: true },
+      select: { id: true, name: true, email: true, phone: true, siret: true, specialty: true, profilePicUrl: true, active: true, createdAt: true, rates: true },
       orderBy: { name: 'asc' },
     })
     return NextResponse.json(users)

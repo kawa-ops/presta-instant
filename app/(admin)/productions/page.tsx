@@ -1,14 +1,17 @@
 'use client'
 import { useState, useMemo } from 'react'
 import { useCached } from '@/lib/useCached'
+import Timeline from '@/components/Timeline'
 
 const STATUSES = [
   { value: '', label: 'Tous' },
   { value: 'a_faire', label: 'À faire', color: '#6b7280' },
   { value: 'en_cours', label: 'En cours', color: '#3b82f6' },
-  { value: 'en_attente', label: 'En attente', color: '#eab308' },
-  { value: 'livre', label: 'Livré', color: '#a78bfa' },
-  { value: 'valide', label: 'Validé', color: '#22c55e' },
+  { value: 'revisions', label: 'Retours à faire', color: '#f97316' },
+  { value: 'livre', label: 'À valider', color: '#a78bfa' },
+  { value: 'envoye_client', label: 'Envoyé client', color: '#38bdf8' },
+  { value: 'retours_client', label: 'Retours client', color: '#f43f5e' },
+  { value: 'valide', label: 'Terminé', color: '#22c55e' },
 ]
 const PRIORITIES = [
   { value: 'urgent', label: 'Urgent', color: '#ef4444' },
@@ -18,11 +21,22 @@ const PRIORITIES = [
 ]
 const PRIORITY_ORDER: Record<string, number> = { urgent: 0, high: 1, normal: 2, low: 3 }
 
+export const RATE_TYPES = [
+  { key: 'filming', label: 'Tournage' },
+  { key: 'editing', label: 'Montage' },
+  { key: 'filming_editing', label: 'Tournage + Montage' },
+  { key: 'retouche', label: 'Retouche photo' },
+]
+
 const sc = (s: string) => STATUSES.find(x => x.value === s)?.color || '#6b7280'
-const sl = (s: string) => STATUSES.find(x => x.value === s)?.label || s
+const sl = (s: string) => STATUSES.find(x => x.value === s)?.label || (s === 'en_attente' ? 'En attente' : s)
 const pc = (p: string) => PRIORITIES.find(x => x.value === p)?.color || '#6b7280'
 const pl = (p: string) => PRIORITIES.find(x => x.value === p)?.label || p
 const fmtDate = (d: string | null) => { if (!d) return '—'; return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }) }
+
+function parseRates(f: any): Record<string, number> {
+  try { return f?.rates ? JSON.parse(f.rates) : {} } catch { return {} }
+}
 
 const IN: React.CSSProperties = { background: '#0f0f0f', border: '1px solid #2a2a2a', borderRadius: 8, padding: '8px 12px', color: '#f0ebe3', fontSize: '0.82rem', width: '100%', boxSizing: 'border-box' }
 const LA: React.CSSProperties = { display: 'block', color: 'rgba(240,235,227,0.4)', fontSize: '0.65rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' as const, marginBottom: 4 }
@@ -38,7 +52,37 @@ function SortIcon({ col, sortBy, sortDir }: { col: string; sortBy: string; sortD
   return <span style={{ color: '#f0ebe3', fontSize: '0.6rem', marginLeft: 3 }}>{sortDir === 'asc' ? '↑' : '↓'}</span>
 }
 
-// Small burst of confetti dots rendered above a row on validation
+// Price selector: negotiated rates dropdown + custom price fallback
+function PriceSelect({ freelancer, price, onChange }: { freelancer: any; price: string; onChange: (v: string) => void }) {
+  const rates = parseRates(freelancer)
+  const entries = RATE_TYPES.filter(rt => rates[rt.key])
+  const matched = entries.find(rt => rates[rt.key]?.toString() === price)
+  const [custom, setCustom] = useState(!matched && price !== '')
+
+  if (entries.length === 0) {
+    return <F type="number" value={price} onChange={onChange} placeholder="0" />
+  }
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <select
+        style={IN}
+        value={custom ? '__custom' : (matched ? matched.key : '')}
+        onChange={e => {
+          if (e.target.value === '__custom') { setCustom(true); return }
+          setCustom(false)
+          const rate = rates[e.target.value]
+          onChange(rate ? rate.toString() : '')
+        }}
+      >
+        <option value="">— Choisir un tarif —</option>
+        {entries.map(rt => <option key={rt.key} value={rt.key}>{rt.label} ({rates[rt.key]} €)</option>)}
+        <option value="__custom">Prix personnalisé…</option>
+      </select>
+      {custom && <F type="number" value={price} onChange={onChange} placeholder="Montant personnalisé (€)" />}
+    </div>
+  )
+}
+
 function Confetti() {
   const colors = ['#22c55e', '#a78bfa', '#eab308', '#3b82f6', '#f0ebe3']
   const dots = Array.from({ length: 18 }, (_, i) => ({
@@ -63,10 +107,13 @@ function Confetti() {
   )
 }
 
-function ProdRow({ p, freelancers, onSave, onDelete, onComplete, onDuplicate, onQuickStatus, saving, celebrating }: {
-  p: any; freelancers: any[]; onSave: (d: any) => void; onDelete: () => void; onComplete: () => void; onDuplicate: () => void; onQuickStatus: (status: string) => void; saving: boolean; celebrating: boolean
+function ProdRow({ p, freelancers, onSave, onDelete, onComplete, onQuickStatus, onFeedback, saving, celebrating }: {
+  p: any; freelancers: any[]; onSave: (d: any) => void; onDelete: () => void; onComplete: () => void
+  onQuickStatus: (status: string) => void; onFeedback: (comment: string) => void; saving: boolean; celebrating: boolean
 }) {
   const [open, setOpen] = useState(false)
+  const [feedbackOpen, setFeedbackOpen] = useState(false)
+  const [feedbackText, setFeedbackText] = useState('')
   const [form, setForm] = useState({
     title: p.title, client: p.client, brief: p.brief || '', sourcesLink: p.sourcesLink || '',
     deliveryLink: p.deliveryLink || '', priority: p.priority, status: p.status,
@@ -75,7 +122,9 @@ function ProdRow({ p, freelancers, onSave, onDelete, onComplete, onDuplicate, on
     internalNotes: p.internalNotes || '', assignedToId: p.assignedToId || '',
   })
   const s = (k: string) => (v: string) => setForm(f => ({ ...f, [k]: v }))
-  const isFreelancer = form.assignedToId && freelancers.find((f: any) => f.id === form.assignedToId)
+  const assignedFreelancer = freelancers.find((f: any) => f.id === form.assignedToId)
+  const isFreelancer = !!assignedFreelancer
+  const isFreelanceProject = !!freelancers.find((f: any) => f.id === p.assignedToId)
   const isOverdue = p.deadline && new Date(p.deadline) < new Date() && !['valide'].includes(p.status)
 
   return (
@@ -104,9 +153,8 @@ function ProdRow({ p, freelancers, onSave, onDelete, onComplete, onDuplicate, on
         <td style={{ padding: '11px 14px', color: p.price ? '#f0ebe3' : 'rgba(240,235,227,0.2)', fontSize: '0.75rem' }}>{p.price ? `${p.price.toLocaleString('fr-FR')} €` : '—'}</td>
         <td style={{ padding: '11px 14px' }} onClick={e => e.stopPropagation()}>
           {celebrating ? (
-            <span style={{ background: `${sc('valide')}15`, color: sc('valide'), padding: '2px 10px', borderRadius: 20, fontSize: '0.7rem', fontWeight: 600 }}>Validé ✓</span>
+            <span style={{ background: `${sc('valide')}15`, color: sc('valide'), padding: '2px 10px', borderRadius: 20, fontSize: '0.7rem', fontWeight: 600 }}>Terminé ✓</span>
           ) : (
-            // Quick status change without opening the row
             <select
               value={p.status}
               onChange={e => onQuickStatus(e.target.value)}
@@ -126,14 +174,9 @@ function ProdRow({ p, freelancers, onSave, onDelete, onComplete, onDuplicate, on
           <div style={{ display: 'flex', gap: 6 }}>
             <button
               onClick={onComplete}
-              title="Marquer comme livré au client"
+              title="Marquer comme terminé"
               style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 6, padding: '4px 9px', color: '#22c55e', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700 }}
             >✓</button>
-            <button
-              onClick={onDuplicate}
-              title="Dupliquer cette prestation"
-              style={{ background: 'rgba(240,235,227,0.05)', border: '1px solid #2a2a2a', borderRadius: 6, padding: '4px 8px', color: 'rgba(240,235,227,0.5)', cursor: 'pointer', fontSize: '0.7rem' }}
-            >⧉</button>
             <button onClick={onDelete} style={{ background: 'rgba(239,68,68,0.08)', border: 'none', borderRadius: 6, padding: '4px 8px', color: '#ef4444', cursor: 'pointer', fontSize: '0.7rem' }}>✕</button>
           </div>
         </td>
@@ -141,17 +184,66 @@ function ProdRow({ p, freelancers, onSave, onDelete, onComplete, onDuplicate, on
       {open && !celebrating && (
         <tr style={{ background: '#0f0f0f' }}>
           <td colSpan={10} style={{ padding: '18px 20px', borderBottom: '1px solid #1a1a1a' }}>
+            {/* Production timeline */}
+            <div style={{ background: '#141414', border: '1px solid #1e1e1e', borderRadius: 10, padding: '14px 18px', marginBottom: 16 }}>
+              <Timeline status={p.status} isFreelance={isFreelanceProject} />
+            </div>
+
+            {/* Workflow actions */}
+            {(p.status === 'livre' || p.status === 'envoye_client' || p.status === 'retours_client') && (
+              <div style={{ marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {p.status === 'livre' && (
+                    <>
+                      <button onClick={() => onQuickStatus('envoye_client')} style={{ background: '#22c55e', color: '#0a0a0a', border: 'none', borderRadius: 8, padding: '8px 16px', fontWeight: 700, cursor: 'pointer', fontSize: '0.76rem' }}>
+                        ✓ Approuver → envoyer au client
+                      </button>
+                      <button onClick={() => setFeedbackOpen(!feedbackOpen)} style={{ background: 'rgba(249,115,22,0.1)', color: '#f97316', border: '1px solid rgba(249,115,22,0.3)', borderRadius: 8, padding: '8px 16px', fontWeight: 700, cursor: 'pointer', fontSize: '0.76rem' }}>
+                        ✎ Demander des modifications
+                      </button>
+                    </>
+                  )}
+                  {p.status === 'envoye_client' && (
+                    <button onClick={() => onQuickStatus('retours_client')} style={{ background: 'rgba(244,63,94,0.1)', color: '#f43f5e', border: '1px solid rgba(244,63,94,0.3)', borderRadius: 8, padding: '8px 16px', fontWeight: 700, cursor: 'pointer', fontSize: '0.76rem' }}>
+                      💬 Retours client reçus
+                    </button>
+                  )}
+                  {p.status === 'retours_client' && (
+                    <>
+                      <button onClick={() => setFeedbackOpen(!feedbackOpen)} style={{ background: 'rgba(249,115,22,0.1)', color: '#f97316', border: '1px solid rgba(249,115,22,0.3)', borderRadius: 8, padding: '8px 16px', fontWeight: 700, cursor: 'pointer', fontSize: '0.76rem' }}>
+                        ✎ Transmettre les retours au prestataire
+                      </button>
+                      <button onClick={onComplete} style={{ background: '#22c55e', color: '#0a0a0a', border: 'none', borderRadius: 8, padding: '8px 16px', fontWeight: 700, cursor: 'pointer', fontSize: '0.76rem' }}>
+                        🎉 Validation finale
+                      </button>
+                    </>
+                  )}
+                </div>
+                {feedbackOpen && (
+                  <div style={{ background: 'rgba(249,115,22,0.04)', border: '1px solid rgba(249,115,22,0.2)', borderRadius: 10, padding: 14 }}>
+                    <label style={LA}>Commentaires pour le prestataire</label>
+                    <TA value={feedbackText} onChange={setFeedbackText} placeholder="Décris précisément les modifications à faire…" />
+                    <button
+                      onClick={() => { if (feedbackText.trim()) { onFeedback(feedbackText.trim()); setFeedbackText(''); setFeedbackOpen(false) } }}
+                      style={{ marginTop: 8, background: '#f97316', color: '#0a0a0a', border: 'none', borderRadius: 8, padding: '8px 16px', fontWeight: 700, cursor: 'pointer', fontSize: '0.76rem' }}
+                    >Envoyer les retours</button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {p.lastFeedback && p.status === 'revisions' && (
+              <div style={{ background: 'rgba(249,115,22,0.05)', border: '1px solid rgba(249,115,22,0.2)', borderRadius: 10, padding: '10px 14px', marginBottom: 16 }}>
+                <p style={{ color: '#f97316', fontSize: '0.68rem', fontWeight: 700, marginBottom: 4 }}>DERNIERS RETOURS ENVOYÉS</p>
+                <p style={{ color: 'rgba(240,235,227,0.7)', fontSize: '0.78rem', whiteSpace: 'pre-wrap' }}>{p.lastFeedback}</p>
+              </div>
+            )}
+
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
               <div><label style={LA}>Titre</label><F value={form.title} onChange={s('title')} /></div>
               <div><label style={LA}>Client</label><F value={form.client} onChange={s('client')} /></div>
               <div><label style={LA}>Date de la prestation</label><F type="date" value={form.productionDate} onChange={s('productionDate')} /></div>
               <div><label style={LA}>Deadline</label><F type="date" value={form.deadline} onChange={s('deadline')} /></div>
-              <div>
-                <label style={LA}>Statut</label>
-                <select style={IN} value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))}>
-                  {STATUSES.filter(s => s.value).map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-                </select>
-              </div>
               <div>
                 <label style={LA}>Priorité</label>
                 <select style={IN} value={form.priority} onChange={e => setForm(f => ({ ...f, priority: e.target.value }))}>
@@ -165,7 +257,7 @@ function ProdRow({ p, freelancers, onSave, onDelete, onComplete, onDuplicate, on
                   {freelancers.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
                 </select>
               </div>
-              {isFreelancer && <div><label style={LA}>Prix du prestataire (€)</label><F type="number" value={form.price} onChange={s('price')} placeholder="0" /></div>}
+              {isFreelancer && <div><label style={LA}>Prix du prestataire (€)</label><PriceSelect freelancer={assignedFreelancer} price={form.price} onChange={s('price')} /></div>}
               <div><label style={LA}>Lien sources</label><F value={form.sourcesLink} onChange={s('sourcesLink')} placeholder="WeTransfer, Drive…" /></div>
               <div><label style={LA}>Lien livraison</label><F value={form.deliveryLink} onChange={s('deliveryLink')} placeholder="Drive, Dropbox…" /></div>
               <div style={{ gridColumn: '1/-1' }}><label style={LA}>Notes internes (admin uniquement)</label><TA value={form.internalNotes} onChange={s('internalNotes')} placeholder="Notes visibles uniquement par les admins" /></div>
@@ -184,7 +276,6 @@ function ProdRow({ p, freelancers, onSave, onDelete, onComplete, onDuplicate, on
 const EMPTY_FORM = { title: '', client: '', brief: '', sourcesLink: '', priority: 'normal', status: 'a_faire', price: '', deadline: '', productionDate: '', internalNotes: '', assignedToId: '' }
 
 export default function ProductionsPage() {
-  // Instant paint from session cache + background revalidation
   const { data: prodsData, loading, mutate } = useCached<any[]>('productions', '/api/productions')
   const { data: freelancersData } = useCached<any[]>('freelancers', '/api/freelancers')
   const prods = Array.isArray(prodsData) ? prodsData : []
@@ -208,9 +299,8 @@ export default function ProductionsPage() {
   }
 
   const sf = (k: string) => (v: string) => setForm(f => ({ ...f, [k]: v }))
-  const isFreelancerNew = form.assignedToId && freelancers.find((f: any) => f.id === form.assignedToId)
+  const newFreelancer = freelancers.find((f: any) => f.id === form.assignedToId)
 
-  // Instant in-memory filter + search + sort
   const visibleProds = useMemo(() => {
     let list = prods
     if (filterStatus) list = list.filter(p => p.status === filterStatus)
@@ -239,7 +329,6 @@ export default function ProductionsPage() {
     })
   }, [prods, filterStatus, search, sortBy, sortDir])
 
-  // Counts per status for filter pills (instant)
   const counts = useMemo(() => {
     const c: Record<string, number> = { '': prods.length }
     prods.forEach(p => { c[p.status] = (c[p.status] || 0) + 1 })
@@ -254,7 +343,6 @@ export default function ProductionsPage() {
       const res = await fetch('/api/productions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) })
       const data = await res.json()
       if (!res.ok) { setCreateError(data.error || 'Erreur lors de la création'); setSaving(null); return }
-      // Optimistic: add locally, no full reload
       setProds(prev => [data, ...prev])
       setShowNew(false)
       setForm({ ...EMPTY_FORM })
@@ -276,45 +364,26 @@ export default function ProductionsPage() {
 
   async function deleteProd(id: string) {
     if (!confirm('Supprimer cette prestation ?')) return
-    // Optimistic: remove immediately
     const prev = prods
     setProds(p => p.filter(x => x.id !== id))
     const res = await fetch(`/api/productions/${id}`, { method: 'DELETE' })
-    if (!res.ok) setProds(() => prev) // rollback on failure
+    if (!res.ok) setProds(() => prev)
   }
 
   async function quickStatus(id: string, status: string) {
-    // Optimistic: change the pill immediately
     setProds(prev => prev.map(p => p.id === id ? { ...p, status } : p))
     fetch(`/api/productions/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) }).catch(() => {})
   }
 
-  async function duplicateProd(p: any) {
-    const res = await fetch('/api/productions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title: `${p.title} (copie)`,
-        client: p.client,
-        brief: p.brief || '',
-        sourcesLink: '',
-        priority: p.priority,
-        status: 'a_faire',
-        price: p.price?.toString() || '',
-        internalNotes: p.internalNotes || '',
-        assignedToId: p.assignedToId || '',
-      }),
-    })
-    const data = await res.json()
-    if (res.ok) setProds(prev => [data, ...prev])
+  async function sendFeedback(id: string, comment: string) {
+    setProds(prev => prev.map(p => p.id === id ? { ...p, status: 'revisions', lastFeedback: comment } : p))
+    fetch(`/api/productions/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ feedback: comment }) }).catch(() => {})
   }
 
   async function completeProd(id: string) {
-    if (!confirm('Marquer ce projet comme livré au client ?')) return
+    if (!confirm('Marquer ce projet comme terminé et validé ?')) return
     setCelebrating(id)
-    // Fire the update while the animation plays
     fetch(`/api/productions/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'valide', archived: true }) }).catch(() => {})
-    // Let the confetti play, then slide the row out to Archives
     setTimeout(() => {
       setProds(prev => prev.filter(p => p.id !== id))
       setCelebrating(null)
@@ -330,7 +399,6 @@ export default function ProductionsPage() {
         <button onClick={() => { setShowNew(true); setCreateError('') }} style={{ background: '#f0ebe3', color: '#0a0a0a', border: 'none', borderRadius: 8, padding: '9px 18px', fontWeight: 700, cursor: 'pointer', fontSize: '0.82rem' }}>+ Nouvelle prestation</button>
       </div>
 
-      {/* Search */}
       <div style={{ marginBottom: 12 }}>
         <input
           value={search}
@@ -340,7 +408,6 @@ export default function ProductionsPage() {
         />
       </div>
 
-      {/* Filter pills — instant, with live counts */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
         {STATUSES.map(s => (
           <button key={s.value} onClick={() => setFilterStatus(s.value)} style={{ padding: '5px 14px', borderRadius: 20, border: `1px solid ${filterStatus === s.value ? (s.color || '#f0ebe3') : '#2a2a2a'}`, background: filterStatus === s.value ? `${s.color || '#f0ebe3'}15` : 'transparent', color: filterStatus === s.value ? (s.color || '#f0ebe3') : 'rgba(240,235,227,0.4)', cursor: 'pointer', fontSize: '0.72rem' }}>
@@ -349,7 +416,6 @@ export default function ProductionsPage() {
         ))}
       </div>
 
-      {/* New form */}
       {showNew && (
         <div style={{ background: '#141414', border: '1px solid #2a2a2a', borderRadius: 14, padding: 22, marginBottom: 16 }}>
           <p style={{ color: '#f0ebe3', fontWeight: 700, marginBottom: 16, fontSize: '0.9rem' }}>Nouvelle prestation</p>
@@ -378,10 +444,10 @@ export default function ProductionsPage() {
                 {freelancers.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
               </select>
             </div>
-            {isFreelancerNew && <div><label style={LA}>Prix du prestataire (€)</label><F type="number" value={form.price} onChange={sf('price')} placeholder="0" /></div>}
+            {newFreelancer && <div><label style={LA}>Prix du prestataire (€)</label><PriceSelect freelancer={newFreelancer} price={form.price} onChange={sf('price')} /></div>}
             <div><label style={LA}>Lien sources</label><F value={form.sourcesLink} onChange={sf('sourcesLink')} placeholder="WeTransfer, Drive…" /></div>
             <div style={{ gridColumn: '1/-1' }}><label style={LA}>Notes internes (admin uniquement)</label><TA value={form.internalNotes} onChange={sf('internalNotes')} placeholder="Notes visibles uniquement par les admins" /></div>
-            {isFreelancerNew && <div style={{ gridColumn: '1/-1' }}><label style={LA}>Brief pour le prestataire</label><TA value={form.brief} onChange={sf('brief')} placeholder="Instructions pour le prestataire…" /></div>}
+            {newFreelancer && <div style={{ gridColumn: '1/-1' }}><label style={LA}>Brief pour le prestataire</label><TA value={form.brief} onChange={sf('brief')} placeholder="Instructions pour le prestataire…" /></div>}
           </div>
           <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
             <button onClick={createProd} disabled={saving === 'new'} style={{ background: '#f0ebe3', color: '#0a0a0a', border: 'none', borderRadius: 8, padding: '9px 20px', fontWeight: 700, cursor: 'pointer', fontSize: '0.82rem', opacity: saving === 'new' ? 0.6 : 1 }}>
@@ -392,7 +458,6 @@ export default function ProductionsPage() {
         </div>
       )}
 
-      {/* Table */}
       {loading ? (
         <div style={{ background: '#141414', border: '1px solid #222', borderRadius: 14, padding: '40px 20px', textAlign: 'center' }}>
           <p style={{ color: 'rgba(240,235,227,0.2)', fontSize: '0.82rem' }}>Chargement…</p>
@@ -427,8 +492,8 @@ export default function ProductionsPage() {
                   onSave={data => updateProd(p.id, data)}
                   onDelete={() => deleteProd(p.id)}
                   onComplete={() => completeProd(p.id)}
-                  onDuplicate={() => duplicateProd(p)}
                   onQuickStatus={status => quickStatus(p.id, status)}
+                  onFeedback={comment => sendFeedback(p.id, comment)}
                   saving={saving === p.id}
                   celebrating={celebrating === p.id}
                 />

@@ -1,9 +1,10 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
+import Timeline from '@/components/Timeline'
 
-const STATUS_COLORS: Record<string, string> = { a_faire: '#6b7280', en_cours: '#3b82f6', en_attente: '#eab308', livre: '#a78bfa', valide: '#22c55e' }
-const STATUS_LABELS: Record<string, string> = { a_faire: 'À faire', en_cours: 'En cours', en_attente: 'En attente', livre: 'Livré', valide: 'Validé' }
+const STATUS_COLORS: Record<string, string> = { a_faire: '#6b7280', en_cours: '#3b82f6', en_attente: '#eab308', revisions: '#f97316', livre: '#a78bfa', envoye_client: '#38bdf8', retours_client: '#f43f5e', valide: '#22c55e' }
+const STATUS_LABELS: Record<string, string> = { a_faire: 'À faire', en_cours: 'En cours', en_attente: 'En attente', revisions: 'Retours à faire', livre: 'En validation', envoye_client: 'Envoyé client', retours_client: 'Retours client', valide: 'Validé' }
 
 function fmt(d: string | null) { if (!d) return '—'; return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }) }
 
@@ -84,6 +85,19 @@ export default function MesPrestationsPage() {
 
                       {expanded === p.id && (
                         <div style={{ padding: '16px 20px 20px', borderBottom: '1px solid #1a1a1a', background: '#111' }}>
+                          {/* Production timeline */}
+                          <div style={{ background: '#161616', border: '1px solid #1e1e1e', borderRadius: 10, padding: '14px 18px', marginBottom: 16 }}>
+                            <Timeline status={p.status} isFreelance={true} />
+                          </div>
+
+                          {/* Revision feedback from Lucas */}
+                          {p.status === 'revisions' && p.lastFeedback && (
+                            <div style={{ background: 'rgba(249,115,22,0.06)', border: '1px solid rgba(249,115,22,0.25)', borderRadius: 10, padding: '12px 16px', marginBottom: 16 }}>
+                              <p style={{ color: '#f97316', fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>✎ Retours de Lucas</p>
+                              <p style={{ color: 'rgba(240,235,227,0.85)', fontSize: '0.82rem', whiteSpace: 'pre-wrap' }}>{p.lastFeedback}</p>
+                            </div>
+                          )}
+
                           {p.brief && (
                             <div style={{ marginBottom: 16 }}>
                               <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.65rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Brief</p>
@@ -102,7 +116,7 @@ export default function MesPrestationsPage() {
                           </div>
                           <div style={{ display: 'flex', gap: 8 }}>
                             <button onClick={() => saveDelivery(p.id)} disabled={saving === p.id + '_d'} style={{ background: '#a78bfa', border: 'none', borderRadius: 8, padding: '8px 18px', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: '0.78rem' }}>
-                              {saving === p.id + '_d' ? 'Envoi…' : '✓ Marquer comme livré'}
+                              {saving === p.id + '_d' ? 'Envoi…' : p.status === 'revisions' ? '⬆ Envoyer la nouvelle version' : '✓ Marquer comme livré'}
                             </button>
                             {p.status === 'a_faire' && (
                               <button onClick={() => updateStatus(p.id, 'en_cours')} disabled={saving === p.id} style={{ background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: 8, padding: '8px 16px', color: '#3b82f6', cursor: 'pointer', fontSize: '0.78rem' }}>

@@ -32,6 +32,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (isAdmin) {
     const fields = ['title', 'client', 'brief', 'sourcesLink', 'deliveryLink', 'priority', 'status', 'internalNotes', 'archived']
     fields.forEach(f => { if (body[f] !== undefined) data[f] = body[f] })
+    // Revision request: store the comments and send the task back to the freelancer
+    if (body.feedback) {
+      data.lastFeedback = body.feedback
+      if (body.status === undefined) data.status = 'revisions'
+    }
     if (body.price !== undefined) data.price = body.price !== null && body.price !== '' ? parseFloat(body.price) : null
     if (body.deadline !== undefined) data.deadline = body.deadline ? new Date(body.deadline) : null
     if (body.productionDate !== undefined) data.productionDate = body.productionDate ? new Date(body.productionDate) : null
@@ -67,10 +72,25 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       }).catch(() => {})
     }
 
+    // Workflow notifications to the assigned freelancer
+    const lucasIdForNotif = await getLucasId()
+    const notifyFreelancer = (message: string) => {
+      if (prod.assignedToId && prod.assignedToId !== lucasIdForNotif) {
+        db.notification.create({ data: { userId: prod.assignedToId, type: 'workflow', message, link: '/espace/prestations' } }).catch(() => {})
+      }
+    }
+    if (isAdmin && body.feedback) {
+      notifyFreelancer(`✎ Retours de Lucas sur "${prod.title}" : ${body.feedback}`)
+    } else if (isAdmin && body.status === 'envoye_client') {
+      notifyFreelancer(`✓ "${prod.title}" a été approuvé et envoyé au client`)
+    } else if (isAdmin && body.status === 'retours_client') {
+      notifyFreelancer(`💬 Retours client reçus sur "${prod.title}"`)
+    }
+
     // Accumulate into monthly payout when admin validates a freelancer's paid production
     // (only on transition to 'valide', never twice)
     if (body.status === 'valide' && before?.status !== 'valide' && prod.assignedToId && prod.price) {
-      const lucasId = await getLucasId()
+      const lucasId = lucasIdForNotif
       if (prod.assignedToId !== lucasId) {
         const month = new Date().toISOString().slice(0, 7)
         const existing = await db.monthlyPayout.findUnique({
