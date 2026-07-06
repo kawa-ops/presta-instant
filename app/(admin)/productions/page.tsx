@@ -2,6 +2,7 @@
 import { useState, useMemo } from 'react'
 import { useCached } from '@/lib/useCached'
 import Timeline from '@/components/Timeline'
+import Thread from '@/components/Thread'
 
 const STATUSES = [
   { value: '', label: 'Tous' },
@@ -144,13 +145,27 @@ function ProdRow({ p, freelancers, onSave, onDelete, onComplete, onQuickStatus, 
   const [open, setOpen] = useState(false)
   const [feedbackOpen, setFeedbackOpen] = useState(false)
   const [feedbackText, setFeedbackText] = useState('')
+  const [shareLabel, setShareLabel] = useState('🔗 Lien client')
   const [form, setForm] = useState({
     title: p.title, client: p.client, brief: p.brief || '', sourcesLink: p.sourcesLink || '',
     deliveryLink: p.deliveryLink || '', priority: p.priority, status: p.status,
-    price: p.price?.toString() || '', deadline: p.deadline ? p.deadline.split('T')[0] : '',
+    price: p.price?.toString() || '', clientPrice: p.clientPrice?.toString() || '',
+    deadline: p.deadline ? p.deadline.split('T')[0] : '',
     productionDate: p.productionDate ? p.productionDate.split('T')[0] : '',
     internalNotes: p.internalNotes || '', assignedToId: p.assignedToId || '',
   })
+
+  async function copyShareLink() {
+    const res = await fetch(`/api/productions/${p.id}/share`, { method: 'POST' })
+    const d = await res.json()
+    if (res.ok && d.url) {
+      try { await navigator.clipboard.writeText(d.url) } catch {}
+      setShareLabel('✓ Copié !')
+      setTimeout(() => setShareLabel('🔗 Lien client'), 2500)
+    }
+  }
+
+  const margin = form.clientPrice && form.price ? parseFloat(form.clientPrice) - parseFloat(form.price) : null
   const s = (k: string) => (v: string) => setForm(f => ({ ...f, [k]: v }))
   const assignedFreelancer = freelancers.find((f: any) => f.id === form.assignedToId)
   const isFreelancer = !!assignedFreelancer
@@ -214,8 +229,13 @@ function ProdRow({ p, freelancers, onSave, onDelete, onComplete, onQuickStatus, 
       {open && !celebrating && (
         <tr style={{ background: '#0f0f0f' }}>
           <td colSpan={10} style={{ padding: '18px 20px', borderBottom: '1px solid #1a1a1a' }}>
-            {/* Production timeline */}
+            {/* Production timeline + client link */}
             <div style={{ background: '#141414', border: '1px solid #1e1e1e', borderRadius: 10, padding: '14px 18px', marginBottom: 16 }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+                <button onClick={copyShareLink} title="Copier le lien de suivi public à envoyer au client" style={{ background: 'rgba(56,189,248,0.08)', border: '1px solid rgba(56,189,248,0.25)', borderRadius: 7, padding: '5px 12px', color: '#38bdf8', cursor: 'pointer', fontSize: '0.7rem', fontWeight: 600 }}>
+                  {shareLabel}
+                </button>
+              </div>
               <Timeline status={p.status} isFreelance={isFreelanceProject} />
             </div>
 
@@ -288,6 +308,15 @@ function ProdRow({ p, freelancers, onSave, onDelete, onComplete, onQuickStatus, 
                 </select>
               </div>
               {isFreelancer && <div><label style={LA}>Prix du prestataire (€)</label><PriceSelect freelancer={assignedFreelancer} price={form.price} onChange={s('price')} /></div>}
+              <div>
+                <label style={LA}>Prix client (€)</label>
+                <F type="number" value={form.clientPrice} onChange={s('clientPrice')} placeholder="Facturé au client" />
+                {margin !== null && !isNaN(margin) && (
+                  <p style={{ color: margin >= 0 ? '#22c55e' : '#ef4444', fontSize: '0.68rem', marginTop: 4, fontWeight: 700 }}>
+                    Marge : {margin.toLocaleString('fr-FR')} €
+                  </p>
+                )}
+              </div>
               <div><label style={LA}>Lien sources</label><F value={form.sourcesLink} onChange={s('sourcesLink')} placeholder="WeTransfer, Drive…" /></div>
               <div><label style={LA}>Lien livraison</label><F value={form.deliveryLink} onChange={s('deliveryLink')} placeholder="Drive, Dropbox…" /></div>
               <div style={{ gridColumn: '1/-1' }}><label style={LA}>Notes internes (admin uniquement)</label><TA value={form.internalNotes} onChange={s('internalNotes')} placeholder="Notes visibles uniquement par les admins" /></div>
@@ -296,6 +325,9 @@ function ProdRow({ p, freelancers, onSave, onDelete, onComplete, onQuickStatus, 
             <button onClick={() => onSave(form)} disabled={saving} style={{ marginTop: 14, background: '#f0ebe3', color: '#0a0a0a', border: 'none', borderRadius: 8, padding: '9px 20px', fontWeight: 700, cursor: 'pointer', fontSize: '0.8rem' }}>
               {saving ? 'Enregistrement…' : 'Enregistrer'}
             </button>
+
+            {/* Discussion + version history — lazy-loaded */}
+            <Thread productionId={p.id} />
           </td>
         </tr>
       )}

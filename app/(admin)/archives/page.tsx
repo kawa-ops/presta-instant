@@ -25,12 +25,14 @@ function F({ value, onChange, placeholder, type = 'text' }: { value: string; onC
 function ArchiveEditor({ p, freelancers, onSave, saving }: { p: any; freelancers: any[]; onSave: (d: any) => void; saving: boolean }) {
   const [form, setForm] = useState({
     title: p.title, client: p.client, price: p.price?.toString() || '',
+    clientPrice: p.clientPrice?.toString() || '',
     deadline: p.deadline ? p.deadline.split('T')[0] : '',
     productionDate: p.productionDate ? p.productionDate.split('T')[0] : '',
     status: p.status, assignedToId: p.assignedToId || '',
     internalNotes: p.internalNotes || '', deliveryLink: p.deliveryLink || '',
   })
   const s = (k: string) => (v: string) => setForm(f => ({ ...f, [k]: v }))
+  const margin = form.clientPrice && form.price ? parseFloat(form.clientPrice) - parseFloat(form.price) : null
 
   return (
     <div style={{ padding: '16px 20px 20px', borderTop: '1px solid #1a1a1a', background: '#111' }}>
@@ -38,6 +40,13 @@ function ArchiveEditor({ p, freelancers, onSave, saving }: { p: any; freelancers
         <div><label style={LA}>Titre</label><F value={form.title} onChange={s('title')} /></div>
         <div><label style={LA}>Client</label><F value={form.client} onChange={s('client')} /></div>
         <div><label style={LA}>Prix prestataire (€)</label><F type="number" value={form.price} onChange={s('price')} /></div>
+        <div>
+          <label style={LA}>Prix client (€)</label>
+          <F type="number" value={form.clientPrice} onChange={s('clientPrice')} />
+          {margin !== null && !isNaN(margin) && (
+            <p style={{ color: margin >= 0 ? '#22c55e' : '#ef4444', fontSize: '0.68rem', marginTop: 4, fontWeight: 700 }}>Marge : {margin.toLocaleString('fr-FR')} €</p>
+          )}
+        </div>
         <div>
           <label style={LA}>Assigné à</label>
           <select style={IN} value={form.assignedToId} onChange={e => setForm(f => ({ ...f, assignedToId: e.target.value }))}>
@@ -94,13 +103,19 @@ export default function ArchivesPage() {
   const visible = q ? prods.filter(p => p.title?.toLowerCase().includes(q) || p.client?.toLowerCase().includes(q) || p.assignedTo?.name?.toLowerCase().includes(q)) : prods
 
   const totalValue = prods.reduce((a, p) => a + (p.price || 0), 0)
+  const totalBilled = prods.reduce((a, p) => a + (p.clientPrice || 0), 0)
+  const totalMargin = totalBilled - totalValue
 
   return (
     <div style={{ maxWidth: 1000 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <div>
           <h1 style={{ color: '#f0ebe3', fontSize: '1.4rem', fontWeight: 800 }}>Archives</h1>
-          <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.75rem', marginTop: 3 }}>{prods.length} prestation{prods.length > 1 ? 's' : ''} · {totalValue.toLocaleString('fr-FR')} € versés aux prestataires · tout reste modifiable</p>
+          <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.75rem', marginTop: 3 }}>
+            {prods.length} prestation{prods.length > 1 ? 's' : ''} · {totalValue.toLocaleString('fr-FR')} € versés aux prestataires
+            {totalBilled > 0 && <> · {totalBilled.toLocaleString('fr-FR')} € facturés · <span style={{ color: totalMargin >= 0 ? '#22c55e' : '#ef4444', fontWeight: 700 }}>marge {totalMargin.toLocaleString('fr-FR')} €</span></>}
+            {' '}· tout reste modifiable
+          </p>
         </div>
       </div>
 

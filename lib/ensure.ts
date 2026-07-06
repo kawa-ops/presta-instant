@@ -17,6 +17,24 @@ export async function ensureSchema() {
     `ALTER TABLE "User" ADD COLUMN IF NOT EXISTS address TEXT`,
     `ALTER TABLE "User" ADD COLUMN IF NOT EXISTS rates TEXT`,
     `ALTER TABLE "Production" ADD COLUMN IF NOT EXISTS "lastFeedback" TEXT`,
+    `ALTER TABLE "Production" ADD COLUMN IF NOT EXISTS "clientPrice" DOUBLE PRECISION`,
+    `ALTER TABLE "Production" ADD COLUMN IF NOT EXISTS "shareToken" TEXT`,
+    `CREATE UNIQUE INDEX IF NOT EXISTS "Production_shareToken_key" ON "Production"("shareToken")`,
+    `CREATE TABLE IF NOT EXISTS "DeliveryVersion" (
+      id TEXT PRIMARY KEY,
+      "productionId" TEXT NOT NULL REFERENCES "Production"(id) ON DELETE CASCADE,
+      url TEXT NOT NULL,
+      version INT NOT NULL,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT NOW()
+    )`,
+    `CREATE TABLE IF NOT EXISTS "Comment" (
+      id TEXT PRIMARY KEY,
+      "productionId" TEXT NOT NULL REFERENCES "Production"(id) ON DELETE CASCADE,
+      "authorName" TEXT NOT NULL,
+      "authorRole" TEXT NOT NULL,
+      body TEXT NOT NULL,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT NOW()
+    )`,
     // Invoice columns
     `ALTER TABLE "Invoice" ALTER COLUMN "fileUrl" DROP NOT NULL`,
     `ALTER TABLE "Invoice" ALTER COLUMN amount DROP NOT NULL`,

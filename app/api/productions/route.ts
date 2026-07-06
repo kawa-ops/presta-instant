@@ -43,9 +43,9 @@ export async function GET(req: NextRequest) {
       orderBy,
       include: { assignedTo: { select: { id: true, name: true, email: true, role: true } } },
     })
-    // Internal notes are admin-only — never sent to freelancers
+    // Internal notes and client pricing are admin-only — never sent to freelancers
     if (!isAdmin) {
-      data = data.map(({ internalNotes, ...rest }: any) => rest)
+      data = data.map(({ internalNotes, clientPrice, ...rest }: any) => rest)
     }
     return NextResponse.json(data)
   } catch (e: any) {
@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
   if (!session || (session.user as any).role !== 'admin') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await req.json()
-  const { title, client, brief, sourcesLink, priority, status, price, deadline, productionDate, internalNotes } = body
+  const { title, client, brief, sourcesLink, priority, status, price, clientPrice, deadline, productionDate, internalNotes } = body
   let { assignedToId } = body
 
   if (!title?.trim() || !client?.trim()) {
@@ -79,6 +79,7 @@ export async function POST(req: NextRequest) {
         priority: priority || 'normal',
         status: status || 'a_faire',
         price: price !== undefined && price !== null && price !== '' ? parseFloat(price) : null,
+        clientPrice: clientPrice !== undefined && clientPrice !== null && clientPrice !== '' ? parseFloat(clientPrice) : null,
         deadline: deadline ? new Date(deadline) : null,
         productionDate: productionDate ? new Date(productionDate) : null,
         internalNotes: internalNotes || null,

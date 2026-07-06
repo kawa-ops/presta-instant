@@ -22,7 +22,7 @@ export async function GET(_: NextRequest, { params }: { params: { id: string } }
     if (!prod) return NextResponse.json({ error: 'Not found' }, { status: 404 })
     if (!isAdmin) {
       if (prod.assignedToId !== userId) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-      const { internalNotes, ...rest } = prod
+      const { internalNotes, clientPrice, ...rest } = prod
       return NextResponse.json(rest)
     }
     return NextResponse.json(prod)
@@ -62,6 +62,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       if (body.status === undefined) data.status = 'revisions'
     }
     if (body.price !== undefined) data.price = body.price !== null && body.price !== '' ? parseFloat(body.price) : null
+    if (body.clientPrice !== undefined) data.clientPrice = body.clientPrice !== null && body.clientPrice !== '' ? parseFloat(body.clientPrice) : null
     if (body.deadline !== undefined) data.deadline = body.deadline ? new Date(body.deadline) : null
     if (body.productionDate !== undefined) data.productionDate = body.productionDate ? new Date(body.productionDate) : null
     if (body.assignedToId !== undefined) {
@@ -74,8 +75,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 
   try {
-    // Read previous status to avoid double-counting payouts on repeated validation
-    const before = await db.production.findUnique({ where: { id: params.id }, select: { status: true } })
+    // Read previous state: status (payout double-count guard) + deliveryLink (version history)
+    const before = await db.production.findUnique({ where: { id: params.id }, select: { status: true, deliveryLink: true } })
 
     const prod = await db.production.update({
       where: { id: params.id },
@@ -85,6 +86,13 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
     // Fire-and-forget side effects
     db.activityLog.create({ data: { actorName: session.user?.name || '?', action: 'a mis à jour', target: prod.title } }).catch(() => {})
+
+    // Keep a version history of every distinct delivery link (V1, V2, V3…)
+    if (data.deliveryLink && data.deliveryLink !== before?.deliveryLink) {
+      db.deliveryVersion.count({ where: { productionId: params.id } }).then((count: number) =>
+        db.deliveryVersion.create({ data: { productionId: params.id, url: data.deliveryLink, version: count + 1 } })
+      ).catch(() => {})
+    }
 
     if (body.status === 'livre') {
       emailTaskCompleted(prod.title, prod.assignedTo?.name || 'Prestataire').catch(() => {})
