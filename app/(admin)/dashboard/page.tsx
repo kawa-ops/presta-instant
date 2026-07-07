@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 import { useCached } from '@/lib/useCached'
+import GamifyCard from '@/components/GamifyCard'
 
 // Small confetti burst rendered inside a notification row on dismiss
 function MiniConfetti() {
@@ -170,6 +171,9 @@ export default function AdminDashboard() {
           ) : null}
         </div>
       )}
+
+      {/* Admin level & rank */}
+      <GamifyCard compact />
 
       {/* Weekly production goal */}
       {stats && (

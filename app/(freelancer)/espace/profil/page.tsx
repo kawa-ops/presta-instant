@@ -1,6 +1,7 @@
 'use client'
 import { useSession } from 'next-auth/react'
 import { useState, useEffect } from 'react'
+import Badges from '@/components/Badges'
 
 const IN: React.CSSProperties = { background: '#0f0f0f', border: '1px solid #2a2a2a', borderRadius: 8, padding: '9px 12px', color: '#f0ebe3', fontSize: '0.82rem', width: '100%', boxSizing: 'border-box' as const }
 const LA: React.CSSProperties = { display: 'block', color: 'rgba(240,235,227,0.4)', fontSize: '0.65rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' as const, marginBottom: 4 }
@@ -82,6 +83,9 @@ export default function ProfilPage() {
         <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.78rem', fontWeight: 600, marginBottom: 4 }}>Mot de passe</p>
         <p style={{ color: 'rgba(240,235,227,0.2)', fontSize: '0.72rem' }}>La modification du mot de passe est gérée par l&apos;administrateur.</p>
       </div>
+
+      {/* Succès & XP */}
+      <Badges />
     </div>
   )
 }

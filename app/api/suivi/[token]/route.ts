@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { waProduction } from '@/lib/whatsapp'
 import { getLucasId } from '@/lib/ensure'
+import { onClientApproval } from '@/lib/gamify'
 
 export const dynamic = 'force-dynamic'
 const db = prisma as any
@@ -31,6 +32,7 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
       db.comment.create({ data: { productionId: prod.id, authorName: `Client (${prod.client})`, authorRole: 'client', body: '✅ Le client a approuvé cette version.' } }).catch(() => {})
       notifyAdmins(`✅ Le client (${prod.client}) a approuvé "${prod.title}"`)
       waProduction(`✅ Le client a approuvé la vidéo !\n\nProjet : ${prod.title}\nClient : ${prod.client}\n\nÀ confirmer avec le client avant livraison finale.`).catch(() => {})
+      onClientApproval(prod.assignedToId, admins.map((a: any) => a.id)).catch(() => {})
       return NextResponse.json({ ok: true })
     }
 

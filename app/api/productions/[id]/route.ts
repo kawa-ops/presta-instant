@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { emailTaskCompleted } from '@/lib/mail'
 import { waProduction } from '@/lib/whatsapp'
+import { onDelivery, onValidation, awardXp } from '@/lib/gamify'
 import { getLucasId } from '@/lib/ensure'
 
 export const dynamic = 'force-dynamic'
@@ -89,9 +90,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
     // Keep a version history of every distinct delivery link (V1, V2, V3…)
     if (data.deliveryLink && data.deliveryLink !== before?.deliveryLink) {
-      db.deliveryVersion.count({ where: { productionId: params.id } }).then((count: number) =>
-        db.deliveryVersion.create({ data: { productionId: params.id, url: data.deliveryLink, version: count + 1 } })
-      ).catch(() => {})
+      db.deliveryVersion.count({ where: { productionId: params.id } }).then((count: number) => {
+        db.deliveryVersion.create({ data: { productionId: params.id, url: data.deliveryLink, version: count + 1 } }).catch(() => {})
+        // XP: delivery + early bonus + achievements (freelancer only)
+        if (!isAdmin) onDelivery(userId, { deadline: prod.deadline, createdAt: prod.createdAt }, count + 1).catch(() => {})
+      }).catch(() => {})
     }
 
     // Record each status transition (feeds the client-portal timeline dates)
@@ -103,6 +106,14 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     if (isAdmin && body.finalDeliverySent) {
       waProduction(`📦 Livraison finale envoyée\n\nProjet : ${prod.title}\nClient : ${prod.client}\nEnvoyé par : ${session.user?.name || 'Admin'}`).catch(() => {})
       db.activityLog.create({ data: { actorName: session.user?.name || 'Admin', action: 'a envoyé la livraison finale', target: prod.title } }).catch(() => {})
+      awardXp(userId, 20, 'Livraison finale envoyée').catch(() => {})
+    }
+
+    // XP: admin validates a project (+ freelancer reward, milestones, perfect-V1)
+    if (isAdmin && body.status === 'valide' && before?.status !== 'valide') {
+      db.productionEvent.count({ where: { productionId: params.id, status: 'revisions' } }).then((revCount: number) => {
+        onValidation(userId, prod.assignedToId, revCount).catch(() => {})
+      }).catch(() => {})
     }
 
     // Deadline moved (drag & drop planning or manual edit) → WhatsApp alert

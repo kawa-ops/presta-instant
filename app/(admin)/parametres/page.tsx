@@ -1,6 +1,7 @@
 'use client'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
+import Badges from '@/components/Badges'
 
 export default function ParametresPage() {
   const { data: session } = useSession()
@@ -36,6 +37,9 @@ export default function ParametresPage() {
           <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.78rem', fontWeight: 600, marginBottom: 4 }}>Base de données</p>
           <p style={{ color: 'rgba(240,235,227,0.2)', fontSize: '0.72rem' }}>Supabase — eu-central-1 · presta.instantmov.fr</p>
         </div>
+
+        {/* Succès & XP admin */}
+        <Badges />
       </div>
     </div>
   )

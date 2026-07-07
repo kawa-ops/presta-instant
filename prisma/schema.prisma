@@ -127,6 +127,23 @@ model Notification {
   createdAt DateTime @default(now())
 }
 
+model XpEvent {
+  id        String   @id @default(cuid())
+  userId    String
+  amount    Int
+  reason    String
+  createdAt DateTime @default(now())
+}
+
+model Achievement {
+  id        String   @id @default(cuid())
+  userId    String
+  key       String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, key])
+}
+
 model ActivityLog {
   id        String   @id @default(cuid())
   actorName String

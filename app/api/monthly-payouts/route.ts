@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { emailInvoiceUploaded, emailInvoicePaid } from '@/lib/mail'
 import { waAccounting, waFreelancer } from '@/lib/whatsapp'
+import { awardXp } from '@/lib/gamify'
 
 export const dynamic = 'force-dynamic'
 const db = prisma as any
@@ -62,6 +63,7 @@ export async function PATCH(req: NextRequest) {
       db.notification.create({ data: { userId: row.freelancerId, type: 'invoice_paid', message: `Votre facture de ${row.month} a été payée`, link: '/espace/facturation' } }).catch(() => {})
       emailInvoicePaid(row.freelancer.name, row.freelancer.email, row.validatedAmount).catch(() => {})
       waAccounting(`💰 Facture de ${row.freelancer.name} (${row.month}) marquée payée — ${(row.validatedAmount || 0).toLocaleString('fr-FR')} €.`).catch(() => {})
+      awardXp((session.user as any).id, 15, 'Facture traitée').catch(() => {})
       waFreelancer(row.freelancer.phone, `💰 Bonjour ${row.freelancer.name}, votre facture de ${row.month} a été payée par instant. (${(row.validatedAmount || 0).toLocaleString('fr-FR')} €).`).catch(() => {})
     }
 
@@ -71,6 +73,8 @@ export async function PATCH(req: NextRequest) {
         : `📄 ${row.freelancer.name} demande le paiement de ${row.month} (sans facture).`
       emailInvoiceUploaded(row.freelancer.name, row.month).catch(() => {})
       waAccounting(label).catch(() => {})
+      // Extra XP when the invoice arrives before the 5th of the month
+      awardXp((session.user as any).id, new Date().getDate() <= 5 ? 15 : 10, 'Facture déposée').catch(() => {})
       db.user.findMany({ where: { role: 'admin' } }).then((admins: any[]) => {
         for (const a of admins) {
           db.notification.create({ data: { userId: a.id, type: 'invoice_uploaded', message: `${row.freelancer.name} a déposé sa facture de ${row.month}`, link: '/facturation' } }).catch(() => {})

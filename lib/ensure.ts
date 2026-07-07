@@ -35,6 +35,20 @@ export async function ensureSchema() {
       status TEXT NOT NULL,
       "createdAt" TIMESTAMP(3) NOT NULL DEFAULT NOW()
     )`,
+    `CREATE TABLE IF NOT EXISTS "XpEvent" (
+      id TEXT PRIMARY KEY,
+      "userId" TEXT NOT NULL,
+      amount INT NOT NULL,
+      reason TEXT NOT NULL,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT NOW()
+    )`,
+    `CREATE TABLE IF NOT EXISTS "Achievement" (
+      id TEXT PRIMARY KEY,
+      "userId" TEXT NOT NULL,
+      key TEXT NOT NULL,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT NOW(),
+      UNIQUE("userId", key)
+    )`,
     `CREATE TABLE IF NOT EXISTS "Comment" (
       id TEXT PRIMARY KEY,
       "productionId" TEXT NOT NULL REFERENCES "Production"(id) ON DELETE CASCADE,

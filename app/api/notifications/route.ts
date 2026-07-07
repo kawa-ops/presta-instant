@@ -38,6 +38,16 @@ export async function PATCH(req: NextRequest) {
     } else {
       await db.notification.updateMany({ where: { userId, read: false }, data: { read: true } })
     }
+
+    // Inbox Zéro: once a day, reward clearing every notification
+    const { awardXp } = await import('@/lib/gamify')
+    const remaining = await db.notification.count({ where: { userId, read: false } }).catch(() => 1)
+    if (remaining === 0) {
+      const startDay = new Date(); startDay.setHours(0, 0, 0, 0)
+      const already = await db.xpEvent.findFirst({ where: { userId, reason: 'Inbox vidée', createdAt: { gte: startDay } } }).catch(() => null)
+      if (!already) awardXp(userId, 10, 'Inbox vidée').catch(() => {})
+    }
+
     return NextResponse.json({ ok: true })
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 })
