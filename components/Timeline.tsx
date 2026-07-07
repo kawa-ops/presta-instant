@@ -28,7 +28,7 @@ export default function Timeline({ status, isFreelance }: { status: string; isFr
   let idx = stages.findIndex(s => s.key === effectiveStatus)
   if (idx === -1) idx = 0
   const pct = Math.round((idx / (stages.length - 1)) * 100)
-  const barColor = inRevision ? '#f97316' : pct === 100 ? '#22c55e' : '#a78bfa'
+  const barColor = inRevision ? '#e879f9' : pct === 100 ? '#22c55e' : '#a78bfa'
 
   return (
     <div style={{ width: '100%' }}>

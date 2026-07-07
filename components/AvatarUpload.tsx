@@ -34,7 +34,7 @@ export default function AvatarUpload() {
   }
 
   return (
-    <div style={{ background: '#141414', border: '1px solid #222', borderRadius: 14, padding: 20, display: 'flex', alignItems: 'center', gap: 18 }}>
+    <div style={{ background: 'rgba(26,18,48,0.6)', border: '1px solid rgba(167,139,250,0.16)', borderRadius: 14, padding: 20, display: 'flex', alignItems: 'center', gap: 18 }}>
       <div style={{ position: 'relative', width: 68, height: 68, flexShrink: 0 }}>
         <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'conic-gradient(#a78bfa, #ec4899, #38bdf8, #a78bfa)' }} />
         <div style={{ position: 'absolute', inset: 3, borderRadius: '50%', background: '#141021', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

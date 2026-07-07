@@ -68,7 +68,7 @@ export default function FreelancerFacturationPage() {
   const STYLES: Record<MonthState['status'], { border: string; bg: string; dot: string; label: string }> = {
     past:     { border: 'rgba(34,197,94,0.2)',   bg: 'rgba(34,197,94,0.04)',   dot: '#22c55e', label: 'Terminé' },
     paid:     { border: 'rgba(34,197,94,0.3)',   bg: 'rgba(34,197,94,0.07)',   dot: '#22c55e', label: 'Payé ✓' },
-    uploaded: { border: 'rgba(249,115,22,0.3)',  bg: 'rgba(249,115,22,0.06)',  dot: '#f97316', label: 'En attente de validation' },
+    uploaded: { border: 'rgba(232,121,249,0.3)',  bg: 'rgba(232,121,249,0.06)',  dot: '#e879f9', label: 'En attente de validation' },
     current:  { border: 'rgba(167,139,250,0.35)', bg: 'rgba(167,139,250,0.07)', dot: '#a78bfa', label: 'Mois en cours' },
     future:   { border: '#222',                  bg: 'transparent',            dot: '#333',    label: 'À venir' },
   }
@@ -133,15 +133,15 @@ export default function FreelancerFacturationPage() {
 
       {/* Summary */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 24 }}>
-        <div style={{ background: '#141414', border: '1px solid #222', borderRadius: 12, padding: '14px 16px' }}>
+        <div style={{ background: 'rgba(26,18,48,0.6)', border: '1px solid rgba(167,139,250,0.16)', borderRadius: 12, padding: '14px 16px' }}>
           <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>Total généré</p>
           <p style={{ color: '#a78bfa', fontSize: '1.4rem', fontWeight: 800 }}>{totalEarned.toLocaleString('fr-FR')} €</p>
         </div>
-        <div style={{ background: '#141414', border: '1px solid #222', borderRadius: 12, padding: '14px 16px' }}>
+        <div style={{ background: 'rgba(26,18,48,0.6)', border: '1px solid rgba(167,139,250,0.16)', borderRadius: 12, padding: '14px 16px' }}>
           <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>Total reçu</p>
           <p style={{ color: '#22c55e', fontSize: '1.4rem', fontWeight: 800 }}>{totalPaid.toLocaleString('fr-FR')} €</p>
         </div>
-        <div style={{ background: '#141414', border: '1px solid #222', borderRadius: 12, padding: '14px 16px' }}>
+        <div style={{ background: 'rgba(26,18,48,0.6)', border: '1px solid rgba(167,139,250,0.16)', borderRadius: 12, padding: '14px 16px' }}>
           <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>En attente</p>
           <p style={{ color: '#eab308', fontSize: '1.4rem', fontWeight: 800 }}>{(totalEarned - totalPaid).toLocaleString('fr-FR')} €</p>
         </div>
@@ -205,7 +205,7 @@ export default function FreelancerFacturationPage() {
               </div>
 
               {success && <p style={{ color: '#22c55e', fontSize: '0.78rem', marginBottom: 10 }}>✓ Demande envoyée — Axel a été notifié</p>}
-              {uploadError && <p style={{ color: '#ef4444', fontSize: '0.78rem', marginBottom: 10 }}>{uploadError}</p>}
+              {uploadError && <p style={{ color: '#fb7185', fontSize: '0.78rem', marginBottom: 10 }}>{uploadError}</p>}
 
               {openData.status !== 'paid' && (
                 <div>
@@ -234,16 +234,16 @@ export default function FreelancerFacturationPage() {
                   </div>
                   {openData.payout?.invoiceUrl && (
                     <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.72rem', marginTop: 10 }}>
-                      Facture actuelle : <a href={openData.payout.invoiceUrl} target="_blank" rel="noreferrer" style={{ color: '#3b82f6' }}>voir le document ↗</a>
+                      Facture actuelle : <a href={openData.payout.invoiceUrl} target="_blank" rel="noreferrer" style={{ color: '#a5b4fc' }}>voir le document ↗</a>
                     </p>
                   )}
                   {openData.status === 'uploaded' && !openData.payout?.invoiceUrl && (
-                    <p style={{ color: '#f97316', fontSize: '0.72rem', marginTop: 10 }}>Demande de paiement envoyée sans facture — en attente de validation.</p>
+                    <p style={{ color: '#e879f9', fontSize: '0.72rem', marginTop: 10 }}>Demande de paiement envoyée sans facture — en attente de validation.</p>
                   )}
                 </div>
               )}
               {openData.status === 'paid' && openData.payout?.invoiceUrl && (
-                <a href={openData.payout.invoiceUrl} target="_blank" rel="noreferrer" style={{ color: '#3b82f6', fontSize: '0.78rem' }}>📄 Voir la facture ↗</a>
+                <a href={openData.payout.invoiceUrl} target="_blank" rel="noreferrer" style={{ color: '#a5b4fc', fontSize: '0.78rem' }}>📄 Voir la facture ↗</a>
               )}
             </div>
           )}

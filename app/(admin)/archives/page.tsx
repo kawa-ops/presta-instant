@@ -12,7 +12,7 @@ const STATUSES = [
   { value: 'valide', label: 'Terminé' },
 ]
 
-const IN: React.CSSProperties = { background: '#0f0f0f', border: '1px solid #2a2a2a', borderRadius: 8, padding: '8px 12px', color: '#f0ebe3', fontSize: '0.82rem', width: '100%', boxSizing: 'border-box' }
+const IN: React.CSSProperties = { background: 'rgba(12,8,26,0.8)', border: '1px solid rgba(167,139,250,0.22)', borderRadius: 8, padding: '8px 12px', color: '#f0ebe3', fontSize: '0.82rem', width: '100%', boxSizing: 'border-box' }
 const LA: React.CSSProperties = { display: 'block', color: 'rgba(240,235,227,0.4)', fontSize: '0.65rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' as const, marginBottom: 4 }
 
 function fmt(d: string | null) { if (!d) return '—'; return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) }
@@ -35,7 +35,7 @@ function ArchiveEditor({ p, freelancers, onSave, saving }: { p: any; freelancers
   const margin = form.clientPrice && form.price ? parseFloat(form.clientPrice) - parseFloat(form.price) : null
 
   return (
-    <div style={{ padding: '16px 20px 20px', borderTop: '1px solid #1a1a1a', background: '#111' }}>
+    <div style={{ padding: '16px 20px 20px', borderTop: '1px solid rgba(167,139,250,0.08)', background: 'rgba(16,11,32,0.6)' }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
         <div><label style={LA}>Titre</label><F value={form.title} onChange={s('title')} /></div>
         <div><label style={LA}>Client</label><F value={form.client} onChange={s('client')} /></div>
@@ -44,7 +44,7 @@ function ArchiveEditor({ p, freelancers, onSave, saving }: { p: any; freelancers
           <label style={LA}>Prix client (€)</label>
           <F type="number" value={form.clientPrice} onChange={s('clientPrice')} />
           {margin !== null && !isNaN(margin) && (
-            <p style={{ color: margin >= 0 ? '#22c55e' : '#ef4444', fontSize: '0.68rem', marginTop: 4, fontWeight: 700 }}>Marge : {margin.toLocaleString('fr-FR')} €</p>
+            <p style={{ color: margin >= 0 ? '#22c55e' : '#fb7185', fontSize: '0.68rem', marginTop: 4, fontWeight: 700 }}>Marge : {margin.toLocaleString('fr-FR')} €</p>
           )}
         </div>
         <div>
@@ -113,7 +113,7 @@ export default function ArchivesPage() {
           <h1 style={{ color: '#f0ebe3', fontSize: '1.4rem', fontWeight: 800 }}>Archives</h1>
           <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.75rem', marginTop: 3 }}>
             {prods.length} prestation{prods.length > 1 ? 's' : ''} · {totalValue.toLocaleString('fr-FR')} € versés aux prestataires
-            {totalBilled > 0 && <> · {totalBilled.toLocaleString('fr-FR')} € facturés · <span style={{ color: totalMargin >= 0 ? '#22c55e' : '#ef4444', fontWeight: 700 }}>marge {totalMargin.toLocaleString('fr-FR')} €</span></>}
+            {totalBilled > 0 && <> · {totalBilled.toLocaleString('fr-FR')} € facturés · <span style={{ color: totalMargin >= 0 ? '#22c55e' : '#fb7185', fontWeight: 700 }}>marge {totalMargin.toLocaleString('fr-FR')} €</span></>}
             {' '}· tout reste modifiable
           </p>
         </div>
@@ -126,13 +126,13 @@ export default function ArchivesPage() {
       {loading ? (
         <p style={{ color: 'rgba(240,235,227,0.2)', textAlign: 'center', padding: 40, fontSize: '0.82rem' }}>Chargement…</p>
       ) : visible.length === 0 ? (
-        <div style={{ background: '#141414', border: '1px solid #222', borderRadius: 14, padding: '40px 20px', textAlign: 'center' }}>
+        <div style={{ background: 'rgba(26,18,48,0.6)', border: '1px solid rgba(167,139,250,0.16)', borderRadius: 14, padding: '40px 20px', textAlign: 'center' }}>
           <p style={{ color: 'rgba(240,235,227,0.2)', fontSize: '0.82rem' }}>{q ? 'Aucun résultat' : 'Aucune prestation archivée'}</p>
         </div>
       ) : (
-        <div style={{ background: '#141414', border: '1px solid #222', borderRadius: 14, overflow: 'hidden' }}>
+        <div style={{ background: 'rgba(26,18,48,0.6)', border: '1px solid rgba(167,139,250,0.16)', borderRadius: 14, overflow: 'hidden' }}>
           {visible.map(p => (
-            <div key={p.id} style={{ borderBottom: '1px solid #1a1a1a' }}>
+            <div key={p.id} style={{ borderBottom: '1px solid rgba(167,139,250,0.08)' }}>
               <div
                 onClick={() => setExpanded(expanded === p.id ? null : p.id)}
                 style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '13px 20px', cursor: 'pointer', background: expanded === p.id ? 'rgba(240,235,227,0.02)' : 'transparent' }}
@@ -145,7 +145,7 @@ export default function ArchivesPage() {
                 <span style={{ color: '#22c55e', fontSize: '0.7rem', fontWeight: 600 }}>✓ Terminé</span>
                 <button
                   onClick={e => { e.stopPropagation(); unarchive(p.id) }}
-                  style={{ background: 'rgba(240,235,227,0.05)', border: '1px solid #2a2a2a', borderRadius: 7, padding: '6px 12px', color: 'rgba(240,235,227,0.5)', cursor: 'pointer', fontSize: '0.72rem' }}
+                  style={{ background: 'rgba(240,235,227,0.05)', border: '1px solid rgba(167,139,250,0.22)', borderRadius: 7, padding: '6px 12px', color: 'rgba(240,235,227,0.5)', cursor: 'pointer', fontSize: '0.72rem' }}
                 >Désarchiver</button>
                 <span style={{ color: 'rgba(240,235,227,0.2)', fontSize: '0.75rem' }}>{expanded === p.id ? '▲' : '▼'}</span>
               </div>

@@ -6,19 +6,19 @@ import Thread from '@/components/Thread'
 
 const STATUSES = [
   { value: '', label: 'Tous' },
-  { value: 'a_faire', label: 'À faire', color: '#6b7280' },
-  { value: 'en_cours', label: 'En cours', color: '#3b82f6' },
-  { value: 'revisions', label: 'Retours à faire', color: '#f97316' },
+  { value: 'a_faire', label: 'À faire', color: '#8b7fb8' },
+  { value: 'en_cours', label: 'En cours', color: '#a5b4fc' },
+  { value: 'revisions', label: 'Retours à faire', color: '#e879f9' },
   { value: 'livre', label: 'À valider', color: '#a78bfa' },
-  { value: 'envoye_client', label: 'Envoyé client', color: '#38bdf8' },
-  { value: 'retours_client', label: 'Retours client', color: '#f43f5e' },
+  { value: 'envoye_client', label: 'Envoyé client', color: '#c7d2fe' },
+  { value: 'retours_client', label: 'Retours client', color: '#ec4899' },
   { value: 'valide', label: 'Terminé', color: '#22c55e' },
 ]
 const PRIORITIES = [
-  { value: 'urgent', label: 'Urgent', color: '#ef4444' },
-  { value: 'high', label: 'Haute', color: '#f97316' },
-  { value: 'normal', label: 'Normale', color: '#6b7280' },
-  { value: 'low', label: 'Basse', color: '#374151' },
+  { value: 'urgent', label: 'Urgent', color: '#fb7185' },
+  { value: 'high', label: 'Haute', color: '#e879f9' },
+  { value: 'normal', label: 'Normale', color: '#8b7fb8' },
+  { value: 'low', label: 'Basse', color: '#5b5273' },
 ]
 const PRIORITY_ORDER: Record<string, number> = { urgent: 0, high: 1, normal: 2, low: 3 }
 
@@ -29,9 +29,9 @@ const RATE_TYPES = [
   { key: 'retouche', label: 'Retouche photo' },
 ]
 
-const sc = (s: string) => STATUSES.find(x => x.value === s)?.color || '#6b7280'
+const sc = (s: string) => STATUSES.find(x => x.value === s)?.color || '#8b7fb8'
 const sl = (s: string) => STATUSES.find(x => x.value === s)?.label || (s === 'en_attente' ? 'En attente' : s)
-const pc = (p: string) => PRIORITIES.find(x => x.value === p)?.color || '#6b7280'
+const pc = (p: string) => PRIORITIES.find(x => x.value === p)?.color || '#8b7fb8'
 const pl = (p: string) => PRIORITIES.find(x => x.value === p)?.label || p
 const fmtDate = (d: string | null) => { if (!d) return '—'; return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }) }
 
@@ -39,7 +39,7 @@ function parseRates(f: any): Record<string, number> {
   try { return f?.rates ? JSON.parse(f.rates) : {} } catch { return {} }
 }
 
-const IN: React.CSSProperties = { background: '#0f0f0f', border: '1px solid #2a2a2a', borderRadius: 8, padding: '8px 12px', color: '#f0ebe3', fontSize: '0.82rem', width: '100%', boxSizing: 'border-box' }
+const IN: React.CSSProperties = { background: 'rgba(12,8,26,0.8)', border: '1px solid rgba(167,139,250,0.22)', borderRadius: 8, padding: '8px 12px', color: '#f0ebe3', fontSize: '0.82rem', width: '100%', boxSizing: 'border-box' }
 const LA: React.CSSProperties = { display: 'block', color: 'rgba(240,235,227,0.4)', fontSize: '0.65rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' as const, marginBottom: 4 }
 
 function F({ value, onChange, placeholder, type = 'text' }: { value: string; onChange: (v: string) => void; placeholder?: string; type?: string }) {
@@ -115,7 +115,7 @@ function PriceSelect({ freelancer, price, onChange }: { freelancer: any; price: 
 }
 
 function Confetti() {
-  const colors = ['#22c55e', '#a78bfa', '#eab308', '#3b82f6', '#f0ebe3']
+  const colors = ['#22c55e', '#a78bfa', '#eab308', '#a5b4fc', '#f0ebe3']
   const dots = Array.from({ length: 18 }, (_, i) => ({
     left: 10 + Math.random() * 80,
     delay: Math.random() * 0.15,
@@ -202,8 +202,8 @@ function ProdRow({ p, freelancers, onSave, onDelete, onComplete, onQuickStatus, 
       <tr
         onClick={() => setOpen(!open)}
         style={{
-          borderBottom: '1px solid #1a1a1a', cursor: 'pointer', position: 'relative',
-          background: celebrating ? 'rgba(34,197,94,0.12)' : needsAttention ? 'rgba(56,189,248,0.05)' : open ? 'rgba(240,235,227,0.02)' : 'transparent',
+          borderBottom: '1px solid rgba(167,139,250,0.08)', cursor: 'pointer', position: 'relative',
+          background: celebrating ? 'rgba(34,197,94,0.12)' : needsAttention ? 'rgba(199,210,254,0.05)' : open ? 'rgba(240,235,227,0.02)' : 'transparent',
           boxShadow: needsAttention ? 'inset 3px 0 0 #38bdf8' : 'none',
           animation: needsAttention ? 'row-glow 2.2s ease-in-out infinite' : 'none',
           transition: 'background 0.4s ease, opacity 0.5s ease',
@@ -216,7 +216,7 @@ function ProdRow({ p, freelancers, onSave, onDelete, onComplete, onQuickStatus, 
         </td>
         <td style={{ padding: '11px 14px', color: 'rgba(240,235,227,0.5)', fontSize: '0.75rem' }}>{fmtDate(p.productionDate)}</td>
         <td style={{ padding: '11px 14px' }}>
-          <span style={{ color: isOverdue ? '#ef4444' : 'rgba(240,235,227,0.5)', fontSize: '0.75rem', fontWeight: isOverdue ? 700 : 400 }}>{fmtDate(p.deadline)}</span>
+          <span style={{ color: isOverdue ? '#fb7185' : 'rgba(240,235,227,0.5)', fontSize: '0.75rem', fontWeight: isOverdue ? 700 : 400 }}>{fmtDate(p.deadline)}</span>
         </td>
         <td style={{ padding: '11px 14px' }}>
           <span style={{ background: `${pc(p.priority)}15`, color: pc(p.priority), padding: '2px 8px', borderRadius: 20, fontSize: '0.65rem', fontWeight: 700 }}>{pl(p.priority)}</span>
@@ -237,7 +237,7 @@ function ProdRow({ p, freelancers, onSave, onDelete, onComplete, onQuickStatus, 
           )}
         </td>
         <td style={{ padding: '11px 14px' }}>
-          {p.sourcesLink ? <a href={p.sourcesLink} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} style={{ color: '#3b82f6', fontSize: '0.72rem' }}>↗ Source</a> : <span style={{ color: 'rgba(240,235,227,0.15)', fontSize: '0.72rem' }}>—</span>}
+          {p.sourcesLink ? <a href={p.sourcesLink} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} style={{ color: '#a5b4fc', fontSize: '0.72rem' }}>↗ Source</a> : <span style={{ color: 'rgba(240,235,227,0.15)', fontSize: '0.72rem' }}>—</span>}
         </td>
         <td style={{ padding: '11px 14px' }}>
           {p.deliveryLink ? <a href={p.deliveryLink} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} style={{ color: '#22c55e', fontSize: '0.72rem' }}>↗ Livraison</a> : <span style={{ color: 'rgba(240,235,227,0.15)', fontSize: '0.72rem' }}>—</span>}
@@ -249,17 +249,17 @@ function ProdRow({ p, freelancers, onSave, onDelete, onComplete, onQuickStatus, 
               title="Marquer comme terminé"
               style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 6, padding: '4px 9px', color: '#22c55e', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700 }}
             >✓</button>
-            <button onClick={onDelete} style={{ background: 'rgba(239,68,68,0.08)', border: 'none', borderRadius: 6, padding: '4px 8px', color: '#ef4444', cursor: 'pointer', fontSize: '0.7rem' }}>✕</button>
+            <button onClick={onDelete} style={{ background: 'rgba(251,113,133,0.08)', border: 'none', borderRadius: 6, padding: '4px 8px', color: '#fb7185', cursor: 'pointer', fontSize: '0.7rem' }}>✕</button>
           </div>
         </td>
       </tr>
       {open && !celebrating && (
         <tr style={{ background: '#0f0f0f' }}>
-          <td colSpan={10} style={{ padding: '18px 20px', borderBottom: '1px solid #1a1a1a' }}>
+          <td colSpan={10} style={{ padding: '18px 20px', borderBottom: '1px solid rgba(167,139,250,0.08)' }}>
             {/* Production timeline + client link */}
-            <div style={{ background: '#141414', border: '1px solid #1e1e1e', borderRadius: 10, padding: '14px 18px', marginBottom: 16 }}>
+            <div style={{ background: 'rgba(26,18,48,0.5)', border: '1px solid rgba(167,139,250,0.12)', borderRadius: 10, padding: '14px 18px', marginBottom: 16 }}>
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
-                <button onClick={copyShareLink} title="Copier le lien de suivi public à envoyer au client" style={{ background: 'rgba(56,189,248,0.08)', border: '1px solid rgba(56,189,248,0.25)', borderRadius: 7, padding: '5px 12px', color: '#38bdf8', cursor: 'pointer', fontSize: '0.7rem', fontWeight: 600 }}>
+                <button onClick={copyShareLink} title="Copier le lien de suivi public à envoyer au client" style={{ background: 'rgba(199,210,254,0.08)', border: '1px solid rgba(199,210,254,0.25)', borderRadius: 7, padding: '5px 12px', color: '#c7d2fe', cursor: 'pointer', fontSize: '0.7rem', fontWeight: 600 }}>
                   {shareLabel}
                 </button>
               </div>
@@ -275,19 +275,19 @@ function ProdRow({ p, freelancers, onSave, onDelete, onComplete, onQuickStatus, 
                       <button onClick={() => onQuickStatus('envoye_client')} style={{ background: '#22c55e', color: '#0a0a0a', border: 'none', borderRadius: 8, padding: '8px 16px', fontWeight: 700, cursor: 'pointer', fontSize: '0.76rem' }}>
                         ✓ Approuver → envoyer au client
                       </button>
-                      <button onClick={() => setFeedbackOpen(!feedbackOpen)} style={{ background: 'rgba(249,115,22,0.1)', color: '#f97316', border: '1px solid rgba(249,115,22,0.3)', borderRadius: 8, padding: '8px 16px', fontWeight: 700, cursor: 'pointer', fontSize: '0.76rem' }}>
+                      <button onClick={() => setFeedbackOpen(!feedbackOpen)} style={{ background: 'rgba(232,121,249,0.1)', color: '#e879f9', border: '1px solid rgba(232,121,249,0.3)', borderRadius: 8, padding: '8px 16px', fontWeight: 700, cursor: 'pointer', fontSize: '0.76rem' }}>
                         ✎ Demander des modifications
                       </button>
                     </>
                   )}
                   {p.status === 'envoye_client' && (
-                    <button onClick={() => onQuickStatus('retours_client')} style={{ background: 'rgba(244,63,94,0.1)', color: '#f43f5e', border: '1px solid rgba(244,63,94,0.3)', borderRadius: 8, padding: '8px 16px', fontWeight: 700, cursor: 'pointer', fontSize: '0.76rem' }}>
+                    <button onClick={() => onQuickStatus('retours_client')} style={{ background: 'rgba(236,72,153,0.1)', color: '#ec4899', border: '1px solid rgba(236,72,153,0.3)', borderRadius: 8, padding: '8px 16px', fontWeight: 700, cursor: 'pointer', fontSize: '0.76rem' }}>
                       💬 Retours client reçus
                     </button>
                   )}
                   {p.status === 'retours_client' && (
                     <>
-                      <button onClick={() => setFeedbackOpen(!feedbackOpen)} style={{ background: 'rgba(249,115,22,0.1)', color: '#f97316', border: '1px solid rgba(249,115,22,0.3)', borderRadius: 8, padding: '8px 16px', fontWeight: 700, cursor: 'pointer', fontSize: '0.76rem' }}>
+                      <button onClick={() => setFeedbackOpen(!feedbackOpen)} style={{ background: 'rgba(232,121,249,0.1)', color: '#e879f9', border: '1px solid rgba(232,121,249,0.3)', borderRadius: 8, padding: '8px 16px', fontWeight: 700, cursor: 'pointer', fontSize: '0.76rem' }}>
                         ✎ Transmettre les retours au prestataire
                       </button>
                       <button onClick={onComplete} style={{ background: '#22c55e', color: '#0a0a0a', border: 'none', borderRadius: 8, padding: '8px 16px', fontWeight: 700, cursor: 'pointer', fontSize: '0.76rem' }}>
@@ -297,12 +297,12 @@ function ProdRow({ p, freelancers, onSave, onDelete, onComplete, onQuickStatus, 
                   )}
                 </div>
                 {feedbackOpen && (
-                  <div style={{ background: 'rgba(249,115,22,0.04)', border: '1px solid rgba(249,115,22,0.2)', borderRadius: 10, padding: 14 }}>
+                  <div style={{ background: 'rgba(232,121,249,0.04)', border: '1px solid rgba(232,121,249,0.2)', borderRadius: 10, padding: 14 }}>
                     <label style={LA}>Commentaires pour le prestataire</label>
                     <TA value={feedbackText} onChange={setFeedbackText} placeholder="Décris précisément les modifications à faire…" />
                     <button
                       onClick={() => { if (feedbackText.trim()) { onFeedback(feedbackText.trim()); setFeedbackText(''); setFeedbackOpen(false) } }}
-                      style={{ marginTop: 8, background: '#f97316', color: '#0a0a0a', border: 'none', borderRadius: 8, padding: '8px 16px', fontWeight: 700, cursor: 'pointer', fontSize: '0.76rem' }}
+                      style={{ marginTop: 8, background: '#e879f9', color: '#0a0a0a', border: 'none', borderRadius: 8, padding: '8px 16px', fontWeight: 700, cursor: 'pointer', fontSize: '0.76rem' }}
                     >Envoyer les retours</button>
                   </div>
                 )}
@@ -311,7 +311,7 @@ function ProdRow({ p, freelancers, onSave, onDelete, onComplete, onQuickStatus, 
 
             {/* Final delivery workflow — appears once the client approved */}
             {clientApproved && (
-              <div style={{ background: 'linear-gradient(135deg, rgba(34,197,94,0.06), rgba(56,189,248,0.04))', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 12, padding: 18, marginBottom: 16 }}>
+              <div style={{ background: 'linear-gradient(135deg, rgba(34,197,94,0.06), rgba(199,210,254,0.04))', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 12, padding: 18, marginBottom: 16 }}>
                 <p style={{ color: '#22c55e', fontSize: '0.85rem', fontWeight: 800, marginBottom: 4 }}>🎉 Le client a approuvé la vidéo !</p>
                 <p style={{ color: 'rgba(240,235,227,0.45)', fontSize: '0.74rem', marginBottom: 14 }}>Prépare l&apos;export final, colle le lien de téléchargement, envoie le message au client, puis confirme.</p>
 
@@ -328,7 +328,7 @@ function ProdRow({ p, freelancers, onSave, onDelete, onComplete, onQuickStatus, 
                 <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
                   <button
                     onClick={async () => { try { await navigator.clipboard.writeText(buildDeliveryMessage(p.client, finalLink)) } catch {}; setCopied(true); setTimeout(() => setCopied(false), 2000) }}
-                    style={{ background: 'rgba(240,235,227,0.06)', border: '1px solid #2a2a2a', borderRadius: 8, padding: '9px 16px', color: 'rgba(240,235,227,0.7)', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600 }}
+                    style={{ background: 'rgba(240,235,227,0.06)', border: '1px solid rgba(167,139,250,0.22)', borderRadius: 8, padding: '9px 16px', color: 'rgba(240,235,227,0.7)', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600 }}
                   >{copied ? '✓ Copié !' : '📋 Copier le message'}</button>
                   <button
                     onClick={() => { if (!finalLink.trim()) { alert('Colle d\'abord le lien de téléchargement final.'); return } onFinalSend(finalLink.trim()) }}
@@ -339,8 +339,8 @@ function ProdRow({ p, freelancers, onSave, onDelete, onComplete, onQuickStatus, 
             )}
 
             {p.lastFeedback && p.status === 'revisions' && (
-              <div style={{ background: 'rgba(249,115,22,0.05)', border: '1px solid rgba(249,115,22,0.2)', borderRadius: 10, padding: '10px 14px', marginBottom: 16 }}>
-                <p style={{ color: '#f97316', fontSize: '0.68rem', fontWeight: 700, marginBottom: 4 }}>DERNIERS RETOURS ENVOYÉS</p>
+              <div style={{ background: 'rgba(232,121,249,0.05)', border: '1px solid rgba(232,121,249,0.2)', borderRadius: 10, padding: '10px 14px', marginBottom: 16 }}>
+                <p style={{ color: '#e879f9', fontSize: '0.68rem', fontWeight: 700, marginBottom: 4 }}>DERNIERS RETOURS ENVOYÉS</p>
                 <p style={{ color: 'rgba(240,235,227,0.7)', fontSize: '0.78rem', whiteSpace: 'pre-wrap' }}>{p.lastFeedback}</p>
               </div>
             )}
@@ -368,7 +368,7 @@ function ProdRow({ p, freelancers, onSave, onDelete, onComplete, onQuickStatus, 
                 <label style={LA}>Prix client (€)</label>
                 <F type="number" value={form.clientPrice} onChange={s('clientPrice')} placeholder="Facturé au client" />
                 {margin !== null && !isNaN(margin) && (
-                  <p style={{ color: margin >= 0 ? '#22c55e' : '#ef4444', fontSize: '0.68rem', marginTop: 4, fontWeight: 700 }}>
+                  <p style={{ color: margin >= 0 ? '#22c55e' : '#fb7185', fontSize: '0.68rem', marginTop: 4, fontWeight: 700 }}>
                     Marge : {margin.toLocaleString('fr-FR')} €
                   </p>
                 )}
@@ -545,7 +545,7 @@ export default function ProductionsPage() {
 
   return (
     <div style={{ width: '100%' }}>
-      <style>{`@keyframes row-glow { 0%, 100% { background-color: rgba(56,189,248,0.04); } 50% { background-color: rgba(56,189,248,0.09); } }`}</style>
+      <style>{`@keyframes row-glow { 0%, 100% { background-color: rgba(199,210,254,0.04); } 50% { background-color: rgba(199,210,254,0.09); } }`}</style>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <h1 style={{ color: '#f0ebe3', fontSize: '1.4rem', fontWeight: 800 }}>Post-productions</h1>
         <button onClick={() => { setShowNew(true); setCreateError('') }} style={{ background: '#f0ebe3', color: '#0a0a0a', border: 'none', borderRadius: 8, padding: '9px 18px', fontWeight: 700, cursor: 'pointer', fontSize: '0.82rem' }}>+ Nouvelle prestation</button>
@@ -557,11 +557,11 @@ export default function ProductionsPage() {
           <div style={{ background: 'rgba(34,197,94,0.05)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: 12, padding: '14px 20px', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 10 }}>
             <span style={{ fontSize: '1.1rem' }}>✅</span>
             <p style={{ color: '#22c55e', fontSize: '0.85rem', fontWeight: 700 }}>Rien à valider — tout est traité !</p>
-            {priority.late > 0 && <p style={{ color: '#ef4444', fontSize: '0.75rem', marginLeft: 'auto' }}>⚠ {priority.late} en retard tout de même</p>}
+            {priority.late > 0 && <p style={{ color: '#fb7185', fontSize: '0.75rem', marginLeft: 'auto' }}>⚠ {priority.late} en retard tout de même</p>}
           </div>
         ) : (
-          <div style={{ background: 'rgba(56,189,248,0.05)', border: '1px solid rgba(56,189,248,0.25)', borderRadius: 12, padding: '14px 20px', marginBottom: 14 }}>
-            <p style={{ color: '#38bdf8', fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>🎯 À traiter en priorité</p>
+          <div style={{ background: 'rgba(199,210,254,0.05)', border: '1px solid rgba(199,210,254,0.25)', borderRadius: 12, padding: '14px 20px', marginBottom: 14 }}>
+            <p style={{ color: '#c7d2fe', fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>🎯 À traiter en priorité</p>
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
               {priority.validations > 0 && (
                 <button onClick={() => setFilterStatus('livre')} style={{ background: 'rgba(167,139,250,0.1)', border: '1px solid rgba(167,139,250,0.35)', borderRadius: 10, padding: '10px 16px', cursor: 'pointer', textAlign: 'left' }}>
@@ -570,8 +570,8 @@ export default function ProductionsPage() {
                 </button>
               )}
               {priority.retours > 0 && (
-                <button onClick={() => setFilterStatus('retours_client')} style={{ background: 'rgba(244,63,94,0.08)', border: '1px solid rgba(244,63,94,0.3)', borderRadius: 10, padding: '10px 16px', cursor: 'pointer', textAlign: 'left' }}>
-                  <p style={{ color: '#f43f5e', fontSize: '1.1rem', fontWeight: 800 }}>{priority.retours}</p>
+                <button onClick={() => setFilterStatus('retours_client')} style={{ background: 'rgba(236,72,153,0.08)', border: '1px solid rgba(236,72,153,0.3)', borderRadius: 10, padding: '10px 16px', cursor: 'pointer', textAlign: 'left' }}>
+                  <p style={{ color: '#ec4899', fontSize: '1.1rem', fontWeight: 800 }}>{priority.retours}</p>
                   <p style={{ color: 'rgba(240,235,227,0.55)', fontSize: '0.7rem' }}>retour{priority.retours > 1 ? 's' : ''} client à traiter</p>
                 </button>
               )}
@@ -582,8 +582,8 @@ export default function ProductionsPage() {
                 </button>
               )}
               {priority.late > 0 && (
-                <div style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 10, padding: '10px 16px' }}>
-                  <p style={{ color: '#ef4444', fontSize: '1.1rem', fontWeight: 800 }}>{priority.late}</p>
+                <div style={{ background: 'rgba(251,113,133,0.06)', border: '1px solid rgba(251,113,133,0.25)', borderRadius: 10, padding: '10px 16px' }}>
+                  <p style={{ color: '#fb7185', fontSize: '1.1rem', fontWeight: 800 }}>{priority.late}</p>
                   <p style={{ color: 'rgba(240,235,227,0.55)', fontSize: '0.7rem' }}>en retard</p>
                 </div>
               )}
@@ -610,9 +610,9 @@ export default function ProductionsPage() {
       </div>
 
       {showNew && (
-        <div style={{ background: '#141414', border: '1px solid #2a2a2a', borderRadius: 14, padding: 22, marginBottom: 16 }}>
+        <div style={{ background: 'rgba(26,18,48,0.7)', border: '1px solid rgba(167,139,250,0.22)', borderRadius: 14, padding: 22, marginBottom: 16 }}>
           <p style={{ color: '#f0ebe3', fontWeight: 700, marginBottom: 16, fontSize: '0.9rem' }}>Nouvelle prestation</p>
-          {createError && <p style={{ color: '#ef4444', fontSize: '0.78rem', marginBottom: 12, background: 'rgba(239,68,68,0.08)', padding: '8px 12px', borderRadius: 6 }}>{createError}</p>}
+          {createError && <p style={{ color: '#fb7185', fontSize: '0.78rem', marginBottom: 12, background: 'rgba(251,113,133,0.08)', padding: '8px 12px', borderRadius: 6 }}>{createError}</p>}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
             <div><label style={LA}>Titre *</label><F value={form.title} onChange={sf('title')} placeholder="Titre de la prestation" /></div>
             <div><label style={LA}>Client *</label><F value={form.client} onChange={sf('client')} placeholder="Nom du client" /></div>
@@ -646,24 +646,24 @@ export default function ProductionsPage() {
             <button onClick={createProd} disabled={saving === 'new'} style={{ background: '#f0ebe3', color: '#0a0a0a', border: 'none', borderRadius: 8, padding: '9px 20px', fontWeight: 700, cursor: 'pointer', fontSize: '0.82rem', opacity: saving === 'new' ? 0.6 : 1 }}>
               {saving === 'new' ? 'Création…' : 'Créer la prestation'}
             </button>
-            <button onClick={() => { setShowNew(false); setForm({ ...EMPTY_FORM }); setCreateError('') }} style={{ background: 'transparent', color: 'rgba(240,235,227,0.4)', border: '1px solid #2a2a2a', borderRadius: 8, padding: '9px 16px', cursor: 'pointer', fontSize: '0.82rem' }}>Annuler</button>
+            <button onClick={() => { setShowNew(false); setForm({ ...EMPTY_FORM }); setCreateError('') }} style={{ background: 'transparent', color: 'rgba(240,235,227,0.4)', border: '1px solid rgba(167,139,250,0.22)', borderRadius: 8, padding: '9px 16px', cursor: 'pointer', fontSize: '0.82rem' }}>Annuler</button>
           </div>
         </div>
       )}
 
       {loading ? (
-        <div style={{ background: '#141414', border: '1px solid #222', borderRadius: 14, padding: '40px 20px', textAlign: 'center' }}>
+        <div style={{ background: 'rgba(26,18,48,0.6)', border: '1px solid rgba(167,139,250,0.16)', borderRadius: 14, padding: '40px 20px', textAlign: 'center' }}>
           <p style={{ color: 'rgba(240,235,227,0.2)', fontSize: '0.82rem' }}>Chargement…</p>
         </div>
       ) : visibleProds.length === 0 ? (
-        <div style={{ background: '#141414', border: '1px solid #222', borderRadius: 14, padding: '40px 20px', textAlign: 'center' }}>
+        <div style={{ background: 'rgba(26,18,48,0.6)', border: '1px solid rgba(167,139,250,0.16)', borderRadius: 14, padding: '40px 20px', textAlign: 'center' }}>
           <p style={{ color: 'rgba(240,235,227,0.2)', fontSize: '0.82rem' }}>{search ? `Aucun résultat pour « ${search} »` : 'Aucune prestation'}</p>
         </div>
       ) : (
-        <div style={{ background: '#141414', border: '1px solid #222', borderRadius: 14, overflow: 'auto' }}>
+        <div style={{ background: 'rgba(26,18,48,0.6)', border: '1px solid rgba(167,139,250,0.16)', borderRadius: 14, overflow: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 900 }}>
             <thead>
-              <tr style={{ borderBottom: '1px solid #1e1e1e' }}>
+              <tr style={{ borderBottom: '1px solid rgba(167,139,250,0.12)' }}>
                 <th style={thStyle} onClick={() => toggleSort('title')}>Titre / Client <SortIcon col="title" sortBy={sortBy} sortDir={sortDir} /></th>
                 <th style={thStyle} onClick={() => toggleSort('productionDate')}>Date prestation <SortIcon col="productionDate" sortBy={sortBy} sortDir={sortDir} /></th>
                 <th style={thStyle} onClick={() => toggleSort('deadline')}>Deadline <SortIcon col="deadline" sortBy={sortBy} sortDir={sortDir} /></th>

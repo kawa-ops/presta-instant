@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import { useCached } from '@/lib/useCached'
 
-const STATUS_COLORS: Record<string, string> = { a_faire: '#6b7280', en_cours: '#3b82f6', en_attente: '#eab308', revisions: '#f97316', livre: '#a78bfa', envoye_client: '#38bdf8', retours_client: '#f43f5e', valide: '#22c55e' }
+const STATUS_COLORS: Record<string, string> = { a_faire: '#8b7fb8', en_cours: '#a5b4fc', en_attente: '#c4b5fd', revisions: '#e879f9', livre: '#a78bfa', envoye_client: '#c7d2fe', retours_client: '#ec4899', valide: '#22c55e' }
 const STATUS_LABELS: Record<string, string> = { a_faire: 'À faire', en_cours: 'En cours', en_attente: 'En attente', revisions: 'Retours à faire', livre: 'À valider', envoye_client: 'Envoyé client', retours_client: 'Retours client', valide: 'Terminé' }
 const DAYS = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi']
 const MONTHS = ['jan', 'fév', 'mar', 'avr', 'mai', 'juin', 'juil', 'août', 'sep', 'oct', 'nov', 'déc']
@@ -73,7 +73,7 @@ export default function SemainePage() {
         style={{
           background: moved ? 'rgba(34,197,94,0.12)' : '#191919',
           border: `1px solid ${moved ? 'rgba(34,197,94,0.4)' : '#232323'}`,
-          borderLeft: `3px solid ${STATUS_COLORS[p.status] || '#6b7280'}`,
+          borderLeft: `3px solid ${STATUS_COLORS[p.status] || '#8b7fb8'}`,
           borderRadius: 8, padding: '9px 11px', marginBottom: 6,
           opacity: isDragging ? 0.35 : dimmed ? 0.8 : 1,
           cursor: 'grab',
@@ -83,7 +83,7 @@ export default function SemainePage() {
         <p style={{ color: '#f0ebe3', fontSize: '0.76rem', fontWeight: 600, lineHeight: 1.3 }}>{p.title}</p>
         <p style={{ color: 'rgba(240,235,227,0.35)', fontSize: '0.66rem', marginTop: 2 }}>{p.client}</p>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 5 }}>
-          <span style={{ background: `${STATUS_COLORS[p.status] || '#6b7280'}18`, color: STATUS_COLORS[p.status] || '#6b7280', padding: '1px 7px', borderRadius: 20, fontSize: '0.6rem', fontWeight: 600 }}>{STATUS_LABELS[p.status] || p.status}</span>
+          <span style={{ background: `${STATUS_COLORS[p.status] || '#8b7fb8'}18`, color: STATUS_COLORS[p.status] || '#8b7fb8', padding: '1px 7px', borderRadius: 20, fontSize: '0.6rem', fontWeight: 600 }}>{STATUS_LABELS[p.status] || p.status}</span>
           <span style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.62rem' }}>{p.assignedTo?.name || 'Lucas'}</span>
         </div>
       </div>
@@ -99,7 +99,7 @@ export default function SemainePage() {
     })
     const weekEnd = days[6]
     const weekCount = days.reduce((a, d) => a + (byDay[dayKey(d)]?.length || 0), 0)
-    const loadColor = weekCount >= 8 ? '#ef4444' : weekCount >= 5 ? '#f97316' : weekCount >= 1 ? '#a78bfa' : 'rgba(240,235,227,0.2)'
+    const loadColor = weekCount >= 8 ? '#fb7185' : weekCount >= 5 ? '#e879f9' : weekCount >= 1 ? '#a78bfa' : 'rgba(240,235,227,0.2)'
 
     return (
       <div style={{ marginBottom: isCurrent ? 28 : 20 }}>
@@ -133,7 +133,7 @@ export default function SemainePage() {
                   transition: 'background 0.15s, border-color 0.15s',
                 }}
               >
-                <div style={{ padding: '9px 10px', borderBottom: '1px solid #1e1e1e', background: isToday ? 'rgba(167,139,250,0.06)' : 'transparent' }}>
+                <div style={{ padding: '9px 10px', borderBottom: '1px solid rgba(167,139,250,0.12)', background: isToday ? 'rgba(167,139,250,0.06)' : 'transparent' }}>
                   <p style={{ color: isToday ? '#a78bfa' : isCurrent ? '#f0ebe3' : 'rgba(240,235,227,0.55)', fontSize: '0.7rem', fontWeight: 700 }}>{DAYS[d.getDay()]}</p>
                   <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.62rem', marginTop: 1 }}>{d.getDate()} {MONTHS[d.getMonth()]}{isToday ? " · aujourd'hui" : ''}</p>
                 </div>
@@ -160,11 +160,11 @@ export default function SemainePage() {
       </div>
 
       {overdue.length > 0 && (
-        <div style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 12, padding: '14px 18px', marginBottom: 20 }}>
-          <p style={{ color: '#ef4444', fontSize: '0.82rem', fontWeight: 700, marginBottom: 10 }}>⚠ {overdue.length} prestation{overdue.length > 1 ? 's' : ''} en retard</p>
+        <div style={{ background: 'rgba(251,113,133,0.06)', border: '1px solid rgba(251,113,133,0.2)', borderRadius: 12, padding: '14px 18px', marginBottom: 20 }}>
+          <p style={{ color: '#fb7185', fontSize: '0.82rem', fontWeight: 700, marginBottom: 10 }}>⚠ {overdue.length} prestation{overdue.length > 1 ? 's' : ''} en retard</p>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {overdue.map(p => (
-              <div key={p.id} style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 8, padding: '7px 11px' }}>
+              <div key={p.id} style={{ background: 'rgba(251,113,133,0.08)', border: '1px solid rgba(251,113,133,0.2)', borderRadius: 8, padding: '7px 11px' }}>
                 <span style={{ color: '#f0ebe3', fontSize: '0.74rem', fontWeight: 600 }}>{p.title}</span>
                 <span style={{ color: 'rgba(240,235,227,0.35)', fontSize: '0.66rem', marginLeft: 6 }}>{p.assignedTo?.name || 'Lucas'}</span>
               </div>

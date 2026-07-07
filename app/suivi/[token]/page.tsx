@@ -35,7 +35,7 @@ export default async function SuiviPage({ params }: { params: { token: string } 
         </div>
 
         {!prod ? (
-          <div style={{ background: '#141414', border: '1px solid #222', borderRadius: 16, padding: 32, textAlign: 'center' }}>
+          <div style={{ background: 'rgba(26,18,48,0.6)', border: '1px solid rgba(167,139,250,0.16)', borderRadius: 16, padding: 32, textAlign: 'center' }}>
             <p style={{ color: 'rgba(240,235,227,0.4)', fontSize: '0.9rem' }}>Lien de suivi introuvable ou expiré.</p>
           </div>
         ) : (

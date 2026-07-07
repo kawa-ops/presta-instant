@@ -42,15 +42,15 @@ export default async function FreelancerDashboard() {
   const validatedAmount = monthPayout?.validatedAmount || 0
   const totalBalance = (payouts as any[]).reduce((a: number, p: any) => a + (p.validatedAmount || 0), 0)
 
-  const STATUS_COLORS: Record<string, string> = { a_faire: '#6b7280', en_cours: '#3b82f6', en_attente: '#eab308', revisions: '#f97316', livre: '#a78bfa', envoye_client: '#38bdf8', retours_client: '#f43f5e', valide: '#22c55e' }
+  const STATUS_COLORS: Record<string, string> = { a_faire: '#8b7fb8', en_cours: '#a5b4fc', en_attente: '#c4b5fd', revisions: '#e879f9', livre: '#a78bfa', envoye_client: '#c7d2fe', retours_client: '#ec4899', valide: '#22c55e' }
   const STATUS_LABELS: Record<string, string> = { a_faire: 'À faire', en_cours: 'En cours', en_attente: 'En attente', revisions: 'Retours à faire', livre: 'À valider', envoye_client: 'Envoyé client', retours_client: 'Retours client', valide: 'Terminé' }
 
   const kpis = [
-    { label: 'Projets en cours', value: enCours.length, color: '#3b82f6', bg: 'rgba(59,130,246,0.08)', border: 'rgba(59,130,246,0.2)' },
+    { label: 'Projets en cours', value: enCours.length, color: '#a5b4fc', bg: 'rgba(165,180,252,0.08)', border: 'rgba(165,180,252,0.2)' },
     { label: 'En attente de validation', value: enAttente.length, color: '#eab308', bg: 'rgba(234,179,8,0.08)', border: 'rgba(234,179,8,0.2)' },
     { label: 'Projets livrés', value: livres.length, color: '#a78bfa', bg: 'rgba(167,139,250,0.08)', border: 'rgba(167,139,250,0.2)' },
     { label: 'Projets validés', value: valides.length, color: '#22c55e', bg: 'rgba(34,197,94,0.08)', border: 'rgba(34,197,94,0.2)' },
-    { label: 'Projets en retard', value: overdue.length, color: '#ef4444', bg: 'rgba(239,68,68,0.08)', border: 'rgba(239,68,68,0.2)' },
+    { label: 'Projets en retard', value: overdue.length, color: '#fb7185', bg: 'rgba(251,113,133,0.08)', border: 'rgba(251,113,133,0.2)' },
   ]
 
   return (
@@ -63,8 +63,8 @@ export default async function FreelancerDashboard() {
       </div>
 
       {overdue.length > 0 && (
-        <div style={{ background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.15)', borderRadius: 10, padding: '11px 16px', marginBottom: 18 }}>
-          <p style={{ color: '#ef4444', fontSize: '0.8rem' }}>⚠ {overdue.length} prestation{overdue.length > 1 ? 's' : ''} en retard — priorité absolue</p>
+        <div style={{ background: 'rgba(251,113,133,0.05)', border: '1px solid rgba(251,113,133,0.15)', borderRadius: 10, padding: '11px 16px', marginBottom: 18 }}>
+          <p style={{ color: '#fb7185', fontSize: '0.8rem' }}>⚠ {overdue.length} prestation{overdue.length > 1 ? 's' : ''} en retard — priorité absolue</p>
         </div>
       )}
 
@@ -119,8 +119,8 @@ export default async function FreelancerDashboard() {
                     <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.68rem', marginTop: 1 }}>{p.client} · {fmt(p.deadline)}</p>
                   </div>
                   {p.price ? <span style={{ color: '#f0ebe3', fontSize: '0.75rem', fontWeight: 700 }}>{p.price.toLocaleString('fr-FR')} €</span> : null}
-                  <span style={{ background: `${STATUS_COLORS[p.status] || '#6b7280'}15`, color: STATUS_COLORS[p.status] || '#6b7280', padding: '2px 8px', borderRadius: 20, fontSize: '0.65rem', fontWeight: 600 }}>{STATUS_LABELS[p.status] || p.status}</span>
-                  {isOverdue && <span style={{ color: '#ef4444', fontSize: '0.65rem', fontWeight: 700 }}>⚠</span>}
+                  <span style={{ background: `${STATUS_COLORS[p.status] || '#8b7fb8'}15`, color: STATUS_COLORS[p.status] || '#8b7fb8', padding: '2px 8px', borderRadius: 20, fontSize: '0.65rem', fontWeight: 600 }}>{STATUS_LABELS[p.status] || p.status}</span>
+                  {isOverdue && <span style={{ color: '#fb7185', fontSize: '0.65rem', fontWeight: 700 }}>⚠</span>}
                 </Link>
               )
             })

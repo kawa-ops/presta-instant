@@ -20,10 +20,13 @@ export async function POST(req: NextRequest) {
       if (!ACHIEVEMENTS[achievementKey]) return NextResponse.json({ error: 'Succès inconnu' }, { status: 400 })
       await unlockAchievement(userId, achievementKey)
     }
-    if (xp && xp > 0) {
-      // Bonus XP bypasses the daily cap: it's an explicit admin reward
-      await db.xpEvent.create({ data: { userId, amount: Math.min(parseInt(xp), 1000), reason: reason || `🎁 Bonus offert par ${session.user?.name || 'Admin'}` } })
-      await db.notification.create({ data: { userId, type: 'achievement', message: `🎁 ${session.user?.name || 'Admin'} t'a offert +${Math.min(parseInt(xp), 1000)} XP${reason ? ` — ${reason}` : ''} !`, link: '/espace' } }).catch(() => {})
+    if (xp && parseInt(xp) !== 0) {
+      // Admin adjustment bypasses the daily cap; negative values allowed for corrections
+      const amount = Math.max(-5000, Math.min(parseInt(xp), 5000))
+      await db.xpEvent.create({ data: { userId, amount, reason: reason || (amount > 0 ? `🎁 Bonus offert par ${session.user?.name || 'Admin'}` : `Ajustement par ${session.user?.name || 'Admin'}`) } })
+      if (amount > 0) {
+        await db.notification.create({ data: { userId, type: 'achievement', message: `🎁 ${session.user?.name || 'Admin'} t'a offert +${amount} XP${reason ? ` — ${reason}` : ''} !`, link: '/espace' } }).catch(() => {})
+      }
     }
     return NextResponse.json({ ok: true })
   } catch (e: any) {

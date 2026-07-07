@@ -29,7 +29,7 @@ export default function FreelancerSidebar() {
 
   return (
     <aside style={{ position: 'fixed', left: 0, top: 0, height: '100vh', width: 220, background: 'linear-gradient(180deg, #16102b 0%, #0f0b1e 100%)', borderRight: '1px solid rgba(167,139,250,0.15)', boxShadow: '4px 0 24px rgba(88,28,135,0.15)', display: 'flex', flexDirection: 'column', zIndex: 40 }}>
-      <div style={{ padding: '20px 20px 16px', borderBottom: '1px solid #1e1e1e' }}>
+      <div style={{ padding: '20px 20px 16px', borderBottom: '1px solid rgba(167,139,250,0.12)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <svg viewBox="0 0 100 100" width="18" height="18" fill="#f0ebe3">
             <path d="M12,52 C12,52 48,46 58,22 C58,22 54,50 78,42 C78,42 60,52 68,76 C68,76 52,58 28,72 C28,72 42,52 12,52 Z"/>
@@ -55,7 +55,7 @@ export default function FreelancerSidebar() {
               <span style={{ fontSize: '0.9rem', width: 18, textAlign: 'center' }}>{item.icon}</span>
               <span style={{ flex: 1 }}>{item.label}</span>
               {item.href === '/espace' && notifCount > 0 && (
-                <span style={{ background: '#ef4444', color: '#fff', borderRadius: '50%', width: 18, height: 18, fontSize: '0.6rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ background: '#fb7185', color: '#fff', borderRadius: '50%', width: 18, height: 18, fontSize: '0.6rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   {notifCount > 9 ? '9+' : notifCount}
                 </span>
               )}
@@ -64,7 +64,7 @@ export default function FreelancerSidebar() {
         })}
       </nav>
 
-      <div style={{ padding: '12px 10px', borderTop: '1px solid #1e1e1e' }}>
+      <div style={{ padding: '12px 10px', borderTop: 'rgba(167,139,250,0.12) 1px solid' }}>
         <div style={{ padding: '8px 12px', marginBottom: 4 }}>
           <p style={{ color: '#f0ebe3', fontSize: '0.78rem', fontWeight: 600 }}>{session?.user?.name}</p>
           <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.68rem' }}>Prestataire</p>

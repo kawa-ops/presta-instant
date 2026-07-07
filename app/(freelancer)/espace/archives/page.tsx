@@ -22,9 +22,9 @@ export default async function FreelancerArchives() {
       {prods.length === 0 ? (
         <p style={{ color: 'rgba(240,235,227,0.2)', textAlign: 'center', padding: 40, fontSize: '0.82rem' }}>Aucune prestation validée pour le moment</p>
       ) : (
-        <div style={{ background: '#141414', border: '1px solid #222', borderRadius: 14, overflow: 'hidden' }}>
+        <div style={{ background: 'rgba(26,18,48,0.6)', border: '1px solid rgba(167,139,250,0.16)', borderRadius: 14, overflow: 'hidden' }}>
           {prods.map((p: any) => (
-            <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 20px', borderBottom: '1px solid #1a1a1a' }}>
+            <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 20px', borderBottom: '1px solid rgba(167,139,250,0.08)' }}>
               <div style={{ flex: 1 }}>
                 <p style={{ color: 'rgba(240,235,227,0.6)', fontSize: '0.82rem' }}>{p.title}</p>
                 <p style={{ color: 'rgba(240,235,227,0.25)', fontSize: '0.7rem', marginTop: 2 }}>{p.client}</p>

@@ -19,7 +19,7 @@ export default function GamifyCard({ compact = false }: { compact?: boolean }) {
 
   return (
     <div style={{
-      background: 'linear-gradient(135deg, rgba(167,139,250,0.08), rgba(56,189,248,0.05))',
+      background: 'linear-gradient(135deg, rgba(167,139,250,0.08), rgba(199,210,254,0.05))',
       border: '1px solid rgba(167,139,250,0.25)', borderRadius: 12,
       padding: compact ? '10px 16px' : '14px 20px', marginBottom: compact ? 16 : 18,
     }}>
@@ -28,7 +28,7 @@ export default function GamifyCard({ compact = false }: { compact?: boolean }) {
           <p style={{ color: '#a78bfa', fontSize: compact ? '0.82rem' : '0.9rem', fontWeight: 800 }}>{data.rank}</p>
           <span style={{ background: 'rgba(167,139,250,0.15)', color: '#a78bfa', padding: '1px 9px', borderRadius: 20, fontSize: '0.65rem', fontWeight: 800 }}>Niv. {data.level}</span>
           {data.streak >= 2 && (
-            <span title={`${data.streak} jours d'activité consécutifs`} style={{ color: '#f97316', fontSize: '0.75rem', fontWeight: 800 }}>🔥{data.streak}</span>
+            <span title={`${data.streak} jours d'activité consécutifs`} style={{ color: '#e879f9', fontSize: '0.75rem', fontWeight: 800 }}>🔥{data.streak}</span>
           )}
         </div>
         <p style={{ color: 'rgba(240,235,227,0.35)', fontSize: '0.68rem', fontWeight: 600 }}>

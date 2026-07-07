@@ -8,10 +8,10 @@ export default function AdminLoading() {
       <div style={{ width: 320, height: 13, background: '#181818', borderRadius: 6, marginBottom: 28, animation: 'pulse 1.2s ease-in-out infinite' }} />
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 20 }}>
         {[0, 1, 2].map(i => (
-          <div key={i} style={{ height: 88, background: '#141414', border: '1px solid #1e1e1e', borderRadius: 14, animation: 'pulse 1.2s ease-in-out infinite', animationDelay: `${i * 0.1}s` }} />
+          <div key={i} style={{ height: 88, background: 'rgba(26,18,48,0.5)', border: '1px solid rgba(167,139,250,0.12)', borderRadius: 14, animation: 'pulse 1.2s ease-in-out infinite', animationDelay: `${i * 0.1}s` }} />
         ))}
       </div>
-      <div style={{ height: 300, background: '#141414', border: '1px solid #1e1e1e', borderRadius: 14, animation: 'pulse 1.2s ease-in-out infinite', animationDelay: '0.2s' }} />
+      <div style={{ height: 300, background: 'rgba(26,18,48,0.5)', border: '1px solid rgba(167,139,250,0.12)', borderRadius: 14, animation: 'pulse 1.2s ease-in-out infinite', animationDelay: '0.2s' }} />
     </div>
   )
 }

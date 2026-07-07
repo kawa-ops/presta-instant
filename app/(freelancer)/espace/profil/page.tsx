@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import Badges from '@/components/Badges'
 import AvatarUpload from '@/components/AvatarUpload'
 
-const IN: React.CSSProperties = { background: '#0f0f0f', border: '1px solid #2a2a2a', borderRadius: 8, padding: '9px 12px', color: '#f0ebe3', fontSize: '0.82rem', width: '100%', boxSizing: 'border-box' as const }
+const IN: React.CSSProperties = { background: 'rgba(12,8,26,0.8)', border: '1px solid rgba(167,139,250,0.22)', borderRadius: 8, padding: '9px 12px', color: '#f0ebe3', fontSize: '0.82rem', width: '100%', boxSizing: 'border-box' as const }
 const LA: React.CSSProperties = { display: 'block', color: 'rgba(240,235,227,0.4)', fontSize: '0.65rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' as const, marginBottom: 4 }
 
 function FieldInput({ value, onChange, placeholder, type = 'text' }: { value: string; onChange: (v: string) => void; placeholder?: string; type?: string }) {
@@ -52,7 +52,7 @@ export default function ProfilPage() {
         <AvatarUpload />
       </div>
 
-      <div style={{ background: '#141414', border: '1px solid #222', borderRadius: 14, padding: 24 }}>
+      <div style={{ background: 'rgba(26,18,48,0.6)', border: '1px solid rgba(167,139,250,0.16)', borderRadius: 14, padding: 24 }}>
         <p style={{ color: '#f0ebe3', fontSize: '0.85rem', fontWeight: 600, marginBottom: 18 }}>Informations personnelles</p>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -84,7 +84,7 @@ export default function ProfilPage() {
         </button>
       </div>
 
-      <div style={{ background: '#141414', border: '1px solid #1e1e1e', borderRadius: 12, padding: 18, marginTop: 12 }}>
+      <div style={{ background: 'rgba(26,18,48,0.5)', border: '1px solid rgba(167,139,250,0.12)', borderRadius: 12, padding: 18, marginTop: 12 }}>
         <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.78rem', fontWeight: 600, marginBottom: 4 }}>Mot de passe</p>
         <p style={{ color: 'rgba(240,235,227,0.2)', fontSize: '0.72rem' }}>La modification du mot de passe est gérée par l&apos;administrateur.</p>
       </div>

@@ -4,12 +4,12 @@ import { useSession } from 'next-auth/react'
 import Timeline from '@/components/Timeline'
 import Thread from '@/components/Thread'
 
-const STATUS_COLORS: Record<string, string> = { a_faire: '#6b7280', en_cours: '#3b82f6', en_attente: '#eab308', revisions: '#f97316', livre: '#a78bfa', envoye_client: '#38bdf8', retours_client: '#f43f5e', valide: '#22c55e' }
+const STATUS_COLORS: Record<string, string> = { a_faire: '#8b7fb8', en_cours: '#a5b4fc', en_attente: '#c4b5fd', revisions: '#e879f9', livre: '#a78bfa', envoye_client: '#c7d2fe', retours_client: '#ec4899', valide: '#22c55e' }
 const STATUS_LABELS: Record<string, string> = { a_faire: 'À faire', en_cours: 'En cours', en_attente: 'En attente', revisions: 'Retours à faire', livre: 'En validation', envoye_client: 'Envoyé client', retours_client: 'Retours client', valide: 'Validé' }
 
 function fmt(d: string | null) { if (!d) return '—'; return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }) }
 
-const IN: React.CSSProperties = { background: '#0f0f0f', border: '1px solid #2a2a2a', borderRadius: 8, padding: '8px 12px', color: '#f0ebe3', fontSize: '0.82rem', width: '100%' }
+const IN: React.CSSProperties = { background: 'rgba(12,8,26,0.8)', border: '1px solid rgba(167,139,250,0.22)', borderRadius: 8, padding: '8px 12px', color: '#f0ebe3', fontSize: '0.82rem', width: '100%' }
 
 function DeliveryInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return <input style={IN} value={value} onChange={e => onChange(e.target.value)} placeholder="Lien Drive, Dropbox, WeTransfer…" />
@@ -72,33 +72,33 @@ export default function MesPrestationsPage() {
           {active.length > 0 && (
             <div style={{ marginBottom: 28 }}>
               <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.7rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 }}>En cours ({active.length})</p>
-              <div style={{ background: '#141414', border: '1px solid #222', borderRadius: 14, overflow: 'hidden' }}>
+              <div style={{ background: 'rgba(26,18,48,0.6)', border: '1px solid rgba(167,139,250,0.16)', borderRadius: 14, overflow: 'hidden' }}>
                 {active.map(p => {
                   const isOverdue = p.deadline && new Date(p.deadline) < new Date() && p.status !== 'valide'
                   return (
                     <div key={p.id}>
-                      <div onClick={() => setExpanded(expanded === p.id ? null : p.id)} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 20px', borderBottom: '1px solid #1a1a1a', cursor: 'pointer', background: expanded === p.id ? 'rgba(240,235,227,0.03)' : 'transparent' }}>
+                      <div onClick={() => setExpanded(expanded === p.id ? null : p.id)} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 20px', borderBottom: '1px solid rgba(167,139,250,0.08)', cursor: 'pointer', background: expanded === p.id ? 'rgba(240,235,227,0.03)' : 'transparent' }}>
                         <div style={{ flex: 1 }}>
                           <p style={{ color: '#f0ebe3', fontSize: '0.85rem', fontWeight: 600 }}>{p.title}</p>
                           <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.72rem', marginTop: 3 }}>{p.client}</p>
                         </div>
                         {p.price ? <span style={{ color: '#f0ebe3', fontSize: '0.82rem', fontWeight: 800 }}>{p.price.toLocaleString('fr-FR')} €</span> : null}
                         <span style={{ background: `${STATUS_COLORS[p.status]}15`, color: STATUS_COLORS[p.status], padding: '3px 10px', borderRadius: 20, fontSize: '0.72rem', fontWeight: 600 }}>{STATUS_LABELS[p.status] || p.status}</span>
-                        <span style={{ color: isOverdue ? '#ef4444' : 'rgba(240,235,227,0.35)', fontSize: '0.75rem', fontWeight: isOverdue ? 600 : 400 }}>{fmt(p.deadline)}</span>
+                        <span style={{ color: isOverdue ? '#fb7185' : 'rgba(240,235,227,0.35)', fontSize: '0.75rem', fontWeight: isOverdue ? 600 : 400 }}>{fmt(p.deadline)}</span>
                         <span style={{ color: 'rgba(240,235,227,0.2)', fontSize: '0.75rem' }}>{expanded === p.id ? '▲' : '▼'}</span>
                       </div>
 
                       {expanded === p.id && (
-                        <div style={{ padding: '16px 20px 20px', borderBottom: '1px solid #1a1a1a', background: '#111' }}>
+                        <div style={{ padding: '16px 20px 20px', borderBottom: '1px solid rgba(167,139,250,0.08)', background: 'rgba(16,11,32,0.6)' }}>
                           {/* Production timeline */}
-                          <div style={{ background: '#161616', border: '1px solid #1e1e1e', borderRadius: 10, padding: '14px 18px', marginBottom: 16 }}>
+                          <div style={{ background: 'rgba(20,14,38,0.7)', border: '1px solid rgba(167,139,250,0.12)', borderRadius: 10, padding: '14px 18px', marginBottom: 16 }}>
                             <Timeline status={p.status} isFreelance={true} />
                           </div>
 
                           {/* Revision feedback from Lucas */}
                           {p.status === 'revisions' && p.lastFeedback && (
-                            <div style={{ background: 'rgba(249,115,22,0.06)', border: '1px solid rgba(249,115,22,0.25)', borderRadius: 10, padding: '12px 16px', marginBottom: 16 }}>
-                              <p style={{ color: '#f97316', fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>✎ Retours de Lucas</p>
+                            <div style={{ background: 'rgba(232,121,249,0.06)', border: '1px solid rgba(232,121,249,0.25)', borderRadius: 10, padding: '12px 16px', marginBottom: 16 }}>
+                              <p style={{ color: '#e879f9', fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>✎ Retours de Lucas</p>
                               <p style={{ color: 'rgba(240,235,227,0.85)', fontSize: '0.82rem', whiteSpace: 'pre-wrap' }}>{p.lastFeedback}</p>
                             </div>
                           )}
@@ -112,7 +112,7 @@ export default function MesPrestationsPage() {
                           {p.sourcesLink && (
                             <div style={{ marginBottom: 16 }}>
                               <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.65rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Sources</p>
-                              <a href={p.sourcesLink} target="_blank" rel="noreferrer" style={{ color: '#3b82f6', fontSize: '0.8rem' }}>{p.sourcesLink}</a>
+                              <a href={p.sourcesLink} target="_blank" rel="noreferrer" style={{ color: '#a5b4fc', fontSize: '0.8rem' }}>{p.sourcesLink}</a>
                             </div>
                           )}
                           <div style={{ marginBottom: 14 }}>
@@ -124,7 +124,7 @@ export default function MesPrestationsPage() {
                               {saving === p.id + '_d' ? 'Envoi…' : p.status === 'revisions' ? '⬆ Envoyer la nouvelle version' : '✓ Marquer comme livré'}
                             </button>
                             {p.status === 'a_faire' && (
-                              <button onClick={() => updateStatus(p.id, 'en_cours')} disabled={saving === p.id} style={{ background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: 8, padding: '8px 16px', color: '#3b82f6', cursor: 'pointer', fontSize: '0.78rem' }}>
+                              <button onClick={() => updateStatus(p.id, 'en_cours')} disabled={saving === p.id} style={{ background: 'rgba(165,180,252,0.1)', border: '1px solid rgba(165,180,252,0.2)', borderRadius: 8, padding: '8px 16px', color: '#a5b4fc', cursor: 'pointer', fontSize: '0.78rem' }}>
                                 Démarrer
                               </button>
                             )}
@@ -144,9 +144,9 @@ export default function MesPrestationsPage() {
           {done.length > 0 && (
             <div>
               <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.7rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 }}>Validées ({done.length})</p>
-              <div style={{ background: '#141414', border: '1px solid #222', borderRadius: 14, overflow: 'hidden' }}>
+              <div style={{ background: 'rgba(26,18,48,0.6)', border: '1px solid rgba(167,139,250,0.16)', borderRadius: 14, overflow: 'hidden' }}>
                 {done.map(p => (
-                  <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 20px', borderBottom: '1px solid #1a1a1a' }}>
+                  <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 20px', borderBottom: '1px solid rgba(167,139,250,0.08)' }}>
                     <div style={{ flex: 1 }}>
                       <p style={{ color: 'rgba(240,235,227,0.5)', fontSize: '0.82rem' }}>{p.title}</p>
                       <p style={{ color: 'rgba(240,235,227,0.2)', fontSize: '0.7rem' }}>{p.client}</p>

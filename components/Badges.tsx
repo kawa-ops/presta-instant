@@ -20,12 +20,12 @@ export default function Badges() {
   const locked = data.locked || []
 
   return (
-    <div style={{ background: '#141414', border: '1px solid #222', borderRadius: 14, padding: 24, marginTop: 12 }}>
+    <div style={{ background: 'rgba(26,18,48,0.6)', border: '1px solid rgba(167,139,250,0.16)', borderRadius: 14, padding: 24, marginTop: 12 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <p style={{ color: '#f0ebe3', fontSize: '0.85rem', fontWeight: 600 }}>
           🏆 Succès <span style={{ color: 'rgba(240,235,227,0.3)', fontWeight: 400 }}>({unlocked.length}/{unlocked.length + locked.length})</span>
         </p>
-        <button onClick={toggleSober} style={{ background: 'rgba(240,235,227,0.04)', border: '1px solid #2a2a2a', borderRadius: 7, padding: '5px 12px', color: 'rgba(240,235,227,0.4)', cursor: 'pointer', fontSize: '0.68rem' }}>
+        <button onClick={toggleSober} style={{ background: 'rgba(240,235,227,0.04)', border: '1px solid rgba(167,139,250,0.22)', borderRadius: 7, padding: '5px 12px', color: 'rgba(240,235,227,0.4)', cursor: 'pointer', fontSize: '0.68rem' }}>
           {sober ? '🎮 Réactiver la gamification' : '🧘 Mode sobre'}
         </button>
       </div>

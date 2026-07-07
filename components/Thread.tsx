@@ -41,7 +41,7 @@ export default function Thread({ productionId }: { productionId: string }) {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 240px', gap: 14, marginTop: 16 }}>
       {/* Comments */}
-      <div style={{ background: '#161616', border: '1px solid #1e1e1e', borderRadius: 10, padding: 14 }}>
+      <div style={{ background: 'rgba(20,14,38,0.7)', border: '1px solid rgba(167,139,250,0.12)', borderRadius: 10, padding: 14 }}>
         <p style={{ color: 'rgba(240,235,227,0.35)', fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
           💬 Discussion {comments.length > 0 ? `(${comments.length})` : ''}
         </p>
@@ -54,12 +54,12 @@ export default function Thread({ productionId }: { productionId: string }) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 260, overflowY: 'auto', marginBottom: 10 }}>
             {comments.map(c => (
               <div key={c.id} style={{
-                background: c.authorRole === 'admin' ? 'rgba(167,139,250,0.06)' : 'rgba(59,130,246,0.05)',
-                border: `1px solid ${c.authorRole === 'admin' ? 'rgba(167,139,250,0.15)' : 'rgba(59,130,246,0.12)'}`,
+                background: c.authorRole === 'admin' ? 'rgba(167,139,250,0.06)' : 'rgba(165,180,252,0.05)',
+                border: `1px solid ${c.authorRole === 'admin' ? 'rgba(167,139,250,0.15)' : 'rgba(165,180,252,0.12)'}`,
                 borderRadius: 8, padding: '8px 12px',
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
-                  <p style={{ color: c.authorRole === 'admin' ? '#a78bfa' : '#3b82f6', fontSize: '0.68rem', fontWeight: 700 }}>{c.authorName}</p>
+                  <p style={{ color: c.authorRole === 'admin' ? '#a78bfa' : '#a5b4fc', fontSize: '0.68rem', fontWeight: 700 }}>{c.authorName}</p>
                   <p style={{ color: 'rgba(240,235,227,0.2)', fontSize: '0.62rem' }}>{fmt(c.createdAt)}</p>
                 </div>
                 <p style={{ color: 'rgba(240,235,227,0.8)', fontSize: '0.78rem', whiteSpace: 'pre-wrap', lineHeight: 1.4 }}>{c.body}</p>
@@ -74,7 +74,7 @@ export default function Thread({ productionId }: { productionId: string }) {
             onChange={e => setBody(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() } }}
             placeholder="Écrire un message…"
-            style={{ flex: 1, background: '#0f0f0f', border: '1px solid #2a2a2a', borderRadius: 8, padding: '8px 12px', color: '#f0ebe3', fontSize: '0.8rem' }}
+            style={{ flex: 1, background: 'rgba(12,8,26,0.8)', border: '1px solid rgba(167,139,250,0.22)', borderRadius: 8, padding: '8px 12px', color: '#f0ebe3', fontSize: '0.8rem' }}
           />
           <button onClick={send} disabled={sending || !body.trim()} style={{ background: body.trim() ? '#f0ebe3' : 'rgba(240,235,227,0.1)', color: body.trim() ? '#0a0a0a' : 'rgba(240,235,227,0.3)', border: 'none', borderRadius: 8, padding: '0 16px', fontWeight: 700, cursor: body.trim() ? 'pointer' : 'default', fontSize: '0.78rem' }}>
             {sending ? '…' : 'Envoyer'}
@@ -83,7 +83,7 @@ export default function Thread({ productionId }: { productionId: string }) {
       </div>
 
       {/* Version history */}
-      <div style={{ background: '#161616', border: '1px solid #1e1e1e', borderRadius: 10, padding: 14, alignSelf: 'start' }}>
+      <div style={{ background: 'rgba(20,14,38,0.7)', border: '1px solid rgba(167,139,250,0.12)', borderRadius: 10, padding: 14, alignSelf: 'start' }}>
         <p style={{ color: 'rgba(240,235,227,0.35)', fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
           📁 Versions livrées
         </p>

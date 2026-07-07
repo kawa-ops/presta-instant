@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 
-const IN: React.CSSProperties = { background: '#0f0f0f', border: '1px solid #2a2a2a', borderRadius: 8, padding: '8px 12px', color: '#f0ebe3', fontSize: '0.82rem', width: '100%' }
+const IN: React.CSSProperties = { background: 'rgba(12,8,26,0.8)', border: '1px solid rgba(167,139,250,0.22)', borderRadius: 8, padding: '8px 12px', color: '#f0ebe3', fontSize: '0.82rem', width: '100%' }
 const LA: React.CSSProperties = { display: 'block', color: 'rgba(240,235,227,0.4)', fontSize: '0.65rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }
 
 function NameInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
@@ -53,9 +53,9 @@ function EditProfileForm({ freelancer, onSaved, onCancel }: { freelancer: any; o
   }
 
   return (
-    <div style={{ borderTop: '1px solid #1e1e1e', paddingTop: 12, marginTop: 12 }}>
+    <div style={{ borderTop: 'rgba(167,139,250,0.12) 1px solid', paddingTop: 12, marginTop: 12 }}>
       <p style={{ color: 'rgba(240,235,227,0.35)', fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Modifier le profil</p>
-      {error && <p style={{ color: '#ef4444', fontSize: '0.72rem', marginBottom: 8 }}>{error}</p>}
+      {error && <p style={{ color: '#fb7185', fontSize: '0.72rem', marginBottom: 8 }}>{error}</p>}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         <div><label style={LA}>Nom</label><NameInput value={form.name} onChange={s('name')} /></div>
         <div><label style={LA}>Email (identifiant de connexion)</label><EmailInput value={form.email} onChange={s('email')} /></div>
@@ -68,7 +68,7 @@ function EditProfileForm({ freelancer, onSaved, onCancel }: { freelancer: any; o
         <button onClick={save} disabled={saving} style={{ flex: 1, background: '#f0ebe3', color: '#0a0a0a', border: 'none', borderRadius: 7, padding: '8px', fontWeight: 700, cursor: 'pointer', fontSize: '0.75rem' }}>
           {saving ? 'Enregistrement…' : 'Enregistrer'}
         </button>
-        <button onClick={onCancel} style={{ background: 'transparent', border: '1px solid #2a2a2a', borderRadius: 7, padding: '8px 14px', color: 'rgba(240,235,227,0.4)', cursor: 'pointer', fontSize: '0.75rem' }}>Annuler</button>
+        <button onClick={onCancel} style={{ background: 'transparent', border: '1px solid rgba(167,139,250,0.22)', borderRadius: 7, padding: '8px 14px', color: 'rgba(240,235,227,0.4)', cursor: 'pointer', fontSize: '0.75rem' }}>Annuler</button>
       </div>
     </div>
   )
@@ -98,7 +98,7 @@ function RatesEditor({ freelancer, onSaved }: { freelancer: any; onSaved: () => 
   }
 
   return (
-    <div style={{ borderTop: '1px solid #1e1e1e', paddingTop: 12, marginTop: 12 }}>
+    <div style={{ borderTop: 'rgba(167,139,250,0.12) 1px solid', paddingTop: 12, marginTop: 12 }}>
       <p style={{ color: 'rgba(240,235,227,0.35)', fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
         Tarifs négociés {saved && <span style={{ color: '#22c55e' }}>✓ enregistrés</span>}
       </p>
@@ -117,7 +117,7 @@ function RatesEditor({ freelancer, onSaved }: { freelancer: any; onSaved: () => 
           </div>
         ))}
       </div>
-      <button onClick={save} disabled={saving} style={{ marginTop: 10, width: '100%', background: 'rgba(240,235,227,0.05)', border: '1px solid #2a2a2a', borderRadius: 7, padding: '7px', color: 'rgba(240,235,227,0.6)', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 600 }}>
+      <button onClick={save} disabled={saving} style={{ marginTop: 10, width: '100%', background: 'rgba(240,235,227,0.05)', border: '1px solid rgba(167,139,250,0.22)', borderRadius: 7, padding: '7px', color: 'rgba(240,235,227,0.6)', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 600 }}>
         {saving ? 'Enregistrement…' : 'Enregistrer les tarifs'}
       </button>
     </div>
@@ -185,7 +185,7 @@ export default function PrestatairesPage() {
       </div>
 
       {showNew && (
-        <div style={{ background: '#141414', border: '1px solid #2a2a2a', borderRadius: 16, padding: 24, marginBottom: 24 }}>
+        <div style={{ background: 'rgba(26,18,48,0.7)', border: '1px solid rgba(167,139,250,0.22)', borderRadius: 16, padding: 24, marginBottom: 24 }}>
           <p style={{ color: '#f0ebe3', fontWeight: 700, marginBottom: 16 }}>Nouveau prestataire</p>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div><label style={LA}>Nom *</label><NameInput value={newForm.name} onChange={v => setNewForm(f => ({ ...f, name: v }))} /></div>
@@ -199,7 +199,7 @@ export default function PrestatairesPage() {
             <button onClick={create} disabled={saving} style={{ background: '#f0ebe3', color: '#0a0a0a', border: 'none', borderRadius: 8, padding: '9px 20px', fontWeight: 700, cursor: 'pointer', fontSize: '0.82rem' }}>
               {saving ? 'Création…' : 'Créer'}
             </button>
-            <button onClick={() => setShowNew(false)} style={{ background: 'transparent', color: 'rgba(240,235,227,0.4)', border: '1px solid #2a2a2a', borderRadius: 8, padding: '9px 16px', cursor: 'pointer', fontSize: '0.82rem' }}>Annuler</button>
+            <button onClick={() => setShowNew(false)} style={{ background: 'transparent', color: 'rgba(240,235,227,0.4)', border: '1px solid rgba(167,139,250,0.22)', borderRadius: 8, padding: '9px 16px', cursor: 'pointer', fontSize: '0.82rem' }}>Annuler</button>
           </div>
         </div>
       )}
@@ -211,13 +211,13 @@ export default function PrestatairesPage() {
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
           {freelancers.map(f => (
-            <div key={f.id} style={{ background: '#141414', border: '1px solid #222', borderRadius: 14, padding: 20 }}>
+            <div key={f.id} style={{ background: 'rgba(26,18,48,0.6)', border: '1px solid rgba(167,139,250,0.16)', borderRadius: 14, padding: 20 }}>
               <div style={{ display: 'flex', alignItems: 'start', justifyContent: 'space-between', marginBottom: 12 }}>
                 <div>
                   <p style={{ color: '#f0ebe3', fontWeight: 700, fontSize: '0.9rem' }}>{f.name}</p>
                   {f.specialty && <p style={{ color: 'rgba(240,235,227,0.4)', fontSize: '0.72rem', marginTop: 2 }}>{f.specialty}</p>}
                 </div>
-                <span style={{ background: f.active ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)', color: f.active ? '#22c55e' : '#ef4444', padding: '3px 10px', borderRadius: 20, fontSize: '0.65rem', fontWeight: 600 }}>
+                <span style={{ background: f.active ? 'rgba(34,197,94,0.1)' : 'rgba(251,113,133,0.1)', color: f.active ? '#22c55e' : '#fb7185', padding: '3px 10px', borderRadius: 20, fontSize: '0.65rem', fontWeight: 600 }}>
                   {f.active ? 'Actif' : 'Inactif'}
                 </span>
               </div>
@@ -229,13 +229,13 @@ export default function PrestatairesPage() {
               </div>
 
               <div style={{ display: 'flex', gap: 8 }}>
-                <button onClick={() => toggleActive(f.id, f.active)} style={{ flex: 1, background: 'rgba(240,235,227,0.05)', border: '1px solid #2a2a2a', borderRadius: 7, padding: '7px', color: 'rgba(240,235,227,0.5)', cursor: 'pointer', fontSize: '0.72rem' }}>
+                <button onClick={() => toggleActive(f.id, f.active)} style={{ flex: 1, background: 'rgba(240,235,227,0.05)', border: '1px solid rgba(167,139,250,0.22)', borderRadius: 7, padding: '7px', color: 'rgba(240,235,227,0.5)', cursor: 'pointer', fontSize: '0.72rem' }}>
                   {f.active ? 'Désactiver' : 'Activer'}
                 </button>
                 <button onClick={() => setEditingId(editingId === f.id ? null : f.id)} style={{ background: editingId === f.id ? 'rgba(167,139,250,0.12)' : 'rgba(240,235,227,0.05)', border: `1px solid ${editingId === f.id ? 'rgba(167,139,250,0.3)' : '#2a2a2a'}`, borderRadius: 7, padding: '7px 12px', color: editingId === f.id ? '#a78bfa' : 'rgba(240,235,227,0.5)', cursor: 'pointer', fontSize: '0.72rem' }} title="Modifier le profil">✏️</button>
-                <button onClick={() => changePassword(f.id)} style={{ background: 'rgba(240,235,227,0.05)', border: '1px solid #2a2a2a', borderRadius: 7, padding: '7px 12px', color: 'rgba(240,235,227,0.5)', cursor: 'pointer', fontSize: '0.72rem' }} title="Changer le mot de passe">🔑</button>
+                <button onClick={() => changePassword(f.id)} style={{ background: 'rgba(240,235,227,0.05)', border: '1px solid rgba(167,139,250,0.22)', borderRadius: 7, padding: '7px 12px', color: 'rgba(240,235,227,0.5)', cursor: 'pointer', fontSize: '0.72rem' }} title="Changer le mot de passe">🔑</button>
                 <button onClick={() => grantBonus(f.id)} style={{ background: 'rgba(167,139,250,0.08)', border: '1px solid rgba(167,139,250,0.3)', borderRadius: 7, padding: '7px 12px', color: '#a78bfa', cursor: 'pointer', fontSize: '0.72rem' }} title="Offrir un bonus XP">🎁</button>
-                <button onClick={() => remove(f.id)} style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 7, padding: '7px 12px', color: '#ef4444', cursor: 'pointer', fontSize: '0.72rem' }}>✕</button>
+                <button onClick={() => remove(f.id)} style={{ background: 'rgba(251,113,133,0.08)', border: '1px solid rgba(251,113,133,0.2)', borderRadius: 7, padding: '7px 12px', color: '#fb7185', cursor: 'pointer', fontSize: '0.72rem' }}>✕</button>
               </div>
 
               {editingId === f.id && (

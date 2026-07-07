@@ -46,7 +46,7 @@ export default function AdminFacturationPage() {
     <div style={{ maxWidth: 900 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
         <h1 style={{ color: '#f0ebe3', fontSize: '1.4rem', fontWeight: 800 }}>Facturation</h1>
-        <a href="/api/facturation/export" style={{ background: 'rgba(240,235,227,0.05)', border: '1px solid #2a2a2a', borderRadius: 8, padding: '8px 16px', color: 'rgba(240,235,227,0.6)', fontSize: '0.78rem', fontWeight: 600, textDecoration: 'none' }}>
+        <a href="/api/facturation/export" style={{ background: 'rgba(240,235,227,0.05)', border: '1px solid rgba(167,139,250,0.22)', borderRadius: 8, padding: '8px 16px', color: 'rgba(240,235,227,0.6)', fontSize: '0.78rem', fontWeight: 600, textDecoration: 'none' }}>
           ⬇ Exporter CSV
         </a>
       </div>
@@ -57,9 +57,9 @@ export default function AdminFacturationPage() {
           <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>À payer</p>
           <p style={{ color: '#eab308', fontSize: '1.5rem', fontWeight: 800 }}>{totalPending.toLocaleString('fr-FR')} €</p>
         </div>
-        <div style={{ background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.18)', borderRadius: 12, padding: '14px 18px' }}>
+        <div style={{ background: 'rgba(165,180,252,0.06)', border: '1px solid rgba(165,180,252,0.18)', borderRadius: 12, padding: '14px 18px' }}>
           <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>Factures reçues en attente</p>
-          <p style={{ color: '#3b82f6', fontSize: '1.5rem', fontWeight: 800 }}>{invoicesWaiting}</p>
+          <p style={{ color: '#a5b4fc', fontSize: '1.5rem', fontWeight: 800 }}>{invoicesWaiting}</p>
         </div>
         <div style={{ background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.18)', borderRadius: 12, padding: '14px 18px' }}>
           <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>Total payé</p>
@@ -70,7 +70,7 @@ export default function AdminFacturationPage() {
       {loading ? (
         <p style={{ color: 'rgba(240,235,227,0.2)', textAlign: 'center', padding: 40, fontSize: '0.82rem' }}>Chargement…</p>
       ) : months.length === 0 ? (
-        <div style={{ background: '#141414', border: '1px solid #222', borderRadius: 14, padding: '40px 20px', textAlign: 'center' }}>
+        <div style={{ background: 'rgba(26,18,48,0.6)', border: '1px solid rgba(167,139,250,0.16)', borderRadius: 14, padding: '40px 20px', textAlign: 'center' }}>
           <p style={{ color: 'rgba(240,235,227,0.2)', fontSize: '0.82rem' }}>Aucune facturation pour l&apos;instant — les montants apparaissent quand une prestation d&apos;un prestataire est validée.</p>
         </div>
       ) : (
@@ -78,7 +78,7 @@ export default function AdminFacturationPage() {
           {months.map(month => (
             <div key={month}>
               <p style={{ color: 'rgba(240,235,227,0.4)', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10 }}>{monthLabel(month)}</p>
-              <div style={{ background: '#141414', border: '1px solid #222', borderRadius: 14, overflow: 'hidden' }}>
+              <div style={{ background: 'rgba(26,18,48,0.6)', border: '1px solid rgba(167,139,250,0.16)', borderRadius: 14, overflow: 'hidden' }}>
                 {byMonth[month].map((p, i) => (
                   <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '14px 20px', borderBottom: i < byMonth[month].length - 1 ? '1px solid #1a1a1a' : 'none' }}>
                     <div style={{ flex: 1 }}>
@@ -90,7 +90,7 @@ export default function AdminFacturationPage() {
 
                     {/* Invoice link */}
                     {p.invoiceUrl ? (
-                      <a href={p.invoiceUrl} target="_blank" rel="noreferrer" style={{ background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: 7, padding: '6px 12px', color: '#3b82f6', fontSize: '0.72rem', textDecoration: 'none', fontWeight: 600 }}>
+                      <a href={p.invoiceUrl} target="_blank" rel="noreferrer" style={{ background: 'rgba(165,180,252,0.1)', border: '1px solid rgba(165,180,252,0.2)', borderRadius: 7, padding: '6px 12px', color: '#a5b4fc', fontSize: '0.72rem', textDecoration: 'none', fontWeight: 600 }}>
                         📄 Facture ↗
                       </a>
                     ) : (

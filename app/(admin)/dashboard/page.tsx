@@ -15,7 +15,7 @@ function fmt(d: string | null) {
   return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })
 }
 
-const STATUS_COLORS: Record<string, string> = { a_faire: '#6b7280', en_cours: '#3b82f6', en_attente: '#eab308', revisions: '#f97316', livre: '#a78bfa', envoye_client: '#38bdf8', retours_client: '#f43f5e', valide: '#22c55e' }
+const STATUS_COLORS: Record<string, string> = { a_faire: '#8b7fb8', en_cours: '#a5b4fc', en_attente: '#c4b5fd', revisions: '#e879f9', livre: '#a78bfa', envoye_client: '#c7d2fe', retours_client: '#ec4899', valide: '#22c55e' }
 const STATUS_LABELS: Record<string, string> = { a_faire: 'À faire', en_cours: 'En cours', en_attente: 'En attente', revisions: 'Retours à faire', livre: 'À valider', envoye_client: 'Envoyé client', retours_client: 'Retours client', valide: 'Terminé' }
 
 const PRESTIGE_ICONS = ['', '✦', '✦✦', '✦✦✦', '❖']
@@ -60,7 +60,7 @@ function Particles() {
   const [dots] = useState(() => Array.from({ length: 16 }, (_, i) => ({
     left: Math.random() * 100, top: Math.random() * 100,
     size: 2 + Math.random() * 3, dur: 8 + Math.random() * 14,
-    delay: Math.random() * 8, color: i % 3 === 0 ? '#ec4899' : i % 2 === 0 ? '#a78bfa' : '#38bdf8',
+    delay: Math.random() * 8, color: i % 3 === 0 ? '#ec4899' : i % 2 === 0 ? '#a78bfa' : '#c7d2fe',
   })))
   return (
     <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', borderRadius: 24 }}>
@@ -123,22 +123,30 @@ export default function AdminDashboard() {
   const initial = firstName.charAt(0).toUpperCase() || '✦'
   const prestige = g?.prestige || 0
 
-  // Daily missions — auto-checked from real data
+  // Objectives generated from real production data — never manually checkable
   const missions = stats ? [
-    { label: 'Terminer 2 projets', done: s.completedToday >= 2, progress: `${Math.min(s.completedToday, 2)}/2`, xp: 30 },
-    { label: 'Valider les livraisons en attente', done: s.pendingValidations === 0, progress: s.pendingValidations > 0 ? `${s.pendingValidations} restante${s.pendingValidations > 1 ? 's' : ''}` : '✓', xp: 20 },
-    { label: 'Inbox zéro', done: (s.notifications || []).length === 0, progress: (s.notifications || []).length > 0 ? `${s.notifications.length} à traiter` : '✓', xp: 10 },
     { label: 'Aucun projet en retard', done: s.overdue === 0, progress: s.overdue > 0 ? `${s.overdue} en retard` : '✓', xp: 15 },
+    { label: 'Livrer les projets du jour', done: s.dueToday === 0, progress: s.dueToday > 0 ? `${s.dueToday} restant${s.dueToday > 1 ? 's' : ''}` : '✓', xp: 25 },
+    { label: 'Valider les livraisons prestataires', done: s.pendingValidations === 0, progress: s.pendingValidations > 0 ? `${s.pendingValidations} en attente` : '✓', xp: 20 },
+    { label: 'Traiter les retours clients', done: s.retoursClient === 0, progress: s.retoursClient > 0 ? `${s.retoursClient} à traiter` : '✓', xp: 20 },
   ] : []
   const missionsDone = missions.filter(m => m.done).length
 
   const kpis = [
-    { label: 'En cours', value: s.inProgress, color: '#818cf8', href: '/productions?status=en_cours' },
+    { label: 'Projets en cours', value: s.inProgress, color: '#a78bfa', href: '/productions?status=en_cours' },
     { label: 'En retard', value: s.overdue, color: '#fb7185', href: '/productions?overdue=true' },
-    { label: "Aujourd'hui", value: s.dueToday, color: '#d9a94e', href: '/semaine' },
-    { label: 'Terminés/mois', value: s.completedMonth, color: '#6ee7b7', href: '/archives' },
-    { label: 'Prestataires', value: s.activeFreelancers, color: '#ec4899', href: '/prestataires' },
+    { label: "À rendre aujourd'hui", value: s.dueToday, color: '#e879f9', href: '/semaine' },
+    { label: 'Terminés ce mois', value: s.completedMonth, color: '#6ee7b7', href: '/archives' },
   ]
+
+  // Production health — replaces the old activity feed with something actionable
+  const health = stats ? [
+    { label: 'En cours', value: s.inProgress, color: '#a78bfa' },
+    { label: 'À valider', value: s.pendingValidations, color: '#d8b4fe' },
+    { label: 'Retours clients', value: s.retoursClient, color: '#ec4899' },
+    { label: 'En retard', value: s.overdue, color: '#fb7185' },
+  ] : []
+  const healthMax = Math.max(1, ...health.map(h => Number(h.value) || 0))
 
   return (
     <div style={{ position: 'relative', width: '100%', maxWidth: 1240, minHeight: '90vh' }}>
@@ -213,7 +221,7 @@ export default function AdminDashboard() {
                   <>
                     <span style={{ background: 'linear-gradient(90deg, rgba(167,139,250,0.2), rgba(236,72,153,0.15))', border: '1px solid rgba(167,139,250,0.35)', color: '#c4b5fd', padding: '3px 12px', borderRadius: 20, fontSize: '0.78rem', fontWeight: 800 }}>{g.rank}</span>
                     <span style={{ color: 'rgba(240,235,227,0.5)', fontSize: '0.78rem', fontWeight: 700 }}>Niveau {g.level}{prestige > 0 ? ` · Prestige ${'I'.repeat(Math.min(prestige, 3))}` : ''}</span>
-                    {g.streak >= 2 && <span style={{ color: '#f97316', fontSize: '0.85rem', fontWeight: 900 }}>🔥 {g.streak} jours</span>}
+                    {g.streak >= 2 && <span style={{ color: '#e879f9', fontSize: '0.85rem', fontWeight: 900 }}>🔥 {g.streak} jours</span>}
                   </>
                 )}
               </div>
@@ -298,7 +306,7 @@ export default function AdminDashboard() {
             <div style={{ display: 'flex', gap: 18, marginTop: 12 }}>
               <div><p style={{ color: '#22c55e', fontSize: '1.05rem', fontWeight: 900, lineHeight: 1 }}>{s.completedToday}</p><p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.62rem' }}>terminés aujourd&apos;hui</p></div>
               <div><p style={{ color: '#c4b5fd', fontSize: '1.05rem', fontWeight: 900, lineHeight: 1 }}>+{g?.xpWeek ?? 0}</p><p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.62rem' }}>XP cette semaine</p></div>
-              <div><p style={{ color: '#f97316', fontSize: '1.05rem', fontWeight: 900, lineHeight: 1 }}>{g?.streak ?? 0}j</p><p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.62rem' }}>streak d&apos;activité</p></div>
+              <div><p style={{ color: '#e879f9', fontSize: '1.05rem', fontWeight: 900, lineHeight: 1 }}>{g?.streak ?? 0}j</p><p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.62rem' }}>streak d&apos;activité</p></div>
             </div>
           </div>
 
@@ -331,11 +339,11 @@ export default function AdminDashboard() {
         </div>
 
         {/* ================= KPIs — dense row ================= */}
-        <div className="dash-fade" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10, marginBottom: 14, animationDelay: '0.12s' }}>
+        <div className="dash-fade" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10, marginBottom: 14, animationDelay: '0.12s' }}>
           {kpis.map(k => (
-            <Link key={k.label} href={k.href} className="dash-card-hover" style={{ ...glass, padding: '14px 16px', textDecoration: 'none', borderColor: `${k.color}30` }}>
-              <p style={{ color: k.color, fontSize: '1.6rem', fontWeight: 900, lineHeight: 1, textShadow: `0 0 18px ${k.color}50` }}>{k.value}</p>
-              <p style={{ color: 'rgba(240,235,227,0.45)', fontSize: '0.66rem', marginTop: 5, fontWeight: 600 }}>{k.label}</p>
+            <Link key={k.label} href={k.href} className="dash-card-hover" style={{ ...glass, padding: '15px 20px', textDecoration: 'none', borderColor: `${k.color}30`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <p style={{ color: 'rgba(240,235,227,0.55)', fontSize: '0.78rem', fontWeight: 700 }}>{k.label}</p>
+              <p style={{ color: k.color, fontSize: '1.7rem', fontWeight: 900, lineHeight: 1, textShadow: `0 0 18px ${k.color}50` }}>{k.value}</p>
             </Link>
           ))}
         </div>
@@ -349,6 +357,7 @@ export default function AdminDashboard() {
             {s.dueTomorrow > 0 && <p style={{ color: '#e0a37a', fontSize: '0.78rem', fontWeight: 700 }}>◐ {s.dueTomorrow} demain</p>}
             {s.pendingValidations > 0 && <p style={{ color: '#a78bfa', fontSize: '0.78rem', fontWeight: 700 }}>🟣 {s.pendingValidations} à valider</p>}
             {s.retoursClient > 0 && <p style={{ color: '#ec4899', fontSize: '0.78rem', fontWeight: 700 }}>💬 {s.retoursClient} retours client</p>}
+            <p style={{ color: 'rgba(240,235,227,0.4)', fontSize: '0.78rem', fontWeight: 600 }}>👥 {s.activeFreelancers} prestataire{s.activeFreelancers > 1 ? 's' : ''} actif{s.activeFreelancers > 1 ? 's' : ''}</p>
             <Link href="/semaine" style={{ color: 'rgba(240,235,227,0.35)', fontSize: '0.7rem', textDecoration: 'none', marginLeft: 'auto' }}>Planning →</Link>
           </div>
         )}
@@ -372,7 +381,7 @@ export default function AdminDashboard() {
                   }}>
                     {popping && <MiniConfetti />}
                     <p style={{ color: '#f0ebe3', fontSize: '0.78rem', flex: 1 }}>{n.message}</p>
-                    <Link href={title ? `/productions?focus=${encodeURIComponent(title)}` : (n.link || '/productions')} style={{ background: 'rgba(56,189,248,0.1)', border: '1px solid rgba(56,189,248,0.3)', borderRadius: 6, padding: '2px 10px', color: '#38bdf8', fontSize: '0.66rem', textDecoration: 'none', fontWeight: 700 }}>👁 Voir</Link>
+                    <Link href={title ? `/productions?focus=${encodeURIComponent(title)}` : (n.link || '/productions')} style={{ background: 'rgba(199,210,254,0.1)', border: '1px solid rgba(199,210,254,0.3)', borderRadius: 6, padding: '2px 10px', color: '#c7d2fe', fontSize: '0.66rem', textDecoration: 'none', fontWeight: 700 }}>👁 Voir</Link>
                     <button onClick={() => dismissNotif(n.id)} disabled={popping} style={{ background: popping ? 'rgba(34,197,94,0.25)' : 'rgba(240,235,227,0.06)', border: `1px solid ${popping ? 'rgba(34,197,94,0.5)' : 'rgba(167,139,250,0.2)'}`, borderRadius: 6, padding: '2px 10px', color: popping ? '#22c55e' : 'rgba(240,235,227,0.45)', cursor: 'pointer', fontSize: '0.66rem', fontWeight: 700 }}>✓</button>
                   </div>
                 )
@@ -401,24 +410,33 @@ export default function AdminDashboard() {
                         <p style={{ color: '#f0ebe3', fontSize: '0.78rem', fontWeight: 600 }}>{p.title}</p>
                         <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.66rem' }}>{p.client} · {p.assignedTo?.name || '—'}</p>
                       </div>
-                      <span style={{ background: `${STATUS_COLORS[p.status] || '#6b7280'}18`, color: STATUS_COLORS[p.status] || '#6b7280', padding: '1px 8px', borderRadius: 20, fontSize: '0.64rem', fontWeight: 700, whiteSpace: 'nowrap' }}>{STATUS_LABELS[p.status] || p.status}</span>
-                      <span style={{ color: isOverdue ? '#ef4444' : '#eab308', fontSize: '0.68rem', fontWeight: 800, whiteSpace: 'nowrap' }}>{fmt(p.deadline)}</span>
+                      <span style={{ background: `${STATUS_COLORS[p.status] || '#8b7fb8'}18`, color: STATUS_COLORS[p.status] || '#8b7fb8', padding: '1px 8px', borderRadius: 20, fontSize: '0.64rem', fontWeight: 700, whiteSpace: 'nowrap' }}>{STATUS_LABELS[p.status] || p.status}</span>
+                      <span style={{ color: isOverdue ? '#fb7185' : '#eab308', fontSize: '0.68rem', fontWeight: 800, whiteSpace: 'nowrap' }}>{fmt(p.deadline)}</span>
                     </Link>
                   )
                 })
               )}
             </div>
 
-            {/* Activité récente — full width */}
-            <div style={{ ...glass, overflow: 'hidden' }}>
-              <p style={{ color: '#f0ebe3', fontSize: '0.78rem', fontWeight: 700, padding: '10px 16px', borderBottom: '1px solid rgba(167,139,250,0.12)' }}>Activité récente</p>
-              {(s.recentActivity as any[]).slice(0, 6).map((a: any) => (
-                <div key={a.id} style={{ padding: '7px 16px', borderBottom: '1px solid rgba(167,139,250,0.06)' }}>
-                  <p style={{ color: 'rgba(240,235,227,0.6)', fontSize: '0.72rem', lineHeight: 1.35 }}>
-                    <strong style={{ color: '#f0ebe3' }}>{a.actorName}</strong> {a.action}{a.target ? <span style={{ color: 'rgba(240,235,227,0.35)' }}> — {a.target}</span> : null}
-                  </p>
-                </div>
-              ))}
+            {/* Santé de la production — remplaces the old activity feed */}
+            <div style={{ ...glass, padding: '14px 20px' }}>
+              <p style={{ color: '#f0ebe3', fontSize: '0.78rem', fontWeight: 700, marginBottom: 12 }}>📊 Santé de la production</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+                {health.map(h => (
+                  <div key={h.label}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+                      <p style={{ color: 'rgba(240,235,227,0.5)', fontSize: '0.7rem', fontWeight: 600 }}>{h.label}</p>
+                      <p style={{ color: h.color, fontSize: '0.72rem', fontWeight: 900 }}>{h.value}</p>
+                    </div>
+                    <div style={{ height: 6, background: 'rgba(0,0,0,0.4)', borderRadius: 5, overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: `${Math.max(((Number(h.value) || 0) / healthMax) * 100, Number(h.value) > 0 ? 5 : 0)}%`, background: `linear-gradient(90deg, ${h.color}70, ${h.color})`, borderRadius: 5, transition: 'width 0.8s cubic-bezier(0.16,1,0.3,1)' }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {s.overdue === 0 && s.retoursClient === 0 && s.pendingValidations === 0 && (
+                <p style={{ color: '#6ee7b7', fontSize: '0.72rem', fontWeight: 700, marginTop: 10 }}>✓ Production parfaitement saine</p>
+              )}
             </div>
           </div>
 

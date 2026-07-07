@@ -33,11 +33,11 @@ export default function LoginPage() {
           <p style={{ color: 'rgba(240,235,227,0.35)', fontSize: '0.8rem' }}>Gestion post-production</p>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ background: '#141414', border: '1px solid #222', borderRadius: 16, padding: 32 }}>
+        <form onSubmit={handleSubmit} style={{ background: 'rgba(26,18,48,0.6)', border: '1px solid rgba(167,139,250,0.16)', borderRadius: 16, padding: 32 }}>
           <h1 style={{ color: '#f0ebe3', fontSize: '1.1rem', fontWeight: 700, marginBottom: 24, textAlign: 'center' }}>Connexion</h1>
 
           {error && (
-            <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 8, padding: '10px 14px', marginBottom: 16, color: '#ef4444', fontSize: '0.8rem' }}>
+            <div style={{ background: 'rgba(251,113,133,0.1)', border: '1px solid rgba(251,113,133,0.2)', borderRadius: 8, padding: '10px 14px', marginBottom: 16, color: '#fb7185', fontSize: '0.8rem' }}>
               {error}
             </div>
           )}
@@ -62,4 +62,4 @@ export default function LoginPage() {
 }
 
 const LS: React.CSSProperties = { display: 'block', color: 'rgba(240,235,227,0.4)', fontSize: '0.68rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }
-const IN: React.CSSProperties = { width: '100%', background: '#0f0f0f', border: '1px solid #2a2a2a', borderRadius: 8, padding: '10px 14px', color: '#f0ebe3', fontSize: '0.85rem' }
+const IN: React.CSSProperties = { width: '100%', background: 'rgba(12,8,26,0.8)', border: '1px solid rgba(167,139,250,0.22)', borderRadius: 8, padding: '10px 14px', color: '#f0ebe3', fontSize: '0.85rem' }

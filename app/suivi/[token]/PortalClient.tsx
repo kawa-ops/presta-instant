@@ -42,12 +42,12 @@ export default function PortalClient({ prod, events, versionCount, token }: {
   // Confetti on approval
   const confetti = approved ? Array.from({ length: 24 }, (_, i) => ({
     left: Math.random() * 100, delay: Math.random() * 0.4,
-    color: ['#22c55e', '#a78bfa', '#eab308', '#38bdf8', '#f0ebe3'][i % 5],
+    color: ['#22c55e', '#a78bfa', '#eab308', '#c7d2fe', '#f0ebe3'][i % 5],
     size: 5 + Math.random() * 5,
   })) : []
 
   return (
-    <div style={{ background: '#141414', border: '1px solid #222', borderRadius: 16, padding: 32, position: 'relative', overflow: 'hidden' }}>
+    <div style={{ background: 'rgba(26,18,48,0.6)', border: '1px solid rgba(167,139,250,0.16)', borderRadius: 16, padding: 32, position: 'relative', overflow: 'hidden' }}>
       {approved && (
         <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
           <style>{`@keyframes portal-fall { 0% { transform: translateY(-20px) rotate(0deg); opacity: 1; } 100% { transform: translateY(400px) rotate(360deg); opacity: 0; } }`}</style>
@@ -75,7 +75,7 @@ export default function PortalClient({ prod, events, versionCount, token }: {
 
       {/* Milestone dates from real events */}
       {events.length > 0 && (
-        <div style={{ marginTop: 20, borderTop: '1px solid #1e1e1e', paddingTop: 16 }}>
+        <div style={{ marginTop: 20, borderTop: 'rgba(167,139,250,0.12) 1px solid', paddingTop: 16 }}>
           <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Historique</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {events.map((e: any) => (
@@ -90,7 +90,7 @@ export default function PortalClient({ prod, events, versionCount, token }: {
 
       {/* ===== Approved state — premium confirmation ===== */}
       {approved && (
-        <div style={{ marginTop: 28, background: 'linear-gradient(135deg, rgba(34,197,94,0.09), rgba(56,189,248,0.05))', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 16, padding: '32px 24px', textAlign: 'center' }}>
+        <div style={{ marginTop: 28, background: 'linear-gradient(135deg, rgba(34,197,94,0.09), rgba(199,210,254,0.05))', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 16, padding: '32px 24px', textAlign: 'center' }}>
           <p style={{ fontSize: '2.2rem', marginBottom: 10 }}>🎉</p>
           <p style={{ color: '#22c55e', fontSize: '1.15rem', fontWeight: 800, marginBottom: 10 }}>Parfait !</p>
           <p style={{ color: 'rgba(240,235,227,0.7)', fontSize: '0.88rem', lineHeight: 1.6 }}>
@@ -99,7 +99,7 @@ export default function PortalClient({ prod, events, versionCount, token }: {
             Vous recevrez le lien de livraison très prochainement.
           </p>
           {prod.status === 'valide' && (
-            <p style={{ color: '#38bdf8', fontSize: '0.8rem', fontWeight: 700, marginTop: 14 }}>📦 Version finale envoyée — vérifiez vos messages !</p>
+            <p style={{ color: '#c7d2fe', fontSize: '0.8rem', fontWeight: 700, marginTop: 14 }}>📦 Version finale envoyée — vérifiez vos messages !</p>
           )}
         </div>
       )}
@@ -107,8 +107,8 @@ export default function PortalClient({ prod, events, versionCount, token }: {
       {/* ===== Video ready — review flow ===== */}
       {videoReady && !approved && mode !== 'sent-feedback' && (
         <div style={{ marginTop: 28 }}>
-          <div style={{ background: 'rgba(56,189,248,0.06)', border: '1px solid rgba(56,189,248,0.25)', borderRadius: 14, padding: '24px 22px', textAlign: 'center', marginBottom: 16 }}>
-            <p style={{ color: '#38bdf8', fontSize: '1rem', fontWeight: 800, marginBottom: 4 }}>🎬 Votre vidéo est prête !</p>
+          <div style={{ background: 'rgba(199,210,254,0.06)', border: '1px solid rgba(199,210,254,0.25)', borderRadius: 14, padding: '24px 22px', textAlign: 'center', marginBottom: 16 }}>
+            <p style={{ color: '#c7d2fe', fontSize: '1rem', fontWeight: 800, marginBottom: 4 }}>🎬 Votre vidéo est prête !</p>
             {versionCount > 1 && <p style={{ color: 'rgba(240,235,227,0.4)', fontSize: '0.75rem', marginBottom: 12 }}>Version actuellement en révision : <strong style={{ color: '#f0ebe3' }}>V{versionCount}</strong></p>}
 
             {isFrameio ? (
@@ -118,12 +118,12 @@ export default function PortalClient({ prod, events, versionCount, token }: {
                   Laissez tous vos commentaires <strong style={{ color: '#f0ebe3' }}>directement sur la timeline</strong>, à la seconde exacte où une modification est souhaitée.<br />
                   Une fois votre relecture terminée, revenez ici et cliquez sur « Ma relecture est terminée ».
                 </p>
-                <a href={prod.deliveryLink} target="_blank" rel="noreferrer" style={{ display: 'inline-block', background: '#38bdf8', color: '#0a0a0a', borderRadius: 10, padding: '11px 24px', fontWeight: 800, fontSize: '0.85rem', textDecoration: 'none' }}>
+                <a href={prod.deliveryLink} target="_blank" rel="noreferrer" style={{ display: 'inline-block', background: '#c7d2fe', color: '#0a0a0a', borderRadius: 10, padding: '11px 24px', fontWeight: 800, fontSize: '0.85rem', textDecoration: 'none' }}>
                   ▶ Regarder ma vidéo sur Frame.io ↗
                 </a>
               </div>
             ) : (
-              <a href={prod.deliveryLink} target="_blank" rel="noreferrer" style={{ display: 'inline-block', background: '#38bdf8', color: '#0a0a0a', borderRadius: 10, padding: '13px 28px', fontWeight: 800, fontSize: '0.9rem', textDecoration: 'none', marginTop: 8 }}>
+              <a href={prod.deliveryLink} target="_blank" rel="noreferrer" style={{ display: 'inline-block', background: '#c7d2fe', color: '#0a0a0a', borderRadius: 10, padding: '13px 28px', fontWeight: 800, fontSize: '0.9rem', textDecoration: 'none', marginTop: 8 }}>
                 ▶ Regarder ma vidéo
               </a>
             )}
@@ -136,11 +136,11 @@ export default function PortalClient({ prod, events, versionCount, token }: {
                 ✅ J&apos;approuve cette version
               </button>
               {isFrameio ? (
-                <button onClick={() => act('frameio_done')} disabled={sending} style={{ background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.3)', borderRadius: 12, padding: '16px 14px', color: '#f97316', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 800 }}>
+                <button onClick={() => act('frameio_done')} disabled={sending} style={{ background: 'rgba(232,121,249,0.08)', border: '1px solid rgba(232,121,249,0.3)', borderRadius: 12, padding: '16px 14px', color: '#e879f9', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 800 }}>
                   ✏️ Ma relecture est terminée
                 </button>
               ) : (
-                <button onClick={() => setMode('feedback')} disabled={sending} style={{ background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.3)', borderRadius: 12, padding: '16px 14px', color: '#f97316', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 800 }}>
+                <button onClick={() => setMode('feedback')} disabled={sending} style={{ background: 'rgba(232,121,249,0.08)', border: '1px solid rgba(232,121,249,0.3)', borderRadius: 12, padding: '16px 14px', color: '#e879f9', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 800 }}>
                   ✏️ J&apos;ai des modifications à demander
                 </button>
               )}
@@ -148,19 +148,19 @@ export default function PortalClient({ prod, events, versionCount, token }: {
           )}
 
           {mode === 'feedback' && (
-            <div style={{ background: 'rgba(249,115,22,0.04)', border: '1px solid rgba(249,115,22,0.25)', borderRadius: 12, padding: 16 }}>
+            <div style={{ background: 'rgba(232,121,249,0.04)', border: '1px solid rgba(232,121,249,0.25)', borderRadius: 12, padding: 16 }}>
               <p style={{ color: 'rgba(240,235,227,0.5)', fontSize: '0.78rem', marginBottom: 10 }}>Décrivez toutes les modifications souhaitées (avec les timecodes si possible) :</p>
               <textarea
                 value={comments}
                 onChange={e => setComments(e.target.value)}
                 placeholder={"Ex :\n- Changer la musique à 0:42\n- Ajouter plus de plans du public\n- Raccourcir l'intro"}
-                style={{ width: '100%', minHeight: 110, background: '#0f0f0f', border: '1px solid #2a2a2a', borderRadius: 10, padding: '12px 14px', color: '#f0ebe3', fontSize: '0.85rem', resize: 'vertical', boxSizing: 'border-box' }}
+                style={{ width: '100%', minHeight: 110, background: 'rgba(12,8,26,0.8)', border: '1px solid rgba(167,139,250,0.22)', borderRadius: 10, padding: '12px 14px', color: '#f0ebe3', fontSize: '0.85rem', resize: 'vertical', boxSizing: 'border-box' }}
               />
               <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
-                <button onClick={() => act('feedback')} disabled={sending || !comments.trim()} style={{ background: comments.trim() ? '#f97316' : 'rgba(240,235,227,0.08)', color: comments.trim() ? '#0a0a0a' : 'rgba(240,235,227,0.3)', border: 'none', borderRadius: 10, padding: '11px 22px', fontWeight: 800, cursor: comments.trim() ? 'pointer' : 'default', fontSize: '0.82rem' }}>
+                <button onClick={() => act('feedback')} disabled={sending || !comments.trim()} style={{ background: comments.trim() ? '#e879f9' : 'rgba(240,235,227,0.08)', color: comments.trim() ? '#0a0a0a' : 'rgba(240,235,227,0.3)', border: 'none', borderRadius: 10, padding: '11px 22px', fontWeight: 800, cursor: comments.trim() ? 'pointer' : 'default', fontSize: '0.82rem' }}>
                   {sending ? 'Envoi…' : 'Envoyer mes retours'}
                 </button>
-                <button onClick={() => setMode('idle')} style={{ background: 'transparent', border: '1px solid #2a2a2a', borderRadius: 10, padding: '11px 16px', color: 'rgba(240,235,227,0.4)', cursor: 'pointer', fontSize: '0.82rem' }}>Annuler</button>
+                <button onClick={() => setMode('idle')} style={{ background: 'transparent', border: '1px solid rgba(167,139,250,0.22)', borderRadius: 10, padding: '11px 16px', color: 'rgba(240,235,227,0.4)', cursor: 'pointer', fontSize: '0.82rem' }}>Annuler</button>
               </div>
             </div>
           )}
@@ -169,8 +169,8 @@ export default function PortalClient({ prod, events, versionCount, token }: {
 
       {/* Feedback sent confirmation */}
       {mode === 'sent-feedback' && (
-        <div style={{ marginTop: 24, background: 'rgba(249,115,22,0.06)', border: '1px solid rgba(249,115,22,0.25)', borderRadius: 14, padding: '22px', textAlign: 'center' }}>
-          <p style={{ color: '#f97316', fontSize: '0.95rem', fontWeight: 800, marginBottom: 6 }}>✓ Retours bien reçus !</p>
+        <div style={{ marginTop: 24, background: 'rgba(232,121,249,0.06)', border: '1px solid rgba(232,121,249,0.25)', borderRadius: 14, padding: '22px', textAlign: 'center' }}>
+          <p style={{ color: '#e879f9', fontSize: '0.95rem', fontWeight: 800, marginBottom: 6 }}>✓ Retours bien reçus !</p>
           <p style={{ color: 'rgba(240,235,227,0.55)', fontSize: '0.82rem', lineHeight: 1.5 }}>
             Notre équipe travaille sur vos modifications.<br />Vous serez informé dès que la nouvelle version est disponible sur cette page.
           </p>
@@ -178,7 +178,7 @@ export default function PortalClient({ prod, events, versionCount, token }: {
       )}
 
       {prod.status === 'retours_client' && mode === 'idle' && !videoReady && (
-        <p style={{ color: '#f97316', fontSize: '0.8rem', marginTop: 20, textAlign: 'center' }}>💬 Vos retours ont été reçus — nouvelle version en préparation.</p>
+        <p style={{ color: '#e879f9', fontSize: '0.8rem', marginTop: 20, textAlign: 'center' }}>💬 Vos retours ont été reçus — nouvelle version en préparation.</p>
       )}
     </div>
   )
