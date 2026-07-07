@@ -3,18 +3,41 @@ import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 import { useCached } from '@/lib/useCached'
-import GamifyCard from '@/components/GamifyCard'
 
-// Small confetti burst rendered inside a notification row on dismiss
+// ============================================================================
+// DASHBOARD — immersive gamified command center (this page only).
+// Purple identity, glassmorphism, animated progress, RPG player card.
+// Every other page stays clean and neutral.
+// ============================================================================
+
+function fmt(d: string | null) {
+  if (!d) return '—'
+  return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })
+}
+
+const STATUS_COLORS: Record<string, string> = { a_faire: '#6b7280', en_cours: '#3b82f6', en_attente: '#eab308', revisions: '#f97316', livre: '#a78bfa', envoye_client: '#38bdf8', retours_client: '#f43f5e', valide: '#22c55e' }
+const STATUS_LABELS: Record<string, string> = { a_faire: 'À faire', en_cours: 'En cours', en_attente: 'En attente', revisions: 'Retours à faire', livre: 'À valider', envoye_client: 'Envoyé client', retours_client: 'Retours client', valide: 'Terminé' }
+
+const PRESTIGE_ICONS = ['', '✦', '✦✦', '✦✦✦', '❖']
+
+// Glass card style used everywhere on this page
+const glass: React.CSSProperties = {
+  background: 'rgba(26, 18, 48, 0.65)',
+  backdropFilter: 'blur(14px)',
+  WebkitBackdropFilter: 'blur(14px)',
+  border: '1px solid rgba(167,139,250,0.18)',
+  borderRadius: 18,
+  boxShadow: '0 8px 32px rgba(0,0,0,0.35)',
+}
+
 function MiniConfetti() {
-  const colors = ['#22c55e', '#a78bfa', '#eab308', '#3b82f6', '#f0ebe3']
+  const colors = ['#22c55e', '#a78bfa', '#eab308', '#ec4899', '#f0ebe3']
   const dots = Array.from({ length: 14 }, (_, i) => ({
     left: 10 + Math.random() * 80, delay: Math.random() * 0.1,
     color: colors[i % colors.length], tx: (Math.random() - 0.5) * 100, size: 3 + Math.random() * 4,
   }))
   return (
     <div style={{ position: 'absolute', inset: 0, overflow: 'visible', pointerEvents: 'none' }}>
-      <style>{`@keyframes notif-pop { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-50px) translateX(var(--tx)) scale(0.3); opacity: 0; } }`}</style>
       {dots.map((d, i) => (
         <span key={i} style={{
           position: 'absolute', bottom: 4, left: `${d.left}%`, width: d.size, height: d.size,
@@ -27,40 +50,37 @@ function MiniConfetti() {
   )
 }
 
-function fmt(d: string | null) {
-  if (!d) return '—'
-  return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })
-}
-
-function IconClock() {
-  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-}
-function IconAlert() {
-  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-}
-function IconCalendar() {
-  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-}
-function IconCheck() {
-  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-}
-function IconUsers() {
-  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-}
-
-const STATUS_COLORS: Record<string, string> = { a_faire: '#6b7280', en_cours: '#3b82f6', en_attente: '#eab308', revisions: '#f97316', livre: '#a78bfa', envoye_client: '#38bdf8', retours_client: '#f43f5e', valide: '#22c55e' }
-const STATUS_LABELS: Record<string, string> = { a_faire: 'À faire', en_cours: 'En cours', en_attente: 'En attente', revisions: 'Retours à faire', livre: 'À valider', envoye_client: 'Envoyé client', retours_client: 'Retours client', valide: 'Terminé' }
-
-// Extract the project title from a notification message (« … » or "…")
 function extractTitle(message: string): string | null {
   const m = message.match(/[«"]([^»"]+)[»"]/)
   return m ? m[1].trim() : null
 }
 
+// Ambient floating particles
+function Particles() {
+  const [dots] = useState(() => Array.from({ length: 16 }, (_, i) => ({
+    left: Math.random() * 100, top: Math.random() * 100,
+    size: 2 + Math.random() * 3, dur: 8 + Math.random() * 14,
+    delay: Math.random() * 8, color: i % 3 === 0 ? '#ec4899' : i % 2 === 0 ? '#a78bfa' : '#38bdf8',
+  })))
+  return (
+    <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', borderRadius: 24 }}>
+      {dots.map((d, i) => (
+        <span key={i} style={{
+          position: 'absolute', left: `${d.left}%`, top: `${d.top}%`,
+          width: d.size, height: d.size, background: d.color, borderRadius: '50%',
+          opacity: 0.35, filter: 'blur(0.5px)',
+          animation: `particle-drift ${d.dur}s ease-in-out ${d.delay}s infinite`,
+        }} />
+      ))}
+    </div>
+  )
+}
+
 export default function AdminDashboard() {
   const { data: session } = useSession()
-  // Paints instantly from session cache, refreshes in the background
   const { data: stats, refresh, mutate } = useCached<any>('stats', '/api/stats')
+  const { data: g, refresh: refreshG } = useCached<any>('gamify', '/api/gamify/me')
+  const { data: board, refresh: refreshBoard } = useCached<any[]>('leaderboard', '/api/gamify/leaderboard')
   const [poppingNotif, setPoppingNotif] = useState<string | null>(null)
   const [brief, setBrief] = useState<any>(null)
   const [briefOpen, setBriefOpen] = useState(false)
@@ -72,16 +92,10 @@ export default function AdminDashboard() {
     if (d && !d.error) setBrief(d)
     setBriefLoading(false)
   }
-
-  function toggleBrief() {
-    if (!briefOpen) loadBrief()
-    setBriefOpen(o => !o)
-  }
+  function toggleBrief() { if (!briefOpen) loadBrief(); setBriefOpen(o => !o) }
 
   useEffect(() => {
-    // Auto-refresh: every 15s, on tab focus, and instantly on live events.
-    // The AI brief re-generates too, so recommendations stay current.
-    const refreshAll = () => { refresh(); if (briefOpen) loadBrief() }
+    const refreshAll = () => { refresh(); refreshG(); refreshBoard(); if (briefOpen) loadBrief() }
     const interval = setInterval(refreshAll, 15000)
     window.addEventListener('focus', refreshAll)
     document.addEventListener('visibilitychange', refreshAll)
@@ -93,10 +107,9 @@ export default function AdminDashboard() {
       window.removeEventListener('live-refresh', refreshAll)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [refresh, briefOpen])
+  }, [refresh, refreshG, refreshBoard, briefOpen])
 
   function dismissNotif(id: string) {
-    // Instant: confetti burst, then remove locally — server sync in background
     setPoppingNotif(id)
     fetch('/api/notifications', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) }).catch(() => {})
     setTimeout(() => {
@@ -105,225 +118,389 @@ export default function AdminDashboard() {
     }, 550)
   }
 
-  const s = stats || { inProgress: '·', overdue: '·', dueToday: '·', dueTomorrow: '·', completedMonth: '·', activeFreelancers: '·', totalProds: '·', recentActivity: [], urgentProds: [], recentProds: [] }
+  const s = stats || { inProgress: '·', overdue: 0, dueToday: 0, dueTomorrow: 0, completedMonth: '·', completedWeek: 0, completedToday: 0, pendingValidations: 0, retoursClient: 0, activeFreelancers: '·', totalProds: '·', recentActivity: [], urgentProds: [], recentProds: [], notifications: [] }
+  const firstName = session?.user?.name?.split(' ')[0] || ''
+  const initial = firstName.charAt(0).toUpperCase() || '✦'
+  const prestige = g?.prestige || 0
+
+  // Daily missions — auto-checked from real data
+  const missions = stats ? [
+    { label: 'Terminer 2 projets', done: s.completedToday >= 2, progress: `${Math.min(s.completedToday, 2)}/2`, xp: 30 },
+    { label: 'Valider les livraisons en attente', done: s.pendingValidations === 0, progress: s.pendingValidations > 0 ? `${s.pendingValidations} restante${s.pendingValidations > 1 ? 's' : ''}` : '✓', xp: 20 },
+    { label: 'Inbox zéro', done: (s.notifications || []).length === 0, progress: (s.notifications || []).length > 0 ? `${s.notifications.length} à traiter` : '✓', xp: 10 },
+    { label: 'Aucun projet en retard', done: s.overdue === 0, progress: s.overdue > 0 ? `${s.overdue} en retard` : '✓', xp: 15 },
+  ] : []
+  const missionsDone = missions.filter(m => m.done).length
 
   const kpis = [
-    { label: 'Projets en cours', value: s.inProgress, sub: 'en production', color: '#3b82f6', bg: 'rgba(59,130,246,0.08)', border: 'rgba(59,130,246,0.2)', icon: <IconClock />, href: '/productions?status=en_cours' },
-    { label: 'Projets en retard', value: s.overdue, sub: 'deadline dépassée', color: '#ef4444', bg: 'rgba(239,68,68,0.08)', border: 'rgba(239,68,68,0.2)', icon: <IconAlert />, href: '/productions?overdue=true' },
-    { label: 'À rendre aujourd\'hui', value: s.dueToday, sub: 'deadline ce jour', color: '#eab308', bg: 'rgba(234,179,8,0.08)', border: 'rgba(234,179,8,0.2)', icon: <IconCalendar />, href: '/productions?due=today' },
-    { label: 'À rendre demain', value: s.dueTomorrow, sub: 'deadline demain', color: '#f97316', bg: 'rgba(249,115,22,0.08)', border: 'rgba(249,115,22,0.2)', icon: <IconCalendar />, href: '/productions?due=tomorrow' },
-    { label: 'Terminés ce mois', value: s.completedMonth, sub: 'validés ce mois', color: '#22c55e', bg: 'rgba(34,197,94,0.08)', border: 'rgba(34,197,94,0.2)', icon: <IconCheck />, href: '/archives' },
-    { label: 'Prestataires actifs', value: s.activeFreelancers, sub: 'freelancers disponibles', color: '#a78bfa', bg: 'rgba(167,139,250,0.08)', border: 'rgba(167,139,250,0.2)', icon: <IconUsers />, href: '/prestataires' },
+    { label: 'En cours', value: s.inProgress, color: '#3b82f6', href: '/productions?status=en_cours' },
+    { label: 'En retard', value: s.overdue, color: '#ef4444', href: '/productions?overdue=true' },
+    { label: "Aujourd'hui", value: s.dueToday, color: '#eab308', href: '/semaine' },
+    { label: 'Demain', value: s.dueTomorrow, color: '#f97316', href: '/semaine' },
+    { label: 'Terminés/mois', value: s.completedMonth, color: '#22c55e', href: '/archives' },
+    { label: 'Prestataires', value: s.activeFreelancers, color: '#ec4899', href: '/prestataires' },
   ]
 
   return (
-    <div style={{ width: '100%', maxWidth: 1200 }}>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
-        <div>
-          <h1 style={{ color: '#f0ebe3', fontSize: '1.5rem', fontWeight: 800 }}>
-            Bonjour {session?.user?.name?.split(' ')[0]} 👋
-          </h1>
-          <p style={{ color: 'rgba(240,235,227,0.35)', fontSize: '0.8rem', marginTop: 3 }}>
-            {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-          </p>
-        </div>
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-          <button onClick={toggleBrief} style={{ background: briefOpen ? 'linear-gradient(135deg, #a78bfa, #38bdf8)' : 'rgba(167,139,250,0.1)', border: '1px solid rgba(167,139,250,0.35)', borderRadius: 10, padding: '10px 18px', color: briefOpen ? '#0a0a0a' : '#a78bfa', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 800 }}>
-            ✨ Brief du jour
-          </button>
-          <div style={{ background: '#141414', border: '1px solid #222', borderRadius: 10, padding: '8px 16px', textAlign: 'center' }}>
-            <p style={{ color: '#f0ebe3', fontSize: '1.1rem', fontWeight: 800 }}>{s.totalProds}</p>
-            <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.65rem' }}>prestations actives</p>
-          </div>
-        </div>
-      </div>
+    <div style={{ position: 'relative', width: '100%', maxWidth: 1240, minHeight: '90vh' }}>
+      {/* ===== Global dashboard styles & keyframes ===== */}
+      <style>{`
+        @keyframes notif-pop { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-50px) translateX(var(--tx)) scale(0.3); opacity: 0; } }
+        @keyframes bg-shift { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+        @keyframes ring-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes card-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+        @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(300%); } }
+        @keyframes particle-drift { 0%, 100% { transform: translate(0, 0); opacity: 0.15; } 50% { transform: translate(14px, -22px); opacity: 0.45; } }
+        @keyframes fade-up { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes glow-pulse { 0%, 100% { box-shadow: 0 0 18px rgba(167,139,250,0.15); } 50% { box-shadow: 0 0 32px rgba(167,139,250,0.35); } }
+        .dash-fade { animation: fade-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both; }
+        .dash-card-hover { transition: transform 0.2s cubic-bezier(0.16,1,0.3,1), box-shadow 0.2s; }
+        .dash-card-hover:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(167,139,250,0.18); }
+      `}</style>
 
-      {/* ✨ AI Daily Brief */}
-      {briefOpen && (
-        <div style={{ background: 'linear-gradient(135deg, rgba(167,139,250,0.06), rgba(56,189,248,0.04))', border: '1px solid rgba(167,139,250,0.3)', borderRadius: 14, padding: '18px 22px', marginBottom: 18 }}>
-          <p style={{ color: '#a78bfa', fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>
-            ✨ Assistant de production — {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
-          </p>
-          {briefLoading && !brief ? (
-            <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.8rem' }}>Analyse de la production en cours…</p>
-          ) : brief ? (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
-              <div>
-                <p style={{ color: 'rgba(240,235,227,0.45)', fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>Priorités du jour</p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-                  {brief.priorities.map((p: string, i: number) => (
-                    <p key={i} style={{ color: 'rgba(240,235,227,0.8)', fontSize: '0.8rem', lineHeight: 1.45 }}>{p}</p>
-                  ))}
-                </div>
+      {/* ===== Ambient animated background (dashboard only) ===== */}
+      <div style={{
+        position: 'absolute', inset: -24, borderRadius: 24, zIndex: 0,
+        background: 'linear-gradient(130deg, rgba(88,28,135,0.35), rgba(30,15,60,0.5), rgba(147,51,234,0.18), rgba(219,39,119,0.12), rgba(30,15,60,0.5))',
+        backgroundSize: '300% 300%',
+        animation: 'bg-shift 18s ease-in-out infinite',
+      }} />
+      <Particles />
+
+      <div style={{ position: 'relative', zIndex: 1 }}>
+        {/* ================= HERO — RPG player card ================= */}
+        <div className="dash-fade" style={{ ...glass, padding: '26px 30px', marginBottom: 14, animation: 'fade-up 0.5s both, card-float 6s ease-in-out 1s infinite', background: 'linear-gradient(135deg, rgba(88,28,135,0.35), rgba(22,17,40,0.6))' }}>
+          <div style={{ display: 'flex', gap: 24, alignItems: 'center', flexWrap: 'wrap' }}>
+            {/* Avatar with animated ring */}
+            <div style={{ position: 'relative', width: 92, height: 92, flexShrink: 0 }}>
+              <div style={{
+                position: 'absolute', inset: 0, borderRadius: '50%',
+                background: prestige >= 2
+                  ? 'conic-gradient(#eab308, #ec4899, #a78bfa, #eab308)'
+                  : prestige >= 1
+                    ? 'conic-gradient(#ec4899, #a78bfa, #38bdf8, #ec4899)'
+                    : 'conic-gradient(#a78bfa, #38bdf8, #a78bfa)',
+                animation: 'ring-spin 6s linear infinite',
+              }} />
+              <div style={{ position: 'absolute', inset: 4, borderRadius: '50%', background: '#141021', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ fontSize: '2rem', fontWeight: 900, background: 'linear-gradient(135deg, #a78bfa, #ec4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{initial}</span>
               </div>
-              <div>
-                <p style={{ color: 'rgba(240,235,227,0.45)', fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>Actions recommandées</p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-                  {brief.actions.map((a: string, i: number) => (
-                    <p key={i} style={{ color: 'rgba(240,235,227,0.8)', fontSize: '0.8rem', lineHeight: 1.45 }}>
-                      <span style={{ color: '#38bdf8', fontWeight: 800 }}>→</span> {a}
-                    </p>
-                  ))}
-                </div>
+              {prestige > 0 && (
+                <span title={`Prestige ${prestige}`} style={{ position: 'absolute', bottom: -4, right: -4, background: '#141021', border: '1px solid rgba(234,179,8,0.5)', borderRadius: 20, padding: '2px 8px', color: '#eab308', fontSize: '0.7rem', fontWeight: 800 }}>
+                  {PRESTIGE_ICONS[Math.min(prestige, 4)]}
+                </span>
+              )}
+            </div>
+
+            {/* Identity + XP */}
+            <div style={{ flex: 1, minWidth: 260 }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
+                <h1 style={{ color: '#f0ebe3', fontSize: '1.45rem', fontWeight: 900 }}>Bonjour {firstName} 👋</h1>
+                {g && (
+                  <>
+                    <span style={{ background: 'linear-gradient(90deg, rgba(167,139,250,0.2), rgba(236,72,153,0.15))', border: '1px solid rgba(167,139,250,0.35)', color: '#c4b5fd', padding: '3px 12px', borderRadius: 20, fontSize: '0.78rem', fontWeight: 800 }}>{g.rank}</span>
+                    <span style={{ color: 'rgba(240,235,227,0.5)', fontSize: '0.78rem', fontWeight: 700 }}>Niveau {g.level}{prestige > 0 ? ` · Prestige ${'I'.repeat(Math.min(prestige, 3))}` : ''}</span>
+                    {g.streak >= 2 && <span style={{ color: '#f97316', fontSize: '0.85rem', fontWeight: 900 }}>🔥 {g.streak} jours</span>}
+                  </>
+                )}
               </div>
-            </div>
-          ) : null}
-        </div>
-      )}
+              <p style={{ color: 'rgba(240,235,227,0.35)', fontSize: '0.75rem', marginTop: 3 }}>
+                {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })} · Studio Niv. {g?.studioLevel ?? '·'}
+              </p>
 
-      {/* Admin level & rank */}
-      <GamifyCard compact />
-
-      {/* Weekly production goal */}
-      {stats && (
-        <div style={{ background: '#141414', border: `1px solid ${s.completedWeek >= 10 ? 'rgba(34,197,94,0.3)' : '#222'}`, borderRadius: 12, padding: '14px 20px', marginBottom: 16 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
-            <p style={{ color: 'rgba(240,235,227,0.4)', fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-              🎯 Objectif de la semaine
-            </p>
-            <p style={{ color: s.completedWeek >= 10 ? '#22c55e' : '#a78bfa', fontSize: '0.85rem', fontWeight: 800 }}>
-              {s.completedWeek} / 10 projets terminés{s.completedWeek >= 10 ? ' — objectif atteint ! 🎉' : ''}
-            </p>
-          </div>
-          <div style={{ height: 8, background: '#1c1c1c', borderRadius: 6, overflow: 'hidden' }}>
-            <div style={{
-              height: '100%', borderRadius: 6,
-              width: `${Math.min(100, (s.completedWeek / 10) * 100)}%`,
-              background: s.completedWeek >= 10
-                ? 'linear-gradient(90deg, #22c55e90, #22c55e)'
-                : 'linear-gradient(90deg, #a78bfa60, #a78bfa)',
-              transition: 'width 0.8s cubic-bezier(0.16, 1, 0.3, 1)',
-            }} />
-          </div>
-        </div>
-      )}
-
-      {/* KPI Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 24 }}>
-        {kpis.map(k => (
-          <Link key={k.label} href={k.href} style={{ background: k.bg, border: `1px solid ${k.border}`, borderRadius: 14, padding: '20px 22px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 16, transition: 'transform 0.15s', opacity: stats ? 1 : 0.5 }}>
-            <div style={{ width: 44, height: 44, background: `${k.color}20`, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', color: k.color, flexShrink: 0 }}>
-              {k.icon}
-            </div>
-            <div>
-              <p style={{ color: k.color, fontSize: '2rem', fontWeight: 800, lineHeight: 1 }}>{k.value}</p>
-              <p style={{ color: '#f0ebe3', fontSize: '0.78rem', fontWeight: 600, marginTop: 3 }}>{k.label}</p>
-              <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.68rem', marginTop: 1 }}>{k.sub}</p>
-            </div>
-          </Link>
-        ))}
-      </div>
-
-      {/* Operational summary */}
-      {stats && (s.overdue > 0 || s.dueToday > 0 || s.dueTomorrow > 0) && (
-        <div style={{ background: '#141414', border: '1px solid #222', borderRadius: 10, padding: '10px 18px', marginBottom: 16, display: 'flex', gap: 22, flexWrap: 'wrap', alignItems: 'center' }}>
-          <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Résumé</p>
-          {s.overdue > 0 && <p style={{ color: '#ef4444', fontSize: '0.8rem', fontWeight: 600 }}>⚠ {s.overdue} en retard</p>}
-          {s.dueToday > 0 && <p style={{ color: '#eab308', fontSize: '0.8rem', fontWeight: 600 }}>● {s.dueToday} aujourd&apos;hui</p>}
-          {s.dueTomorrow > 0 && <p style={{ color: '#f97316', fontSize: '0.8rem', fontWeight: 600 }}>◐ {s.dueTomorrow} demain</p>}
-          <Link href="/semaine" style={{ color: 'rgba(240,235,227,0.35)', fontSize: '0.72rem', textDecoration: 'none', marginLeft: 'auto' }}>Voir le planning →</Link>
-        </div>
-      )}
-
-      {/* 🔔 À traiter — with direct project access */}
-      {stats && (s.notifications || []).length > 0 && (
-        <div style={{ background: 'rgba(167,139,250,0.05)', border: '1px solid rgba(167,139,250,0.2)', borderRadius: 12, padding: '14px 18px', marginBottom: 16 }}>
-          <p style={{ color: '#a78bfa', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>🔔 À traiter</p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {(s.notifications as any[]).map((n: any) => {
-              const popping = poppingNotif === n.id
-              const title = extractTitle(n.message)
-              return (
-                <div key={n.id} style={{
-                  display: 'flex', alignItems: 'center', gap: 8, position: 'relative',
-                  background: popping ? 'rgba(34,197,94,0.1)' : 'transparent',
-                  borderRadius: 6, padding: '3px 6px',
-                  opacity: popping ? 0.4 : 1,
-                  transform: popping ? 'translateX(12px)' : 'none',
-                  transition: 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
-                }}>
-                  {popping && <MiniConfetti />}
-                  <p style={{ color: '#f0ebe3', fontSize: '0.8rem', flex: 1 }}>{n.message}</p>
-                  <Link
-                    href={title ? `/productions?focus=${encodeURIComponent(title)}` : (n.link || '/productions')}
-                    title="Voir le projet"
-                    style={{ background: 'rgba(56,189,248,0.08)', border: '1px solid rgba(56,189,248,0.25)', borderRadius: 6, padding: '3px 10px', color: '#38bdf8', fontSize: '0.68rem', textDecoration: 'none', fontWeight: 600 }}
-                  >👁 Voir</Link>
-                  <button onClick={() => dismissNotif(n.id)} disabled={popping} title="Marquer comme traité" style={{ background: popping ? 'rgba(34,197,94,0.2)' : 'rgba(240,235,227,0.05)', border: `1px solid ${popping ? 'rgba(34,197,94,0.4)' : '#2a2a2a'}`, borderRadius: 6, padding: '3px 10px', color: popping ? '#22c55e' : 'rgba(240,235,227,0.4)', cursor: 'pointer', fontSize: '0.68rem' }}>✓</button>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Main grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 16 }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          {/* Urgent */}
-          <div style={{ background: '#141414', border: '1px solid #222', borderRadius: 14, overflow: 'hidden' }}>
-            <div style={{ padding: '14px 20px', borderBottom: '1px solid #1e1e1e', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <p style={{ color: '#f0ebe3', fontSize: '0.85rem', fontWeight: 600 }}>Priorités du jour</p>
-              <Link href="/productions" style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.72rem', textDecoration: 'none' }}>Tout voir →</Link>
-            </div>
-            {(s.urgentProds as any[]).length === 0 ? (
-              <div style={{ padding: '28px 20px', textAlign: 'center' }}>
-                <p style={{ color: '#22c55e', fontSize: '0.82rem' }}>✓ Aucune urgence aujourd&apos;hui</p>
-              </div>
-            ) : (
-              (s.urgentProds as any[]).map((p: any) => {
-                const isOverdue = p.deadline && new Date(p.deadline) < new Date()
-                return (
-                  <Link key={p.id} href="/productions" style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 12, padding: '11px 20px', borderBottom: '1px solid #191919', textDecoration: 'none', alignItems: 'center' }}>
-                    <div>
-                      <p style={{ color: '#f0ebe3', fontSize: '0.82rem', fontWeight: 600 }}>{p.title}</p>
-                      <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.7rem', marginTop: 1 }}>{p.client} · {p.assignedTo?.name || '—'}</p>
+              {/* XP bar — Arentreal style: level labels at both ends */}
+              {g && (
+                <div style={{ marginTop: 12, maxWidth: 480 }}>
+                  <div style={{ height: 10, background: 'rgba(0,0,0,0.5)', borderRadius: 8, overflow: 'hidden', position: 'relative' }}>
+                    <div style={{ height: '100%', width: `${Math.max(g.progress, 3)}%`, background: 'linear-gradient(90deg, #7c3aed, #a78bfa, #ec4899)', borderRadius: 8, position: 'relative', overflow: 'hidden', transition: 'width 1s cubic-bezier(0.16,1,0.3,1)' }}>
+                      <div style={{ position: 'absolute', inset: 0, width: '40%', background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent)', animation: 'shimmer 2.4s ease-in-out infinite' }} />
                     </div>
-                    <span style={{ background: `${STATUS_COLORS[p.status] || '#6b7280'}15`, color: STATUS_COLORS[p.status] || '#6b7280', padding: '2px 8px', borderRadius: 20, fontSize: '0.68rem', fontWeight: 600, whiteSpace: 'nowrap' }}>{STATUS_LABELS[p.status] || p.status}</span>
-                    <span style={{ color: isOverdue ? '#ef4444' : '#eab308', fontSize: '0.72rem', fontWeight: 600, whiteSpace: 'nowrap' }}>{fmt(p.deadline)}</span>
-                  </Link>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 5 }}>
+                    <p style={{ color: '#c4b5fd', fontSize: '0.66rem', fontWeight: 800 }}>Niv. {g.level}</p>
+                    <p style={{ color: 'rgba(240,235,227,0.4)', fontSize: '0.66rem', fontWeight: 700 }}>{g.xpInLevel} XP / {g.xpForNext} · encore {g.xpForNext - g.xpInLevel} XP</p>
+                    <p style={{ color: 'rgba(240,235,227,0.35)', fontSize: '0.66rem', fontWeight: 800 }}>Niv. {g.level + 1}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Player stats */}
+            {g && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, auto)', gap: '10px 26px', textAlign: 'right' }}>
+                {[
+                  { v: g.validated, l: 'productions terminées' },
+                  { v: g.approvals, l: 'approbations clients' },
+                  { v: `${g.completionRate}%`, l: 'taux de complétion' },
+                  { v: `+${g.xpToday}`, l: 'XP aujourd\'hui', hot: g.xpToday > 0 },
+                ].map((st: any, i) => (
+                  <div key={i}>
+                    <p style={{ color: st.hot ? '#ec4899' : '#f0ebe3', fontSize: '1.25rem', fontWeight: 900, lineHeight: 1 }}>{st.v}</p>
+                    <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.62rem', marginTop: 2 }}>{st.l}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <button onClick={toggleBrief} className="dash-card-hover" style={{ background: briefOpen ? 'linear-gradient(135deg, #a78bfa, #ec4899)' : 'rgba(167,139,250,0.12)', border: '1px solid rgba(167,139,250,0.4)', borderRadius: 12, padding: '12px 20px', color: briefOpen ? '#0a0a0a' : '#c4b5fd', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 800, animation: 'glow-pulse 3s ease-in-out infinite' }}>
+              ✨ Brief du jour
+            </button>
+          </div>
+        </div>
+
+        {/* ✨ AI Brief */}
+        {briefOpen && (
+          <div className="dash-fade" style={{ ...glass, padding: '18px 24px', marginBottom: 14 }}>
+            <p style={{ color: '#c4b5fd', fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>✨ Assistant de production</p>
+            {briefLoading && !brief ? (
+              <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.8rem' }}>Analyse de la production en cours…</p>
+            ) : brief ? (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+                <div>
+                  <p style={{ color: 'rgba(240,235,227,0.45)', fontSize: '0.66rem', fontWeight: 700, textTransform: 'uppercase', marginBottom: 8 }}>Priorités du jour</p>
+                  {brief.priorities.map((p: string, i: number) => <p key={i} style={{ color: 'rgba(240,235,227,0.8)', fontSize: '0.78rem', lineHeight: 1.5, marginBottom: 5 }}>{p}</p>)}
+                </div>
+                <div>
+                  <p style={{ color: 'rgba(240,235,227,0.45)', fontSize: '0.66rem', fontWeight: 700, textTransform: 'uppercase', marginBottom: 8 }}>Actions recommandées</p>
+                  {brief.actions.map((a: string, i: number) => <p key={i} style={{ color: 'rgba(240,235,227,0.8)', fontSize: '0.78rem', lineHeight: 1.5, marginBottom: 5 }}><span style={{ color: '#ec4899', fontWeight: 800 }}>→</span> {a}</p>)}
+                </div>
+              </div>
+            ) : null}
+          </div>
+        )}
+
+        {/* ================= Motivation strip: goal + missions ================= */}
+        <div className="dash-fade" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14, animationDelay: '0.06s' }}>
+          {/* Weekly goal */}
+          <div style={{ ...glass, padding: '16px 20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
+              <p style={{ color: 'rgba(240,235,227,0.45)', fontSize: '0.66rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>🎯 Objectif de la semaine</p>
+              <p style={{ color: s.completedWeek >= 10 ? '#22c55e' : '#c4b5fd', fontSize: '0.85rem', fontWeight: 900 }}>
+                {s.completedWeek}/10{s.completedWeek >= 10 ? ' 🎉' : ''}
+              </p>
+            </div>
+            <div style={{ height: 9, background: 'rgba(0,0,0,0.5)', borderRadius: 8, overflow: 'hidden', position: 'relative' }}>
+              <div style={{ height: '100%', width: `${Math.min(100, (s.completedWeek / 10) * 100)}%`, background: s.completedWeek >= 10 ? 'linear-gradient(90deg, #16a34a, #22c55e)' : 'linear-gradient(90deg, #7c3aed, #ec4899)', borderRadius: 8, transition: 'width 1s cubic-bezier(0.16,1,0.3,1)', position: 'relative', overflow: 'hidden' }}>
+                <div style={{ position: 'absolute', inset: 0, width: '40%', background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)', animation: 'shimmer 2.8s ease-in-out infinite' }} />
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 18, marginTop: 12 }}>
+              <div><p style={{ color: '#22c55e', fontSize: '1.05rem', fontWeight: 900, lineHeight: 1 }}>{s.completedToday}</p><p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.62rem' }}>terminés aujourd&apos;hui</p></div>
+              <div><p style={{ color: '#c4b5fd', fontSize: '1.05rem', fontWeight: 900, lineHeight: 1 }}>+{g?.xpWeek ?? 0}</p><p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.62rem' }}>XP cette semaine</p></div>
+              <div><p style={{ color: '#f97316', fontSize: '1.05rem', fontWeight: 900, lineHeight: 1 }}>{g?.streak ?? 0}j</p><p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.62rem' }}>streak d&apos;activité</p></div>
+            </div>
+          </div>
+
+          {/* Daily missions */}
+          <div style={{ ...glass, padding: '16px 20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10 }}>
+              <p style={{ color: 'rgba(240,235,227,0.45)', fontSize: '0.66rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>⚔️ Missions du jour</p>
+              <p style={{ color: missionsDone === missions.length && missions.length > 0 ? '#22c55e' : '#c4b5fd', fontSize: '0.78rem', fontWeight: 900 }}>
+                {missionsDone}/{missions.length}{missionsDone === missions.length && missions.length > 0 ? ' — journée parfaite ! 🏆' : ''}
+              </p>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+              {missions.map((m, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{
+                    width: 18, height: 18, borderRadius: 6, flexShrink: 0,
+                    background: m.done ? 'linear-gradient(135deg, #16a34a, #22c55e)' : 'rgba(0,0,0,0.4)',
+                    border: m.done ? 'none' : '1px solid rgba(167,139,250,0.3)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: '#0a0a0a', fontSize: '0.65rem', fontWeight: 900,
+                    transition: 'all 0.3s',
+                  }}>{m.done ? '✓' : ''}</span>
+                  <p style={{ color: m.done ? 'rgba(240,235,227,0.35)' : '#f0ebe3', fontSize: '0.78rem', flex: 1, textDecoration: m.done ? 'line-through' : 'none' }}>{m.label}</p>
+                  <span style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.66rem' }}>{m.progress}</span>
+                  <span style={{ color: m.done ? '#22c55e' : '#c4b5fd', fontSize: '0.66rem', fontWeight: 800 }}>+{m.xp} XP</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* ================= KPIs — dense row ================= */}
+        <div className="dash-fade" style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 10, marginBottom: 14, animationDelay: '0.12s' }}>
+          {kpis.map(k => (
+            <Link key={k.label} href={k.href} className="dash-card-hover" style={{ ...glass, padding: '14px 16px', textDecoration: 'none', borderColor: `${k.color}30` }}>
+              <p style={{ color: k.color, fontSize: '1.6rem', fontWeight: 900, lineHeight: 1, textShadow: `0 0 18px ${k.color}50` }}>{k.value}</p>
+              <p style={{ color: 'rgba(240,235,227,0.45)', fontSize: '0.66rem', marginTop: 5, fontWeight: 600 }}>{k.label}</p>
+            </Link>
+          ))}
+        </div>
+
+        {/* Operational summary */}
+        {stats && (s.overdue > 0 || s.dueToday > 0 || s.dueTomorrow > 0 || s.pendingValidations > 0) && (
+          <div className="dash-fade" style={{ ...glass, padding: '9px 18px', marginBottom: 14, display: 'flex', gap: 20, flexWrap: 'wrap', alignItems: 'center', animationDelay: '0.16s' }}>
+            <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.64rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Résumé</p>
+            {s.overdue > 0 && <p style={{ color: '#ef4444', fontSize: '0.78rem', fontWeight: 700 }}>⚠ {s.overdue} en retard</p>}
+            {s.dueToday > 0 && <p style={{ color: '#eab308', fontSize: '0.78rem', fontWeight: 700 }}>● {s.dueToday} aujourd&apos;hui</p>}
+            {s.dueTomorrow > 0 && <p style={{ color: '#f97316', fontSize: '0.78rem', fontWeight: 700 }}>◐ {s.dueTomorrow} demain</p>}
+            {s.pendingValidations > 0 && <p style={{ color: '#a78bfa', fontSize: '0.78rem', fontWeight: 700 }}>🟣 {s.pendingValidations} à valider</p>}
+            {s.retoursClient > 0 && <p style={{ color: '#f43f5e', fontSize: '0.78rem', fontWeight: 700 }}>💬 {s.retoursClient} retours client</p>}
+            <Link href="/semaine" style={{ color: 'rgba(240,235,227,0.35)', fontSize: '0.7rem', textDecoration: 'none', marginLeft: 'auto' }}>Planning →</Link>
+          </div>
+        )}
+
+        {/* 🔔 À traiter */}
+        {stats && (s.notifications || []).length > 0 && (
+          <div className="dash-fade" style={{ ...glass, padding: '14px 20px', marginBottom: 14, borderColor: 'rgba(167,139,250,0.3)', animationDelay: '0.2s' }}>
+            <p style={{ color: '#c4b5fd', fontSize: '0.68rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>🔔 À traiter</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {(s.notifications as any[]).map((n: any) => {
+                const popping = poppingNotif === n.id
+                const title = extractTitle(n.message)
+                return (
+                  <div key={n.id} style={{
+                    display: 'flex', alignItems: 'center', gap: 8, position: 'relative',
+                    background: popping ? 'rgba(34,197,94,0.12)' : 'transparent',
+                    borderRadius: 8, padding: '3px 6px',
+                    opacity: popping ? 0.4 : 1,
+                    transform: popping ? 'translateX(12px)' : 'none',
+                    transition: 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
+                  }}>
+                    {popping && <MiniConfetti />}
+                    <p style={{ color: '#f0ebe3', fontSize: '0.78rem', flex: 1 }}>{n.message}</p>
+                    <Link href={title ? `/productions?focus=${encodeURIComponent(title)}` : (n.link || '/productions')} style={{ background: 'rgba(56,189,248,0.1)', border: '1px solid rgba(56,189,248,0.3)', borderRadius: 6, padding: '2px 10px', color: '#38bdf8', fontSize: '0.66rem', textDecoration: 'none', fontWeight: 700 }}>👁 Voir</Link>
+                    <button onClick={() => dismissNotif(n.id)} disabled={popping} style={{ background: popping ? 'rgba(34,197,94,0.25)' : 'rgba(240,235,227,0.06)', border: `1px solid ${popping ? 'rgba(34,197,94,0.5)' : 'rgba(167,139,250,0.2)'}`, borderRadius: 6, padding: '2px 10px', color: popping ? '#22c55e' : 'rgba(240,235,227,0.45)', cursor: 'pointer', fontSize: '0.66rem', fontWeight: 700 }}>✓</button>
+                  </div>
                 )
-              })
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ================= Main grid: lists + leaderboard ================= */}
+        <div className="dash-fade" style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 14, animationDelay: '0.24s' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {/* Priorités */}
+            <div style={{ ...glass, overflow: 'hidden' }}>
+              <div style={{ padding: '11px 18px', borderBottom: '1px solid rgba(167,139,250,0.12)', display: 'flex', justifyContent: 'space-between' }}>
+                <p style={{ color: '#f0ebe3', fontSize: '0.8rem', fontWeight: 700 }}>Priorités du jour</p>
+                <Link href="/productions" style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.7rem', textDecoration: 'none' }}>Tout voir →</Link>
+              </div>
+              {(s.urgentProds as any[]).length === 0 ? (
+                <p style={{ color: '#22c55e', padding: '18px', textAlign: 'center', fontSize: '0.8rem', fontWeight: 700 }}>✓ Aucune urgence aujourd&apos;hui</p>
+              ) : (
+                (s.urgentProds as any[]).map((p: any) => {
+                  const isOverdue = p.deadline && new Date(p.deadline) < new Date()
+                  return (
+                    <Link key={p.id} href={`/productions?focus=${encodeURIComponent(p.title)}`} style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 10, padding: '8px 18px', borderBottom: '1px solid rgba(167,139,250,0.07)', textDecoration: 'none', alignItems: 'center' }}>
+                      <div>
+                        <p style={{ color: '#f0ebe3', fontSize: '0.78rem', fontWeight: 600 }}>{p.title}</p>
+                        <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.66rem' }}>{p.client} · {p.assignedTo?.name || '—'}</p>
+                      </div>
+                      <span style={{ background: `${STATUS_COLORS[p.status] || '#6b7280'}18`, color: STATUS_COLORS[p.status] || '#6b7280', padding: '1px 8px', borderRadius: 20, fontSize: '0.64rem', fontWeight: 700, whiteSpace: 'nowrap' }}>{STATUS_LABELS[p.status] || p.status}</span>
+                      <span style={{ color: isOverdue ? '#ef4444' : '#eab308', fontSize: '0.68rem', fontWeight: 800, whiteSpace: 'nowrap' }}>{fmt(p.deadline)}</span>
+                    </Link>
+                  )
+                })
+              )}
+            </div>
+
+            {/* Dernières prestations + activité — two dense columns */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+              <div style={{ ...glass, overflow: 'hidden' }}>
+                <p style={{ color: '#f0ebe3', fontSize: '0.78rem', fontWeight: 700, padding: '10px 16px', borderBottom: '1px solid rgba(167,139,250,0.12)' }}>Dernières prestations</p>
+                {(s.recentProds as any[]).slice(0, 5).map((p: any) => (
+                  <div key={p.id} style={{ display: 'flex', gap: 8, padding: '7px 16px', borderBottom: '1px solid rgba(167,139,250,0.06)', alignItems: 'center' }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ color: '#f0ebe3', fontSize: '0.74rem', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.title}</p>
+                      <p style={{ color: 'rgba(240,235,227,0.28)', fontSize: '0.64rem' }}>{p.assignedTo?.name || '—'}</p>
+                    </div>
+                    <span style={{ background: `${STATUS_COLORS[p.status] || '#6b7280'}18`, color: STATUS_COLORS[p.status] || '#6b7280', padding: '1px 7px', borderRadius: 20, fontSize: '0.6rem', fontWeight: 700, whiteSpace: 'nowrap' }}>{STATUS_LABELS[p.status] || p.status}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{ ...glass, overflow: 'hidden' }}>
+                <p style={{ color: '#f0ebe3', fontSize: '0.78rem', fontWeight: 700, padding: '10px 16px', borderBottom: '1px solid rgba(167,139,250,0.12)' }}>Activité récente</p>
+                {(s.recentActivity as any[]).slice(0, 5).map((a: any) => (
+                  <div key={a.id} style={{ padding: '7px 16px', borderBottom: '1px solid rgba(167,139,250,0.06)' }}>
+                    <p style={{ color: 'rgba(240,235,227,0.6)', fontSize: '0.72rem', lineHeight: 1.35 }}>
+                      <strong style={{ color: '#f0ebe3' }}>{a.actorName}</strong> {a.action}{a.target ? <span style={{ color: 'rgba(240,235,227,0.35)' }}> — {a.target}</span> : null}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* ===== Sidebar: leaderboard + achievements ===== */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {/* Leaderboard — Arentreal-style podium then list */}
+            <div style={{ ...glass, overflow: 'hidden' }}>
+              <p style={{ color: '#f0ebe3', fontSize: '0.78rem', fontWeight: 800, padding: '11px 16px', borderBottom: '1px solid rgba(167,139,250,0.12)' }}>🏆 Classement du studio</p>
+
+              {(board || []).length >= 2 && (
+                <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: 8, padding: '18px 12px 14px' }}>
+                  {[1, 0, 2].map(pos => {
+                    const u = (board || [])[pos]
+                    if (!u) return <div key={pos} style={{ width: 76 }} />
+                    const isFirst = pos === 0
+                    const trophy = pos === 0 ? '🏆' : pos === 1 ? '🥈' : '🥉'
+                    const tColor = pos === 0 ? '#eab308' : pos === 1 ? '#c0c8d4' : '#b45309'
+                    return (
+                      <div key={u.id} style={{
+                        width: isFirst ? 96 : 78, textAlign: 'center',
+                        background: isFirst ? 'linear-gradient(180deg, rgba(234,179,8,0.1), rgba(26,18,48,0.4))' : 'rgba(0,0,0,0.25)',
+                        border: `1px solid ${isFirst ? 'rgba(234,179,8,0.35)' : 'rgba(167,139,250,0.15)'}`,
+                        borderRadius: 14, padding: isFirst ? '14px 8px' : '10px 6px',
+                        transform: isFirst ? 'translateY(-8px)' : 'none',
+                        boxShadow: isFirst ? '0 8px 24px rgba(234,179,8,0.12)' : 'none',
+                      }}>
+                        <p style={{ fontSize: isFirst ? '1.5rem' : '1.15rem', marginBottom: 4 }}>{trophy}</p>
+                        <p style={{ color: tColor, fontSize: '0.95rem', fontWeight: 900, lineHeight: 1 }}>{pos + 1}</p>
+                        <p style={{ color: '#f0ebe3', fontSize: '0.68rem', fontWeight: 800, marginTop: 5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{u.name}{u.isMe ? ' ✦' : ''}</p>
+                        <p style={{ color: '#c4b5fd', fontSize: '0.62rem', fontWeight: 800 }}>Niv. {u.level}</p>
+                        <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.58rem' }}>{u.productions} prod.</p>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+
+              {(board || []).slice(3).map((u: any, i: number) => (
+                <div key={u.id} style={{
+                  display: 'flex', alignItems: 'center', gap: 10, padding: '7px 14px',
+                  borderTop: '1px solid rgba(167,139,250,0.06)',
+                  background: u.isMe ? 'rgba(167,139,250,0.1)' : 'transparent',
+                  borderLeft: u.isMe ? '2px solid #a78bfa' : '2px solid transparent',
+                }}>
+                  <span style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.72rem', fontWeight: 900, width: 18, textAlign: 'center' }}>{i + 4}</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ color: '#f0ebe3', fontSize: '0.72rem', fontWeight: 700 }}>{u.name}{u.isMe ? ' (toi)' : ''}</p>
+                    <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.58rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{u.rank}</p>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <p style={{ color: '#c4b5fd', fontSize: '0.7rem', fontWeight: 900 }}>Niv. {u.level}</p>
+                    <p style={{ color: 'rgba(240,235,227,0.25)', fontSize: '0.56rem' }}>{u.productions} prod.</p>
+                  </div>
+                </div>
+              ))}
+              {(board || []).length === 1 && (
+                <p style={{ color: 'rgba(240,235,227,0.25)', fontSize: '0.7rem', padding: '4px 16px 14px', textAlign: 'center' }}>Le podium se remplit dès que l&apos;équipe gagne de l&apos;XP 💪</p>
+              )}
+              {(!board || board.length === 0) && <p style={{ color: 'rgba(240,235,227,0.2)', fontSize: '0.72rem', padding: '16px', textAlign: 'center' }}>Le classement se remplit avec l&apos;XP gagné.</p>}
+            </div>
+
+            {/* Achievements showcase */}
+            {g && (
+              <div style={{ ...glass, padding: '12px 16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10 }}>
+                  <p style={{ color: '#f0ebe3', fontSize: '0.78rem', fontWeight: 800 }}>🏅 Succès</p>
+                  <Link href="/parametres" style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.66rem', textDecoration: 'none' }}>{(g.achievements || []).length}/{(g.achievements || []).length + (g.locked || []).length} →</Link>
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {(g.achievements || []).slice(0, 8).map((a: any) => (
+                    <span key={a.key} title={a.label} style={{ fontSize: '1.15rem', background: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.35)', borderRadius: 10, padding: '5px 8px', cursor: 'default' }}>{a.emoji}</span>
+                  ))}
+                  {(g.locked || []).slice(0, Math.max(0, 8 - (g.achievements || []).length)).map((a: any) => (
+                    <span key={a.key} title={`À débloquer : ${a.label}`} style={{ fontSize: '1.15rem', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(167,139,250,0.12)', borderRadius: 10, padding: '5px 8px', filter: 'grayscale(1)', opacity: 0.4, cursor: 'default' }}>{a.emoji}</span>
+                  ))}
+                </div>
+              </div>
             )}
           </div>
-
-          {/* Recent */}
-          <div style={{ background: '#141414', border: '1px solid #222', borderRadius: 14, overflow: 'hidden' }}>
-            <div style={{ padding: '14px 20px', borderBottom: '1px solid #1e1e1e', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <p style={{ color: '#f0ebe3', fontSize: '0.85rem', fontWeight: 600 }}>Dernières prestations</p>
-              <Link href="/productions" style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.72rem', textDecoration: 'none' }}>Tout voir →</Link>
-            </div>
-            {(s.recentProds as any[]).map((p: any) => (
-              <div key={p.id} style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 12, padding: '11px 20px', borderBottom: '1px solid #191919', alignItems: 'center' }}>
-                <div>
-                  <p style={{ color: '#f0ebe3', fontSize: '0.82rem', fontWeight: 500 }}>{p.title}</p>
-                  <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.7rem', marginTop: 1 }}>{p.client}</p>
-                </div>
-                <p style={{ color: 'rgba(240,235,227,0.35)', fontSize: '0.72rem' }}>{p.assignedTo?.name || '—'}</p>
-                <span style={{ background: `${STATUS_COLORS[p.status] || '#6b7280'}15`, color: STATUS_COLORS[p.status] || '#6b7280', padding: '2px 8px', borderRadius: 20, fontSize: '0.68rem', fontWeight: 600 }}>{STATUS_LABELS[p.status] || p.status}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Activity */}
-        <div style={{ background: '#141414', border: '1px solid #222', borderRadius: 14, overflow: 'hidden', alignSelf: 'start' }}>
-          <div style={{ padding: '14px 16px', borderBottom: '1px solid #1e1e1e' }}>
-            <p style={{ color: '#f0ebe3', fontSize: '0.85rem', fontWeight: 600 }}>Activité récente</p>
-          </div>
-          {(s.recentActivity as any[]).length === 0 ? (
-            <p style={{ color: 'rgba(240,235,227,0.2)', padding: '24px 16px', textAlign: 'center', fontSize: '0.78rem' }}>Aucune activité</p>
-          ) : (
-            (s.recentActivity as any[]).map((a: any, i: number) => (
-              <div key={a.id} style={{ padding: '10px 16px', borderBottom: i < s.recentActivity.length - 1 ? '1px solid #191919' : 'none' }}>
-                <p style={{ color: 'rgba(240,235,227,0.65)', fontSize: '0.75rem' }}>
-                  <strong style={{ color: '#f0ebe3' }}>{a.actorName}</strong>{' '}{a.action}{a.target ? <span style={{ color: 'rgba(240,235,227,0.4)' }}> — {a.target}</span> : null}
-                </p>
-                <p style={{ color: 'rgba(240,235,227,0.2)', fontSize: '0.65rem', marginTop: 2 }}>{fmt(a.createdAt)}</p>
-              </div>
-            ))
-          )}
         </div>
       </div>
     </div>

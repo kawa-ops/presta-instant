@@ -41,10 +41,15 @@ export async function GET() {
       db.notification.findMany({ where: { userId: adminId, read: false }, orderBy: { createdAt: 'desc' }, take: 8 }),
     ])
 
-    const completedWeek = await db.production.count({ where: { status: 'valide', updatedAt: { gte: startWeek } } }).catch(() => 0)
+    const [completedWeek, completedToday, pendingValidations, retoursClient] = await Promise.all([
+      db.production.count({ where: { status: 'valide', updatedAt: { gte: startWeek } } }).catch(() => 0),
+      db.production.count({ where: { status: 'valide', updatedAt: { gte: startToday } } }).catch(() => 0),
+      db.production.count({ where: { archived: false, status: 'livre' } }).catch(() => 0),
+      db.production.count({ where: { archived: false, status: 'retours_client' } }).catch(() => 0),
+    ])
 
     return NextResponse.json(
-      { inProgress, overdue, dueToday, dueTomorrow, completedMonth, completedWeek, activeFreelancers, totalProds, recentActivity, urgentProds, recentProds, notifications },
+      { inProgress, overdue, dueToday, dueTomorrow, completedMonth, completedWeek, completedToday, pendingValidations, retoursClient, activeFreelancers, totalProds, recentActivity, urgentProds, recentProds, notifications },
       { headers: { 'Cache-Control': 'no-store' } }
     )
   } catch (e: any) {

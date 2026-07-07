@@ -13,13 +13,25 @@ export async function GET() {
   const userId = (session.user as any).id
   const role = (session.user as any).role
 
+  const startDay = new Date(); startDay.setHours(0, 0, 0, 0)
+  const startWeek = new Date(startDay); startWeek.setDate(startWeek.getDate() - ((startWeek.getDay() + 6) % 7))
+
   try {
-    const [totalAgg, studioAgg, achievements, recentEvents, streak] = await Promise.all([
+    const [totalAgg, studioAgg, achievements, recentEvents, streak, todayAgg, weekAgg, approvals, validated, totalAssigned] = await Promise.all([
       db.xpEvent.aggregate({ _sum: { amount: true }, where: { userId } }),
       db.xpEvent.aggregate({ _sum: { amount: true } }),
       db.achievement.findMany({ where: { userId }, orderBy: { createdAt: 'desc' } }),
       db.xpEvent.findMany({ where: { userId }, orderBy: { createdAt: 'desc' }, take: 10 }),
       computeStreak(userId),
+      db.xpEvent.aggregate({ _sum: { amount: true }, where: { userId, createdAt: { gte: startDay } } }),
+      db.xpEvent.aggregate({ _sum: { amount: true }, where: { userId, createdAt: { gte: startWeek } } }),
+      db.xpEvent.count({ where: { userId, reason: 'Approbation client' } }),
+      role === 'admin'
+        ? db.production.count({ where: { status: 'valide' } })
+        : db.production.count({ where: { assignedToId: userId, status: 'valide' } }),
+      role === 'admin'
+        ? db.production.count()
+        : db.production.count({ where: { assignedToId: userId } }),
     ])
 
     const xp = totalAgg._sum.amount || 0
@@ -30,6 +42,9 @@ export async function GET() {
 
     const studioXp = studioAgg._sum.amount || 0
 
+    // Prestige: one tier every 20 levels — purely cosmetic
+    const prestige = Math.floor(level / 20)
+
     return NextResponse.json({
       xp, level, progress,
       xpInLevel: xp - currentThreshold,
@@ -37,6 +52,12 @@ export async function GET() {
       rank: rankFor(level, role),
       nextRank: rankFor(level + 1, role) !== rankFor(level, role) ? rankFor(level + 1, role) : null,
       streak,
+      prestige,
+      xpToday: todayAgg._sum.amount || 0,
+      xpWeek: weekAgg._sum.amount || 0,
+      approvals,
+      validated,
+      completionRate: totalAssigned > 0 ? Math.round((validated / totalAssigned) * 100) : 0,
       studioLevel: levelFromXp(studioXp),
       achievements: achievements.map((a: any) => ({ key: a.key, ...ACHIEVEMENTS[a.key], unlockedAt: a.createdAt })).filter((a: any) => a.label),
       locked: Object.entries(ACHIEVEMENTS)
