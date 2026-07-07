@@ -2,9 +2,20 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 import { ensureSchema } from '@/lib/ensure'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 
 export async function GET() {
   try {
+    // Admin-only once the app is bootstrapped; open only if no admin exists yet
+    const adminExists = await prisma.user.findFirst({ where: { role: 'admin' } }).catch(() => null)
+    if (adminExists) {
+      const session = await getServerSession(authOptions)
+      if (!session || (session.user as any).role !== 'admin') {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      }
+    }
+
     await ensureSchema()
     // Create tables
     await prisma.$executeRawUnsafe(`
@@ -90,7 +101,7 @@ export async function GET() {
       }
     }
 
-    return NextResponse.json({ ok: true, message: 'Setup terminé — comptes admin créés (Instant2026!)' })
+    return NextResponse.json({ ok: true, message: 'Setup terminé — schéma et comptes vérifiés' })
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 })
   }

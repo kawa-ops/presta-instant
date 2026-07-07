@@ -7,10 +7,18 @@ export const dynamic = 'force-dynamic'
 const db = prisma as any
 
 // Wipes all demo/production data while keeping user accounts and features intact.
-// Admin-only, triggered manually once.
-export async function GET() {
+// Admin-only + explicit confirmation flag: /api/reset?confirm=SUPPRIMER
+export async function GET(req: Request) {
   const session = await getServerSession(authOptions)
   if (!session || (session.user as any).role !== 'admin') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const confirm = new URL(req.url).searchParams.get('confirm')
+  if (confirm !== 'SUPPRIMER') {
+    return NextResponse.json({
+      error: 'Confirmation requise — cette action efface TOUTES les prestations, paiements et notifications.',
+      howTo: 'Rappelle cette URL avec ?confirm=SUPPRIMER pour confirmer.',
+    }, { status: 400 })
+  }
 
   try {
     const [invoices, payouts, notifications, activity, productions] = await Promise.all([

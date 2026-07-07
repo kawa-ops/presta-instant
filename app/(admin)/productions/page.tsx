@@ -4,22 +4,9 @@ import { useCached } from '@/lib/useCached'
 import Timeline from '@/components/Timeline'
 import Thread from '@/components/Thread'
 
-const STATUSES = [
-  { value: '', label: 'Tous' },
-  { value: 'a_faire', label: 'À faire', color: '#8b7fb8' },
-  { value: 'en_cours', label: 'En cours', color: '#a5b4fc' },
-  { value: 'revisions', label: 'Retours à faire', color: '#e879f9' },
-  { value: 'livre', label: 'À valider', color: '#a78bfa' },
-  { value: 'envoye_client', label: 'Envoyé client', color: '#c7d2fe' },
-  { value: 'retours_client', label: 'Retours client', color: '#ec4899' },
-  { value: 'valide', label: 'Terminé', color: '#22c55e' },
-]
-const PRIORITIES = [
-  { value: 'urgent', label: 'Urgent', color: '#fb7185' },
-  { value: 'high', label: 'Haute', color: '#e879f9' },
-  { value: 'normal', label: 'Normale', color: '#8b7fb8' },
-  { value: 'low', label: 'Basse', color: '#5b5273' },
-]
+import { STATUSES as BASE_STATUSES, PRIORITIES } from '@/lib/statuses'
+
+const STATUSES = [{ value: '', label: 'Tous', color: undefined as string | undefined }, ...BASE_STATUSES]
 const PRIORITY_ORDER: Record<string, number> = { urgent: 0, high: 1, normal: 2, low: 3 }
 
 const RATE_TYPES = [
@@ -244,6 +231,13 @@ function ProdRow({ p, freelancers, onSave, onDelete, onComplete, onQuickStatus, 
         </td>
         <td style={{ padding: '11px 14px' }} onClick={e => e.stopPropagation()}>
           <div style={{ display: 'flex', gap: 6 }}>
+            {p.status === 'livre' && (
+              <button
+                onClick={() => onQuickStatus('envoye_client')}
+                title="Approuver et envoyer au client"
+                style={{ background: 'rgba(216,180,254,0.12)', border: '1px solid rgba(216,180,254,0.4)', borderRadius: 6, padding: '4px 9px', color: '#d8b4fe', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 800 }}
+              >👍</button>
+            )}
             <button
               onClick={onComplete}
               title="Marquer comme terminé"
@@ -463,6 +457,7 @@ export default function ProductionsPage() {
       const res = await fetch('/api/productions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) })
       const data = await res.json()
       if (!res.ok) { setCreateError(data.error || 'Erreur lors de la création'); setSaving(null); return }
+      try { localStorage.setItem('last-client', form.client.trim()) } catch {}
       setProds(prev => [data, ...prev])
       setShowNew(false)
       setForm({ ...EMPTY_FORM })
@@ -548,7 +543,13 @@ export default function ProductionsPage() {
       <style>{`@keyframes row-glow { 0%, 100% { background-color: rgba(199,210,254,0.04); } 50% { background-color: rgba(199,210,254,0.09); } }`}</style>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <h1 style={{ color: '#f0ebe3', fontSize: '1.4rem', fontWeight: 800 }}>Post-productions</h1>
-        <button onClick={() => { setShowNew(true); setCreateError('') }} style={{ background: '#f0ebe3', color: '#0a0a0a', border: 'none', borderRadius: 8, padding: '9px 18px', fontWeight: 700, cursor: 'pointer', fontSize: '0.82rem' }}>+ Nouvelle prestation</button>
+        <button onClick={() => {
+          // Pre-fill: last used client + deadline defaulting to D+7
+          const lastClient = localStorage.getItem('last-client') || ''
+          const d = new Date(); d.setDate(d.getDate() + 7)
+          setForm(f => ({ ...EMPTY_FORM, client: lastClient, deadline: d.toISOString().slice(0, 10) }))
+          setShowNew(true); setCreateError('')
+        }} style={{ background: '#f0ebe3', color: '#0a0a0a', border: 'none', borderRadius: 8, padding: '9px 18px', fontWeight: 700, cursor: 'pointer', fontSize: '0.82rem' }}>+ Nouvelle prestation</button>
       </div>
 
       {/* Priority Validation Center */}

@@ -79,7 +79,11 @@ export async function ensureSchema() {
   done = true
 }
 
+// Cached per lambda instance — Lucas's ID never changes
+let lucasIdCache: string | null | undefined
 export async function getLucasId(): Promise<string | null> {
+  if (lucasIdCache !== undefined) return lucasIdCache
   const lucas = await db.user.findFirst({ where: { email: 'lucas.rawinstant@gmail.com' } }).catch(() => null)
-  return lucas?.id || null
+  lucasIdCache = lucas?.id || null
+  return lucasIdCache
 }
