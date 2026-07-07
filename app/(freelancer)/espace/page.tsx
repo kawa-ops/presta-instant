@@ -44,6 +44,20 @@ export default async function FreelancerDashboard() {
   const STATUS_COLORS: Record<string, string> = { a_faire: '#6b7280', en_cours: '#3b82f6', en_attente: '#eab308', revisions: '#f97316', livre: '#a78bfa', envoye_client: '#38bdf8', retours_client: '#f43f5e', valide: '#22c55e' }
   const STATUS_LABELS: Record<string, string> = { a_faire: 'À faire', en_cours: 'En cours', en_attente: 'En attente', revisions: 'Retours à faire', livre: 'À valider', envoye_client: 'Envoyé client', retours_client: 'Retours client', valide: 'Terminé' }
 
+  // XP & levels — 1 validated project = 1 XP
+  const xp = valides.length
+  const LEVELS = [
+    { name: 'Monteur', min: 0 },
+    { name: 'Monteur confirmé', min: 5 },
+    { name: 'Monteur Senior', min: 15 },
+    { name: 'Master Editor', min: 30 },
+    { name: 'Grand Master', min: 50 },
+  ]
+  const levelIdx = LEVELS.reduce((acc, l, i) => xp >= l.min ? i : acc, 0)
+  const level = LEVELS[levelIdx]
+  const nextLevel = LEVELS[levelIdx + 1] || null
+  const xpProgress = nextLevel ? Math.round(((xp - level.min) / (nextLevel.min - level.min)) * 100) : 100
+
   const kpis = [
     { label: 'Projets en cours', value: enCours.length, color: '#3b82f6', bg: 'rgba(59,130,246,0.08)', border: 'rgba(59,130,246,0.2)' },
     { label: 'En attente de validation', value: enAttente.length, color: '#eab308', bg: 'rgba(234,179,8,0.08)', border: 'rgba(234,179,8,0.2)' },
@@ -66,6 +80,21 @@ export default async function FreelancerDashboard() {
           <p style={{ color: '#ef4444', fontSize: '0.8rem' }}>⚠ {overdue.length} prestation{overdue.length > 1 ? 's' : ''} en retard — priorité absolue</p>
         </div>
       )}
+
+      {/* Level & XP */}
+      <div style={{ background: 'linear-gradient(135deg, rgba(167,139,250,0.08), rgba(56,189,248,0.05))', border: '1px solid rgba(167,139,250,0.25)', borderRadius: 12, padding: '14px 20px', marginBottom: 18 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
+          <p style={{ color: '#a78bfa', fontSize: '0.9rem', fontWeight: 800 }}>
+            {levelIdx >= 4 ? '👑' : levelIdx >= 3 ? '🏆' : levelIdx >= 2 ? '⭐' : levelIdx >= 1 ? '🎬' : '🎞️'} {level.name}
+          </p>
+          <p style={{ color: 'rgba(240,235,227,0.4)', fontSize: '0.72rem', fontWeight: 600 }}>
+            {xp} projet{xp > 1 ? 's' : ''} validé{xp > 1 ? 's' : ''}{nextLevel ? ` · encore ${nextLevel.min - xp} avant ${nextLevel.name}` : ' · niveau max !'}
+          </p>
+        </div>
+        <div style={{ height: 7, background: 'rgba(0,0,0,0.4)', borderRadius: 6, overflow: 'hidden' }}>
+          <div style={{ height: '100%', width: `${Math.max(xpProgress, 3)}%`, background: 'linear-gradient(90deg, #a78bfa, #38bdf8)', borderRadius: 6, transition: 'width 0.8s cubic-bezier(0.16, 1, 0.3, 1)' }} />
+        </div>
+      </div>
 
       {/* Status KPIs */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10, marginBottom: 18 }}>

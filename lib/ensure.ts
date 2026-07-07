@@ -27,6 +27,13 @@ export async function ensureSchema() {
       version INT NOT NULL,
       "createdAt" TIMESTAMP(3) NOT NULL DEFAULT NOW()
     )`,
+    `ALTER TABLE "Production" ADD COLUMN IF NOT EXISTS "clientApprovedAt" TIMESTAMP(3)`,
+    `CREATE TABLE IF NOT EXISTS "ProductionEvent" (
+      id TEXT PRIMARY KEY,
+      "productionId" TEXT NOT NULL REFERENCES "Production"(id) ON DELETE CASCADE,
+      status TEXT NOT NULL,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT NOW()
+    )`,
     `CREATE TABLE IF NOT EXISTS "Comment" (
       id TEXT PRIMARY KEY,
       "productionId" TEXT NOT NULL REFERENCES "Production"(id) ON DELETE CASCADE,

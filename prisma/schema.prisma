@@ -47,14 +47,24 @@ model Production {
   internalNotes  String?
   lastFeedback   String?   // Latest revision comments from Lucas
   shareToken     String?   @unique // public client-tracking link
+  clientApprovedAt DateTime? // client clicked "approve" on the portal
   archived       Boolean   @default(false)
   assignedToId   String?
   assignedTo     User?     @relation("AssignedTo", fields: [assignedToId], references: [id])
   invoices       Invoice[]
   deliveryVersions DeliveryVersion[]
   comments       Comment[]
+  events         ProductionEvent[]
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
+}
+
+model ProductionEvent {
+  id           String     @id @default(cuid())
+  productionId String
+  production   Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
+  status       String     // the status the production entered
+  createdAt    DateTime   @default(now())
 }
 
 model DeliveryVersion {

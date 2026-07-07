@@ -75,8 +75,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 
   try {
-    // Read previous state: status (payout double-count guard) + deliveryLink (version history)
-    const before = await db.production.findUnique({ where: { id: params.id }, select: { status: true, deliveryLink: true } })
+    // Read previous state: status (payout guard + event history), deliveryLink (versions), deadline (reschedule alert)
+    const before = await db.production.findUnique({ where: { id: params.id }, select: { status: true, deliveryLink: true, deadline: true } })
 
     const prod = await db.production.update({
       where: { id: params.id },
@@ -92,6 +92,23 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       db.deliveryVersion.count({ where: { productionId: params.id } }).then((count: number) =>
         db.deliveryVersion.create({ data: { productionId: params.id, url: data.deliveryLink, version: count + 1 } })
       ).catch(() => {})
+    }
+
+    // Record each status transition (feeds the client-portal timeline dates)
+    if (data.status && data.status !== before?.status) {
+      db.productionEvent.create({ data: { productionId: params.id, status: data.status } }).catch(() => {})
+    }
+
+    // Deadline moved (drag & drop planning or manual edit) → WhatsApp alert
+    if (data.deadline !== undefined && isAdmin) {
+      const oldD = before?.deadline ? new Date(before.deadline).getTime() : null
+      const newD = data.deadline ? new Date(data.deadline).getTime() : null
+      if (oldD !== newD) {
+        const fmtFr = (d: Date | null) => d ? d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }) : 'aucune'
+        waProduction(
+          `📅 Deadline modifiée\n\nProjet : ${prod.title}\nAncienne deadline : ${fmtFr(before?.deadline ? new Date(before.deadline) : null)}\nNouvelle deadline : ${fmtFr(data.deadline)}\nModifié par : ${session.user?.name || 'Admin'}`
+        ).catch(() => {})
+      }
     }
 
     if (body.status === 'livre') {

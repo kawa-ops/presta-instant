@@ -380,6 +380,8 @@ export default function ProductionsPage() {
         case 'priority': va = PRIORITY_ORDER[a.priority] ?? 9; vb = PRIORITY_ORDER[b.priority] ?? 9; break
         case 'price': va = a.price ?? -1; vb = b.price ?? -1; break
         case 'deadline': va = a.deadline ? new Date(a.deadline).getTime() : Infinity; vb = b.deadline ? new Date(b.deadline).getTime() : Infinity; break
+        case 'productionDate': va = a.productionDate ? new Date(a.productionDate).getTime() : Infinity; vb = b.productionDate ? new Date(b.productionDate).getTime() : Infinity; break
+        case 'assignee': va = (a.assignedTo?.name || 'Lucas').toLowerCase(); vb = (b.assignedTo?.name || 'Lucas').toLowerCase(); break
         case 'title': va = a.title?.toLowerCase() || ''; vb = b.title?.toLowerCase() || ''; break
         case 'client': va = a.client?.toLowerCase() || ''; vb = b.client?.toLowerCase() || ''; break
         case 'status': va = a.status; vb = b.status; break
@@ -536,10 +538,10 @@ export default function ProductionsPage() {
             <thead>
               <tr style={{ borderBottom: '1px solid #1e1e1e' }}>
                 <th style={thStyle} onClick={() => toggleSort('title')}>Titre / Client <SortIcon col="title" sortBy={sortBy} sortDir={sortDir} /></th>
-                <th style={thStyle}>Date prestation</th>
+                <th style={thStyle} onClick={() => toggleSort('productionDate')}>Date prestation <SortIcon col="productionDate" sortBy={sortBy} sortDir={sortDir} /></th>
                 <th style={thStyle} onClick={() => toggleSort('deadline')}>Deadline <SortIcon col="deadline" sortBy={sortBy} sortDir={sortDir} /></th>
                 <th style={thStyle} onClick={() => toggleSort('priority')}>Priorité <SortIcon col="priority" sortBy={sortBy} sortDir={sortDir} /></th>
-                <th style={thStyle}>Assigné à</th>
+                <th style={thStyle} onClick={() => toggleSort('assignee')}>Assigné à <SortIcon col="assignee" sortBy={sortBy} sortDir={sortDir} /></th>
                 <th style={thStyle} onClick={() => toggleSort('price')}>Prix <SortIcon col="price" sortBy={sortBy} sortDir={sortDir} /></th>
                 <th style={thStyle} onClick={() => toggleSort('status')}>Statut <SortIcon col="status" sortBy={sortBy} sortDir={sortDir} /></th>
                 <th style={thStyle}>Source</th>

@@ -90,6 +90,7 @@ export async function POST(req: NextRequest) {
 
     // Fire-and-forget side effects (don't block the response)
     db.activityLog.create({ data: { actorName: session.user?.name || 'Admin', action: 'a créé la prestation', target: prod.title } }).catch(() => {})
+    db.productionEvent.create({ data: { productionId: prod.id, status: prod.status } }).catch(() => {})
     if (assignedToId && assignedToId !== lucasId) {
       db.notification.create({ data: { userId: assignedToId, type: 'new_task', message: `Nouvelle prestation assignée : ${prod.title}`, link: `/espace/prestations` } }).catch(() => {})
     }

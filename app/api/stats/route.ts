@@ -16,6 +16,9 @@ export async function GET() {
   const startTomorrow = new Date(startToday); startTomorrow.setDate(startTomorrow.getDate() + 1)
   const endTomorrow = new Date(endToday); endTomorrow.setDate(endTomorrow.getDate() + 1)
   const startMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+  // Monday of the current week
+  const startWeek = new Date(startToday)
+  startWeek.setDate(startWeek.getDate() - ((startWeek.getDay() + 6) % 7))
 
   const activeWhere = { archived: false, status: { notIn: ['valide'] } }
   const adminId = (session.user as any).id
@@ -38,8 +41,10 @@ export async function GET() {
       db.notification.findMany({ where: { userId: adminId, read: false }, orderBy: { createdAt: 'desc' }, take: 8 }),
     ])
 
+    const completedWeek = await db.production.count({ where: { status: 'valide', updatedAt: { gte: startWeek } } }).catch(() => 0)
+
     return NextResponse.json(
-      { inProgress, overdue, dueToday, dueTomorrow, completedMonth, activeFreelancers, totalProds, recentActivity, urgentProds, recentProds, notifications },
+      { inProgress, overdue, dueToday, dueTomorrow, completedMonth, completedWeek, activeFreelancers, totalProds, recentActivity, urgentProds, recentProds, notifications },
       { headers: { 'Cache-Control': 'no-store' } }
     )
   } catch (e: any) {

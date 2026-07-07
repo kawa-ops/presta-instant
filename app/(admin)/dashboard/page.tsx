@@ -145,6 +145,30 @@ export default function AdminDashboard() {
         </div>
       )}
 
+      {/* Weekly production goal */}
+      {stats && (
+        <div style={{ background: '#141414', border: `1px solid ${s.completedWeek >= 10 ? 'rgba(34,197,94,0.3)' : '#222'}`, borderRadius: 12, padding: '14px 20px', marginBottom: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
+            <p style={{ color: 'rgba(240,235,227,0.4)', fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              🎯 Objectif de la semaine
+            </p>
+            <p style={{ color: s.completedWeek >= 10 ? '#22c55e' : '#a78bfa', fontSize: '0.85rem', fontWeight: 800 }}>
+              {s.completedWeek} / 10 projets terminés{s.completedWeek >= 10 ? ' — objectif atteint ! 🎉' : ''}
+            </p>
+          </div>
+          <div style={{ height: 8, background: '#1c1c1c', borderRadius: 6, overflow: 'hidden' }}>
+            <div style={{
+              height: '100%', borderRadius: 6,
+              width: `${Math.min(100, (s.completedWeek / 10) * 100)}%`,
+              background: s.completedWeek >= 10
+                ? 'linear-gradient(90deg, #22c55e90, #22c55e)'
+                : 'linear-gradient(90deg, #a78bfa60, #a78bfa)',
+              transition: 'width 0.8s cubic-bezier(0.16, 1, 0.3, 1)',
+            }} />
+          </div>
+        </div>
+      )}
+
       {/* KPI Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 24 }}>
         {kpis.map(k => (
