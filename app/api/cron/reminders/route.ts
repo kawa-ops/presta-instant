@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { emailDeadlineReminder } from '@/lib/mail'
+import { waProduction } from '@/lib/whatsapp'
 
 export const dynamic = 'force-dynamic'
 const db = prisma as any
@@ -32,6 +33,13 @@ export async function GET(req: NextRequest) {
 
     // Email Lucas with the full list
     await emailDeadlineReminder(prods.map((p: any) => ({ title: p.title, client: p.client, assignee: p.assignedTo?.name || '—' })))
+
+    // Morning WhatsApp digest (once a day, actionable only)
+    const overdueCount = await db.production.count({
+      where: { archived: false, status: { notIn: ['valide'] }, deadline: { lt: new Date(new Date().setHours(0, 0, 0, 0)) } },
+    }).catch(() => 0)
+    const lines = prods.slice(0, 5).map((p: any) => `• ${p.title} (${p.assignedTo?.name || 'Lucas'})`).join('\n')
+    waProduction(`☀️ Brief du matin\n\n${prods.length} à livrer demain :\n${lines}${overdueCount > 0 ? `\n\n⚠ ${overdueCount} prestation${overdueCount > 1 ? 's' : ''} en retard` : ''}`).catch(() => {})
 
     // In-app notification for each assigned freelancer
     for (const p of prods) {

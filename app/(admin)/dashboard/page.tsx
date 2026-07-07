@@ -50,26 +50,49 @@ function IconUsers() {
 const STATUS_COLORS: Record<string, string> = { a_faire: '#6b7280', en_cours: '#3b82f6', en_attente: '#eab308', revisions: '#f97316', livre: '#a78bfa', envoye_client: '#38bdf8', retours_client: '#f43f5e', valide: '#22c55e' }
 const STATUS_LABELS: Record<string, string> = { a_faire: 'À faire', en_cours: 'En cours', en_attente: 'En attente', revisions: 'Retours à faire', livre: 'À valider', envoye_client: 'Envoyé client', retours_client: 'Retours client', valide: 'Terminé' }
 
+// Extract the project title from a notification message (« … » or "…")
+function extractTitle(message: string): string | null {
+  const m = message.match(/[«"]([^»"]+)[»"]/)
+  return m ? m[1].trim() : null
+}
+
 export default function AdminDashboard() {
   const { data: session } = useSession()
   // Paints instantly from session cache, refreshes in the background
   const { data: stats, refresh, mutate } = useCached<any>('stats', '/api/stats')
   const [poppingNotif, setPoppingNotif] = useState<string | null>(null)
+  const [brief, setBrief] = useState<any>(null)
+  const [briefOpen, setBriefOpen] = useState(false)
+  const [briefLoading, setBriefLoading] = useState(false)
+
+  async function loadBrief() {
+    setBriefLoading(true)
+    const d = await fetch('/api/brief', { cache: 'no-store' }).then(r => r.json()).catch(() => null)
+    if (d && !d.error) setBrief(d)
+    setBriefLoading(false)
+  }
+
+  function toggleBrief() {
+    if (!briefOpen) loadBrief()
+    setBriefOpen(o => !o)
+  }
 
   useEffect(() => {
-    // Auto-refresh: every 15s, on tab focus, and instantly on live events
-    const interval = setInterval(refresh, 15000)
-    const onFocus = () => refresh()
-    window.addEventListener('focus', onFocus)
-    document.addEventListener('visibilitychange', onFocus)
-    window.addEventListener('live-refresh', onFocus)
+    // Auto-refresh: every 15s, on tab focus, and instantly on live events.
+    // The AI brief re-generates too, so recommendations stay current.
+    const refreshAll = () => { refresh(); if (briefOpen) loadBrief() }
+    const interval = setInterval(refreshAll, 15000)
+    window.addEventListener('focus', refreshAll)
+    document.addEventListener('visibilitychange', refreshAll)
+    window.addEventListener('live-refresh', refreshAll)
     return () => {
       clearInterval(interval)
-      window.removeEventListener('focus', onFocus)
-      document.removeEventListener('visibilitychange', onFocus)
-      window.removeEventListener('live-refresh', onFocus)
+      window.removeEventListener('focus', refreshAll)
+      document.removeEventListener('visibilitychange', refreshAll)
+      window.removeEventListener('live-refresh', refreshAll)
     }
-  }, [refresh])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refresh, briefOpen])
 
   function dismissNotif(id: string) {
     // Instant: confetti burst, then remove locally — server sync in background
@@ -104,44 +127,47 @@ export default function AdminDashboard() {
             {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
           </p>
         </div>
-        <div style={{ background: '#141414', border: '1px solid #222', borderRadius: 10, padding: '8px 16px', textAlign: 'center' }}>
-          <p style={{ color: '#f0ebe3', fontSize: '1.1rem', fontWeight: 800 }}>{s.totalProds}</p>
-          <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.65rem' }}>prestations actives</p>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          <button onClick={toggleBrief} style={{ background: briefOpen ? 'linear-gradient(135deg, #a78bfa, #38bdf8)' : 'rgba(167,139,250,0.1)', border: '1px solid rgba(167,139,250,0.35)', borderRadius: 10, padding: '10px 18px', color: briefOpen ? '#0a0a0a' : '#a78bfa', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 800 }}>
+            ✨ Brief du jour
+          </button>
+          <div style={{ background: '#141414', border: '1px solid #222', borderRadius: 10, padding: '8px 16px', textAlign: 'center' }}>
+            <p style={{ color: '#f0ebe3', fontSize: '1.1rem', fontWeight: 800 }}>{s.totalProds}</p>
+            <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.65rem' }}>prestations actives</p>
+          </div>
         </div>
       </div>
 
-      {/* Live notifications requiring attention */}
-      {stats && (s.notifications || []).length > 0 && (
-        <div style={{ background: 'rgba(167,139,250,0.05)', border: '1px solid rgba(167,139,250,0.2)', borderRadius: 12, padding: '14px 18px', marginBottom: 16 }}>
-          <p style={{ color: '#a78bfa', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>🔔 À traiter</p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {(s.notifications as any[]).map((n: any) => {
-              const popping = poppingNotif === n.id
-              return (
-                <div key={n.id} style={{
-                  display: 'flex', alignItems: 'center', gap: 10, position: 'relative',
-                  background: popping ? 'rgba(34,197,94,0.1)' : 'transparent',
-                  borderRadius: 6, padding: '3px 6px',
-                  opacity: popping ? 0.4 : 1,
-                  transform: popping ? 'translateX(12px)' : 'none',
-                  transition: 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
-                }}>
-                  {popping && <MiniConfetti />}
-                  <p style={{ color: '#f0ebe3', fontSize: '0.8rem', flex: 1 }}>{n.message}</p>
-                  <button onClick={() => dismissNotif(n.id)} disabled={popping} title="Marquer comme traité" style={{ background: popping ? 'rgba(34,197,94,0.2)' : 'rgba(240,235,227,0.05)', border: `1px solid ${popping ? 'rgba(34,197,94,0.4)' : '#2a2a2a'}`, borderRadius: 6, padding: '3px 10px', color: popping ? '#22c55e' : 'rgba(240,235,227,0.4)', cursor: 'pointer', fontSize: '0.68rem' }}>✓</button>
+      {/* ✨ AI Daily Brief */}
+      {briefOpen && (
+        <div style={{ background: 'linear-gradient(135deg, rgba(167,139,250,0.06), rgba(56,189,248,0.04))', border: '1px solid rgba(167,139,250,0.3)', borderRadius: 14, padding: '18px 22px', marginBottom: 18 }}>
+          <p style={{ color: '#a78bfa', fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>
+            ✨ Assistant de production — {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
+          </p>
+          {briefLoading && !brief ? (
+            <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.8rem' }}>Analyse de la production en cours…</p>
+          ) : brief ? (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+              <div>
+                <p style={{ color: 'rgba(240,235,227,0.45)', fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>Priorités du jour</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+                  {brief.priorities.map((p: string, i: number) => (
+                    <p key={i} style={{ color: 'rgba(240,235,227,0.8)', fontSize: '0.8rem', lineHeight: 1.45 }}>{p}</p>
+                  ))}
                 </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Alerts */}
-      {stats && (s.overdue > 0 || s.dueToday > 0) && (
-        <div style={{ background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.15)', borderRadius: 10, padding: '12px 18px', marginBottom: 20, display: 'flex', gap: 20, flexWrap: 'wrap' }}>
-          {s.overdue > 0 && <p style={{ color: '#ef4444', fontSize: '0.82rem' }}>⚠ {s.overdue} prestation{s.overdue > 1 ? 's' : ''} en retard</p>}
-          {s.dueToday > 0 && <p style={{ color: '#eab308', fontSize: '0.82rem' }}>● {s.dueToday} prestation{s.dueToday > 1 ? 's' : ''} à livrer aujourd&apos;hui</p>}
-          {s.dueTomorrow > 0 && <p style={{ color: '#f97316', fontSize: '0.82rem' }}>◐ {s.dueTomorrow} à livrer demain</p>}
+              </div>
+              <div>
+                <p style={{ color: 'rgba(240,235,227,0.45)', fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>Actions recommandées</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+                  {brief.actions.map((a: string, i: number) => (
+                    <p key={i} style={{ color: 'rgba(240,235,227,0.8)', fontSize: '0.8rem', lineHeight: 1.45 }}>
+                      <span style={{ color: '#38bdf8', fontWeight: 800 }}>→</span> {a}
+                    </p>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : null}
         </div>
       )}
 
@@ -184,6 +210,49 @@ export default function AdminDashboard() {
           </Link>
         ))}
       </div>
+
+      {/* Operational summary */}
+      {stats && (s.overdue > 0 || s.dueToday > 0 || s.dueTomorrow > 0) && (
+        <div style={{ background: '#141414', border: '1px solid #222', borderRadius: 10, padding: '10px 18px', marginBottom: 16, display: 'flex', gap: 22, flexWrap: 'wrap', alignItems: 'center' }}>
+          <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Résumé</p>
+          {s.overdue > 0 && <p style={{ color: '#ef4444', fontSize: '0.8rem', fontWeight: 600 }}>⚠ {s.overdue} en retard</p>}
+          {s.dueToday > 0 && <p style={{ color: '#eab308', fontSize: '0.8rem', fontWeight: 600 }}>● {s.dueToday} aujourd&apos;hui</p>}
+          {s.dueTomorrow > 0 && <p style={{ color: '#f97316', fontSize: '0.8rem', fontWeight: 600 }}>◐ {s.dueTomorrow} demain</p>}
+          <Link href="/semaine" style={{ color: 'rgba(240,235,227,0.35)', fontSize: '0.72rem', textDecoration: 'none', marginLeft: 'auto' }}>Voir le planning →</Link>
+        </div>
+      )}
+
+      {/* 🔔 À traiter — with direct project access */}
+      {stats && (s.notifications || []).length > 0 && (
+        <div style={{ background: 'rgba(167,139,250,0.05)', border: '1px solid rgba(167,139,250,0.2)', borderRadius: 12, padding: '14px 18px', marginBottom: 16 }}>
+          <p style={{ color: '#a78bfa', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>🔔 À traiter</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {(s.notifications as any[]).map((n: any) => {
+              const popping = poppingNotif === n.id
+              const title = extractTitle(n.message)
+              return (
+                <div key={n.id} style={{
+                  display: 'flex', alignItems: 'center', gap: 8, position: 'relative',
+                  background: popping ? 'rgba(34,197,94,0.1)' : 'transparent',
+                  borderRadius: 6, padding: '3px 6px',
+                  opacity: popping ? 0.4 : 1,
+                  transform: popping ? 'translateX(12px)' : 'none',
+                  transition: 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
+                }}>
+                  {popping && <MiniConfetti />}
+                  <p style={{ color: '#f0ebe3', fontSize: '0.8rem', flex: 1 }}>{n.message}</p>
+                  <Link
+                    href={title ? `/productions?focus=${encodeURIComponent(title)}` : (n.link || '/productions')}
+                    title="Voir le projet"
+                    style={{ background: 'rgba(56,189,248,0.08)', border: '1px solid rgba(56,189,248,0.25)', borderRadius: 6, padding: '3px 10px', color: '#38bdf8', fontSize: '0.68rem', textDecoration: 'none', fontWeight: 600 }}
+                  >👁 Voir</Link>
+                  <button onClick={() => dismissNotif(n.id)} disabled={popping} title="Marquer comme traité" style={{ background: popping ? 'rgba(34,197,94,0.2)' : 'rgba(240,235,227,0.05)', border: `1px solid ${popping ? 'rgba(34,197,94,0.4)' : '#2a2a2a'}`, borderRadius: 6, padding: '3px 10px', color: popping ? '#22c55e' : 'rgba(240,235,227,0.4)', cursor: 'pointer', fontSize: '0.68rem' }}>✓</button>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Main grid */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 16 }}>

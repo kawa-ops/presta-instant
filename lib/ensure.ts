@@ -28,6 +28,7 @@ export async function ensureSchema() {
       "createdAt" TIMESTAMP(3) NOT NULL DEFAULT NOW()
     )`,
     `ALTER TABLE "Production" ADD COLUMN IF NOT EXISTS "clientApprovedAt" TIMESTAMP(3)`,
+    `ALTER TABLE "Production" ADD COLUMN IF NOT EXISTS "finalLink" TEXT`,
     `CREATE TABLE IF NOT EXISTS "ProductionEvent" (
       id TEXT PRIMARY KEY,
       "productionId" TEXT NOT NULL REFERENCES "Production"(id) ON DELETE CASCADE,

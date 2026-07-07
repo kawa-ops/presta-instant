@@ -28,7 +28,7 @@ export default function PortalClient({ prod, events, versionCount, token }: {
   const videoReady = ['envoye_client', 'retours_client'].includes(prod.status) && prod.deliveryLink
   const approved = mode === 'sent-approve' || prod.status === 'valide'
 
-  async function act(action: 'approve' | 'feedback') {
+  async function act(action: 'approve' | 'feedback' | 'frameio_done') {
     setSending(true)
     const res = await fetch(`/api/suivi/${token}`, {
       method: 'POST',
@@ -88,14 +88,19 @@ export default function PortalClient({ prod, events, versionCount, token }: {
         </div>
       )}
 
-      {/* ===== Approved state ===== */}
+      {/* ===== Approved state — premium confirmation ===== */}
       {approved && (
-        <div style={{ marginTop: 28, background: 'rgba(34,197,94,0.07)', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 14, padding: '26px 22px', textAlign: 'center' }}>
-          <p style={{ fontSize: '1.8rem', marginBottom: 8 }}>🎉</p>
-          <p style={{ color: '#22c55e', fontSize: '1.05rem', fontWeight: 800, marginBottom: 6 }}>Merci !</p>
-          <p style={{ color: 'rgba(240,235,227,0.6)', fontSize: '0.85rem', lineHeight: 1.5 }}>
-            Nous sommes ravis que la vidéo vous plaise.<br />Nous vous recontactons très vite pour la livraison finale.
+        <div style={{ marginTop: 28, background: 'linear-gradient(135deg, rgba(34,197,94,0.09), rgba(56,189,248,0.05))', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 16, padding: '32px 24px', textAlign: 'center' }}>
+          <p style={{ fontSize: '2.2rem', marginBottom: 10 }}>🎉</p>
+          <p style={{ color: '#22c55e', fontSize: '1.15rem', fontWeight: 800, marginBottom: 10 }}>Parfait !</p>
+          <p style={{ color: 'rgba(240,235,227,0.7)', fontSize: '0.88rem', lineHeight: 1.6 }}>
+            Merci d&apos;avoir validé votre vidéo.<br />
+            Notre équipe prépare maintenant la <strong style={{ color: '#f0ebe3' }}>version finale téléchargeable</strong>.<br />
+            Vous recevrez le lien de livraison très prochainement.
           </p>
+          {prod.status === 'valide' && (
+            <p style={{ color: '#38bdf8', fontSize: '0.8rem', fontWeight: 700, marginTop: 14 }}>📦 Version finale envoyée — vérifiez vos messages !</p>
+          )}
         </div>
       )}
 
@@ -106,18 +111,15 @@ export default function PortalClient({ prod, events, versionCount, token }: {
             <p style={{ color: '#38bdf8', fontSize: '1rem', fontWeight: 800, marginBottom: 4 }}>🎬 Votre vidéo est prête !</p>
             {versionCount > 1 && <p style={{ color: 'rgba(240,235,227,0.4)', fontSize: '0.75rem', marginBottom: 12 }}>Version actuellement en révision : <strong style={{ color: '#f0ebe3' }}>V{versionCount}</strong></p>}
 
-            {isFrameio && !frameioNotice ? (
-              <button onClick={() => setFrameioNotice(true)} style={{ background: '#38bdf8', color: '#0a0a0a', border: 'none', borderRadius: 10, padding: '13px 28px', fontWeight: 800, cursor: 'pointer', fontSize: '0.9rem', marginTop: 8 }}>
-                ▶ Regarder ma vidéo
-              </button>
-            ) : isFrameio && frameioNotice ? (
+            {isFrameio ? (
               <div style={{ background: 'rgba(240,235,227,0.04)', borderRadius: 10, padding: '14px 16px', marginTop: 10, textAlign: 'left' }}>
-                <p style={{ color: 'rgba(240,235,227,0.7)', fontSize: '0.8rem', lineHeight: 1.5, marginBottom: 12 }}>
-                  Votre vidéo va s&apos;ouvrir dans <strong style={{ color: '#f0ebe3' }}>Frame.io</strong>.<br />
-                  Vous pouvez laisser vos commentaires directement sur la timeline, à la seconde exacte où une modification est souhaitée. Cela nous permet de traiter vos retours beaucoup plus vite.
+                <p style={{ color: 'rgba(240,235,227,0.7)', fontSize: '0.8rem', lineHeight: 1.6, marginBottom: 12 }}>
+                  Votre relecture est hébergée sur <strong style={{ color: '#f0ebe3' }}>Frame.io</strong>.<br />
+                  Laissez tous vos commentaires <strong style={{ color: '#f0ebe3' }}>directement sur la timeline</strong>, à la seconde exacte où une modification est souhaitée.<br />
+                  Une fois votre relecture terminée, revenez ici et cliquez sur « Ma relecture est terminée ».
                 </p>
                 <a href={prod.deliveryLink} target="_blank" rel="noreferrer" style={{ display: 'inline-block', background: '#38bdf8', color: '#0a0a0a', borderRadius: 10, padding: '11px 24px', fontWeight: 800, fontSize: '0.85rem', textDecoration: 'none' }}>
-                  Ouvrir Frame.io ↗
+                  ▶ Regarder ma vidéo sur Frame.io ↗
                 </a>
               </div>
             ) : (
@@ -133,9 +135,15 @@ export default function PortalClient({ prod, events, versionCount, token }: {
               <button onClick={() => act('approve')} disabled={sending} style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.35)', borderRadius: 12, padding: '16px 14px', color: '#22c55e', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 800 }}>
                 ✅ J&apos;approuve cette version
               </button>
-              <button onClick={() => setMode('feedback')} disabled={sending} style={{ background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.3)', borderRadius: 12, padding: '16px 14px', color: '#f97316', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 800 }}>
-                ✏️ J&apos;ai des modifications à demander
-              </button>
+              {isFrameio ? (
+                <button onClick={() => act('frameio_done')} disabled={sending} style={{ background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.3)', borderRadius: 12, padding: '16px 14px', color: '#f97316', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 800 }}>
+                  ✏️ Ma relecture est terminée
+                </button>
+              ) : (
+                <button onClick={() => setMode('feedback')} disabled={sending} style={{ background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.3)', borderRadius: 12, padding: '16px 14px', color: '#f97316', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 800 }}>
+                  ✏️ J&apos;ai des modifications à demander
+                </button>
+              )}
             </div>
           )}
 

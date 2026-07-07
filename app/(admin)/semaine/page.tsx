@@ -62,7 +62,13 @@ export default function SemainePage() {
     return (
       <div
         draggable
-        onDragStart={e => { setDragId(p.id); e.dataTransfer.setData('text/plain', p.id); e.dataTransfer.effectAllowed = 'move' }}
+        onDragStart={e => {
+          e.dataTransfer.setData('text/plain', p.id)
+          e.dataTransfer.effectAllowed = 'move'
+          // Defer the state update: a synchronous re-render during dragstart
+          // cancels the native drag in Chrome (caused the "double click" bug)
+          setTimeout(() => setDragId(p.id), 0)
+        }}
         onDragEnd={() => { setDragId(null); setDragOverDay(null) }}
         style={{
           background: moved ? 'rgba(34,197,94,0.12)' : '#191919',

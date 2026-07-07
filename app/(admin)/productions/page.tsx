@@ -1,5 +1,5 @@
 'use client'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useCached } from '@/lib/useCached'
 import Timeline from '@/components/Timeline'
 import Thread from '@/components/Thread'
@@ -138,10 +138,32 @@ function Confetti() {
   )
 }
 
-function ProdRow({ p, freelancers, onSave, onDelete, onComplete, onQuickStatus, onFeedback, saving, celebrating }: {
+// Ready-to-send client message for the final delivery
+function buildDeliveryMessage(clientName: string, link: string) {
+  return `Bonjour ${clientName},
+
+Merci d'avoir validé votre vidéo !
+
+Pour confirmer, il n'y a plus de modifications en attente.
+
+Voici votre version finale téléchargeable :
+${link || '[lien à coller]'}
+
+Vous pouvez dès maintenant la télécharger et la publier sur vos réseaux.
+
+Encore merci pour votre confiance !
+
+Belle journée,
+L'équipe instant.`
+}
+
+function ProdRow({ p, freelancers, onSave, onDelete, onComplete, onQuickStatus, onFeedback, onFinalSend, saving, celebrating }: {
   p: any; freelancers: any[]; onSave: (d: any) => void; onDelete: () => void; onComplete: () => void
-  onQuickStatus: (status: string) => void; onFeedback: (comment: string) => void; saving: boolean; celebrating: boolean
+  onQuickStatus: (status: string) => void; onFeedback: (comment: string) => void; onFinalSend: (finalLink: string) => void
+  saving: boolean; celebrating: boolean
 }) {
+  const [finalLink, setFinalLink] = useState(p.finalLink || '')
+  const [copied, setCopied] = useState(false)
   const [open, setOpen] = useState(false)
   const [feedbackOpen, setFeedbackOpen] = useState(false)
   const [feedbackText, setFeedbackText] = useState('')
@@ -171,6 +193,9 @@ function ProdRow({ p, freelancers, onSave, onDelete, onComplete, onQuickStatus, 
   const isFreelancer = !!assignedFreelancer
   const isFreelanceProject = !!freelancers.find((f: any) => f.id === p.assignedToId)
   const isOverdue = p.deadline && new Date(p.deadline) < new Date() && !['valide'].includes(p.status)
+  // Rows demanding Lucas's attention glow until the action is done
+  const clientApproved = !!p.clientApprovedAt && p.status !== 'valide'
+  const needsAttention = ['livre', 'retours_client', 'revisions'].includes(p.status) || clientApproved
 
   return (
     <>
@@ -178,7 +203,9 @@ function ProdRow({ p, freelancers, onSave, onDelete, onComplete, onQuickStatus, 
         onClick={() => setOpen(!open)}
         style={{
           borderBottom: '1px solid #1a1a1a', cursor: 'pointer', position: 'relative',
-          background: celebrating ? 'rgba(34,197,94,0.12)' : open ? 'rgba(240,235,227,0.02)' : 'transparent',
+          background: celebrating ? 'rgba(34,197,94,0.12)' : needsAttention ? 'rgba(56,189,248,0.05)' : open ? 'rgba(240,235,227,0.02)' : 'transparent',
+          boxShadow: needsAttention ? 'inset 3px 0 0 #38bdf8' : 'none',
+          animation: needsAttention ? 'row-glow 2.2s ease-in-out infinite' : 'none',
           transition: 'background 0.4s ease, opacity 0.5s ease',
           opacity: celebrating ? 0.9 : 1,
         }}
@@ -279,6 +306,35 @@ function ProdRow({ p, freelancers, onSave, onDelete, onComplete, onQuickStatus, 
                     >Envoyer les retours</button>
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Final delivery workflow — appears once the client approved */}
+            {clientApproved && (
+              <div style={{ background: 'linear-gradient(135deg, rgba(34,197,94,0.06), rgba(56,189,248,0.04))', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 12, padding: 18, marginBottom: 16 }}>
+                <p style={{ color: '#22c55e', fontSize: '0.85rem', fontWeight: 800, marginBottom: 4 }}>🎉 Le client a approuvé la vidéo !</p>
+                <p style={{ color: 'rgba(240,235,227,0.45)', fontSize: '0.74rem', marginBottom: 14 }}>Prépare l&apos;export final, colle le lien de téléchargement, envoie le message au client, puis confirme.</p>
+
+                <label style={LA}>Lien de téléchargement final (Drive, WeTransfer…)</label>
+                <input style={IN} value={finalLink} onChange={e => setFinalLink(e.target.value)} placeholder="https://…" />
+
+                <label style={{ ...LA, marginTop: 12 }}>Message prêt à envoyer au client</label>
+                <textarea
+                  readOnly
+                  value={buildDeliveryMessage(p.client, finalLink)}
+                  style={{ ...IN, minHeight: 170, resize: 'vertical', color: 'rgba(240,235,227,0.75)', fontSize: '0.78rem', lineHeight: 1.5 }}
+                />
+
+                <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
+                  <button
+                    onClick={async () => { try { await navigator.clipboard.writeText(buildDeliveryMessage(p.client, finalLink)) } catch {}; setCopied(true); setTimeout(() => setCopied(false), 2000) }}
+                    style={{ background: 'rgba(240,235,227,0.06)', border: '1px solid #2a2a2a', borderRadius: 8, padding: '9px 16px', color: 'rgba(240,235,227,0.7)', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600 }}
+                  >{copied ? '✓ Copié !' : '📋 Copier le message'}</button>
+                  <button
+                    onClick={() => { if (!finalLink.trim()) { alert('Colle d\'abord le lien de téléchargement final.'); return } onFinalSend(finalLink.trim()) }}
+                    style={{ background: '#22c55e', color: '#0a0a0a', border: 'none', borderRadius: 8, padding: '9px 18px', fontWeight: 800, cursor: 'pointer', fontSize: '0.78rem' }}
+                  >📦 J&apos;ai envoyé la livraison finale</button>
+                </div>
               </div>
             )}
 
@@ -456,14 +512,85 @@ export default function ProductionsPage() {
     }, 1300)
   }
 
+  // Final delivery confirmed → project fully completed and archived
+  async function finalSend(id: string, finalLink: string) {
+    setCelebrating(id)
+    fetch(`/api/productions/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ finalLink, finalDeliverySent: true, status: 'valide', archived: true }),
+    }).catch(() => {})
+    setTimeout(() => {
+      setProds(prev => prev.filter(p => p.id !== id))
+      setCelebrating(null)
+    }, 1300)
+  }
+
+  // Deep-link from dashboard notifications: /productions?focus=<titre>
+  useEffect(() => {
+    const focus = new URLSearchParams(window.location.search).get('focus')
+    if (focus) setSearch(focus)
+  }, [])
+
+  // Priority Validation Center counts
+  const priority = useMemo(() => {
+    const validations = prods.filter(p => p.status === 'livre').length
+    const retours = prods.filter(p => p.status === 'retours_client').length
+    const finals = prods.filter(p => p.clientApprovedAt && p.status !== 'valide').length
+    const late = prods.filter(p => p.deadline && new Date(p.deadline) < new Date() && p.status !== 'valide').length
+    return { validations, retours, finals, late, total: validations + retours + finals }
+  }, [prods])
+
   const thStyle: React.CSSProperties = { padding: '10px 14px', color: 'rgba(240,235,227,0.25)', fontSize: '0.65rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', cursor: 'pointer', whiteSpace: 'nowrap', userSelect: 'none', textAlign: 'left' }
 
   return (
     <div style={{ width: '100%' }}>
+      <style>{`@keyframes row-glow { 0%, 100% { background-color: rgba(56,189,248,0.04); } 50% { background-color: rgba(56,189,248,0.09); } }`}</style>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <h1 style={{ color: '#f0ebe3', fontSize: '1.4rem', fontWeight: 800 }}>Post-productions</h1>
         <button onClick={() => { setShowNew(true); setCreateError('') }} style={{ background: '#f0ebe3', color: '#0a0a0a', border: 'none', borderRadius: 8, padding: '9px 18px', fontWeight: 700, cursor: 'pointer', fontSize: '0.82rem' }}>+ Nouvelle prestation</button>
       </div>
+
+      {/* Priority Validation Center */}
+      {!loading && (
+        priority.total === 0 ? (
+          <div style={{ background: 'rgba(34,197,94,0.05)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: 12, padding: '14px 20px', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: '1.1rem' }}>✅</span>
+            <p style={{ color: '#22c55e', fontSize: '0.85rem', fontWeight: 700 }}>Rien à valider — tout est traité !</p>
+            {priority.late > 0 && <p style={{ color: '#ef4444', fontSize: '0.75rem', marginLeft: 'auto' }}>⚠ {priority.late} en retard tout de même</p>}
+          </div>
+        ) : (
+          <div style={{ background: 'rgba(56,189,248,0.05)', border: '1px solid rgba(56,189,248,0.25)', borderRadius: 12, padding: '14px 20px', marginBottom: 14 }}>
+            <p style={{ color: '#38bdf8', fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>🎯 À traiter en priorité</p>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              {priority.validations > 0 && (
+                <button onClick={() => setFilterStatus('livre')} style={{ background: 'rgba(167,139,250,0.1)', border: '1px solid rgba(167,139,250,0.35)', borderRadius: 10, padding: '10px 16px', cursor: 'pointer', textAlign: 'left' }}>
+                  <p style={{ color: '#a78bfa', fontSize: '1.1rem', fontWeight: 800 }}>{priority.validations}</p>
+                  <p style={{ color: 'rgba(240,235,227,0.55)', fontSize: '0.7rem' }}>validation{priority.validations > 1 ? 's' : ''} en attente</p>
+                </button>
+              )}
+              {priority.retours > 0 && (
+                <button onClick={() => setFilterStatus('retours_client')} style={{ background: 'rgba(244,63,94,0.08)', border: '1px solid rgba(244,63,94,0.3)', borderRadius: 10, padding: '10px 16px', cursor: 'pointer', textAlign: 'left' }}>
+                  <p style={{ color: '#f43f5e', fontSize: '1.1rem', fontWeight: 800 }}>{priority.retours}</p>
+                  <p style={{ color: 'rgba(240,235,227,0.55)', fontSize: '0.7rem' }}>retour{priority.retours > 1 ? 's' : ''} client à traiter</p>
+                </button>
+              )}
+              {priority.finals > 0 && (
+                <button onClick={() => setFilterStatus('')} style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 10, padding: '10px 16px', cursor: 'pointer', textAlign: 'left' }}>
+                  <p style={{ color: '#22c55e', fontSize: '1.1rem', fontWeight: 800 }}>{priority.finals}</p>
+                  <p style={{ color: 'rgba(240,235,227,0.55)', fontSize: '0.7rem' }}>livraison{priority.finals > 1 ? 's' : ''} finale{priority.finals > 1 ? 's' : ''} à envoyer 🎉</p>
+                </button>
+              )}
+              {priority.late > 0 && (
+                <div style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 10, padding: '10px 16px' }}>
+                  <p style={{ color: '#ef4444', fontSize: '1.1rem', fontWeight: 800 }}>{priority.late}</p>
+                  <p style={{ color: 'rgba(240,235,227,0.55)', fontSize: '0.7rem' }}>en retard</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )
+      )}
 
       <div style={{ marginBottom: 12 }}>
         <input
@@ -560,6 +687,7 @@ export default function ProductionsPage() {
                   onComplete={() => completeProd(p.id)}
                   onQuickStatus={status => quickStatus(p.id, status)}
                   onFeedback={comment => sendFeedback(p.id, comment)}
+                  onFinalSend={link => finalSend(p.id, link)}
                   saving={saving === p.id}
                   celebrating={celebrating === p.id}
                 />

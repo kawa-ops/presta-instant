@@ -54,7 +54,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 
   if (isAdmin) {
-    const fields = ['title', 'client', 'brief', 'sourcesLink', 'deliveryLink', 'priority', 'status', 'internalNotes', 'archived']
+    const fields = ['title', 'client', 'brief', 'sourcesLink', 'deliveryLink', 'priority', 'status', 'internalNotes', 'archived', 'finalLink']
     fields.forEach(f => { if (body[f] !== undefined) data[f] = body[f] })
     // Revision request: store the comments and send the task back to the freelancer
     if (body.feedback) {
@@ -97,6 +97,12 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     // Record each status transition (feeds the client-portal timeline dates)
     if (data.status && data.status !== before?.status) {
       db.productionEvent.create({ data: { productionId: params.id, status: data.status } }).catch(() => {})
+    }
+
+    // Final delivery sent to the client
+    if (isAdmin && body.finalDeliverySent) {
+      waProduction(`📦 Livraison finale envoyée\n\nProjet : ${prod.title}\nClient : ${prod.client}\nEnvoyé par : ${session.user?.name || 'Admin'}`).catch(() => {})
+      db.activityLog.create({ data: { actorName: session.user?.name || 'Admin', action: 'a envoyé la livraison finale', target: prod.title } }).catch(() => {})
     }
 
     // Deadline moved (drag & drop planning or manual edit) → WhatsApp alert

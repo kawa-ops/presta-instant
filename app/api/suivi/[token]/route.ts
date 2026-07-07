@@ -34,6 +34,17 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
       return NextResponse.json({ ok: true })
     }
 
+    // Frame.io flow: the client left timestamped comments on the Frame.io timeline
+    if (action === 'frameio_done') {
+      const body = 'Le client a terminé sa relecture sur Frame.io — les commentaires sont sur la timeline.'
+      await db.production.update({ where: { id: prod.id }, data: { status: 'retours_client', lastFeedback: body } })
+      db.productionEvent.create({ data: { productionId: prod.id, status: 'retours_client' } }).catch(() => {})
+      db.comment.create({ data: { productionId: prod.id, authorName: `Client (${prod.client})`, authorRole: 'client', body } }).catch(() => {})
+      notifyAdmins(`💬 Relecture Frame.io terminée sur "${prod.title}"`)
+      waProduction(`💬 Relecture terminée sur Frame.io\n\nProjet : ${prod.title}\nClient : ${prod.client}\n\nLes commentaires sont sur la timeline Frame.io.`).catch(() => {})
+      return NextResponse.json({ ok: true })
+    }
+
     if (action === 'feedback') {
       if (!comments?.trim()) return NextResponse.json({ error: 'Message vide' }, { status: 400 })
       const body = comments.trim().slice(0, 3000)
