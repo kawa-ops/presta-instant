@@ -2,6 +2,7 @@
 import { useSession } from 'next-auth/react'
 import { useState, useEffect } from 'react'
 import Badges from '@/components/Badges'
+import AvatarUpload from '@/components/AvatarUpload'
 
 const IN: React.CSSProperties = { background: '#0f0f0f', border: '1px solid #2a2a2a', borderRadius: 8, padding: '9px 12px', color: '#f0ebe3', fontSize: '0.82rem', width: '100%', boxSizing: 'border-box' as const }
 const LA: React.CSSProperties = { display: 'block', color: 'rgba(240,235,227,0.4)', fontSize: '0.65rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' as const, marginBottom: 4 }
@@ -46,6 +47,10 @@ export default function ProfilPage() {
           Profil mis à jour ✓
         </div>
       )}
+
+      <div style={{ marginBottom: 12 }}>
+        <AvatarUpload />
+      </div>
 
       <div style={{ background: '#141414', border: '1px solid #222', borderRadius: 14, padding: 24 }}>
         <p style={{ color: '#f0ebe3', fontSize: '0.85rem', fontWeight: 600, marginBottom: 18 }}>Informations personnelles</p>

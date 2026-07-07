@@ -122,9 +122,17 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       const newD = data.deadline ? new Date(data.deadline).getTime() : null
       if (oldD !== newD) {
         const fmtFr = (d: Date | null) => d ? d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }) : 'aucune'
+        const oldStr = fmtFr(before?.deadline ? new Date(before.deadline) : null)
+        const newStr = fmtFr(data.deadline)
         waProduction(
-          `📅 Deadline modifiée\n\nProjet : ${prod.title}\nAncienne deadline : ${fmtFr(before?.deadline ? new Date(before.deadline) : null)}\nNouvelle deadline : ${fmtFr(data.deadline)}\nModifié par : ${session.user?.name || 'Admin'}`
+          `📅 Deadline modifiée\n\nProjet : ${prod.title}\nAncienne deadline : ${oldStr}\nNouvelle deadline : ${newStr}\nModifié par : ${session.user?.name || 'Admin'}`
         ).catch(() => {})
+        // In-app push for the other admins (not the one who moved it)
+        db.user.findMany({ where: { role: 'admin', id: { not: userId } } }).then((admins: any[]) => {
+          for (const a of admins) {
+            db.notification.create({ data: { userId: a.id, type: 'workflow', message: `📅 "${prod.title}" déplacé : ${oldStr} → ${newStr} (par ${session.user?.name || 'Admin'})`, link: '/semaine' } }).catch(() => {})
+          }
+        }).catch(() => {})
       }
     }
 

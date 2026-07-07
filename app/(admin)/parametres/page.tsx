@@ -2,6 +2,7 @@
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 import Badges from '@/components/Badges'
+import AvatarUpload from '@/components/AvatarUpload'
 
 export default function ParametresPage() {
   const { data: session } = useSession()
@@ -11,6 +12,8 @@ export default function ParametresPage() {
       <h1 style={{ color: '#f0ebe3', fontSize: '1.4rem', fontWeight: 800, marginBottom: 28 }}>Paramètres</h1>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <AvatarUpload />
+
         <div style={{ background: '#141414', border: '1px solid #222', borderRadius: 14, padding: 20 }}>
           <p style={{ color: '#f0ebe3', fontSize: '0.85rem', fontWeight: 600, marginBottom: 4 }}>Compte</p>
           <p style={{ color: 'rgba(240,235,227,0.4)', fontSize: '0.78rem' }}>{session?.user?.name} — {session?.user?.email}</p>

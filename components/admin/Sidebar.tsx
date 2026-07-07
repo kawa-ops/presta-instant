@@ -30,7 +30,7 @@ export default function AdminSidebar() {
   }, [])
 
   return (
-    <aside style={{ position: 'fixed', left: 0, top: 0, height: '100vh', width: 220, background: '#0d0d0d', borderRight: '1px solid #1e1e1e', display: 'flex', flexDirection: 'column', zIndex: 40 }}>
+    <aside style={{ position: 'fixed', left: 0, top: 0, height: '100vh', width: 220, background: 'linear-gradient(180deg, #16102b 0%, #0f0b1e 100%)', borderRight: '1px solid rgba(167,139,250,0.15)', boxShadow: '4px 0 24px rgba(88,28,135,0.15)', display: 'flex', flexDirection: 'column', zIndex: 40 }}>
       <div style={{ padding: '20px 20px 16px', borderBottom: '1px solid #1e1e1e' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <svg viewBox="0 0 100 100" width="18" height="18" fill="#f0ebe3">
@@ -49,9 +49,9 @@ export default function AdminSidebar() {
             <Link key={item.href} href={item.href} style={{
               display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px',
               borderRadius: 8, marginBottom: 2, textDecoration: 'none',
-              color: active ? '#f0ebe3' : 'rgba(240,235,227,0.4)',
-              background: active ? 'rgba(240,235,227,0.07)' : 'transparent',
-              borderLeft: active ? '2px solid #f0ebe3' : '2px solid transparent',
+              color: active ? '#f0ebe3' : 'rgba(240,235,227,0.45)',
+              background: active ? 'linear-gradient(90deg, rgba(167,139,250,0.18), rgba(236,72,153,0.08))' : 'transparent',
+              borderLeft: active ? '2px solid #a78bfa' : '2px solid transparent', boxShadow: active ? '0 0 16px rgba(167,139,250,0.12)' : 'none',
               fontSize: '0.82rem', fontWeight: active ? 600 : 400, transition: 'all 0.15s',
             }}>
               <span style={{ fontSize: '0.9rem', width: 18, textAlign: 'center' }}>{item.icon}</span>

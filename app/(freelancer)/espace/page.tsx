@@ -83,17 +83,17 @@ export default async function FreelancerDashboard() {
 
       {/* Financial KPIs */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 20 }}>
-        <div style={{ background: '#141414', border: '1px solid #222', borderRadius: 12, padding: '16px 18px' }}>
+        <div style={{ background: 'rgba(26,18,48,0.65)', border: '1px solid rgba(167,139,250,0.18)', borderRadius: 12, padding: '16px 18px' }}>
           <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.65rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Montant en attente</p>
           <p style={{ color: '#eab308', fontSize: '1.6rem', fontWeight: 800, lineHeight: 1 }}>{pendingAmount.toLocaleString('fr-FR')} €</p>
           <p style={{ color: 'rgba(240,235,227,0.25)', fontSize: '0.68rem', marginTop: 4 }}>livré, en attente de validation</p>
         </div>
-        <div style={{ background: '#141414', border: '1px solid #222', borderRadius: 12, padding: '16px 18px' }}>
+        <div style={{ background: 'rgba(26,18,48,0.65)', border: '1px solid rgba(167,139,250,0.18)', borderRadius: 12, padding: '16px 18px' }}>
           <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.65rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Montant validé</p>
           <p style={{ color: '#22c55e', fontSize: '1.6rem', fontWeight: 800, lineHeight: 1 }}>{validatedAmount.toLocaleString('fr-FR')} €</p>
           <p style={{ color: 'rgba(240,235,227,0.25)', fontSize: '0.68rem', marginTop: 4 }}>ce mois-ci</p>
         </div>
-        <div style={{ background: '#141414', border: '1px solid #222', borderRadius: 12, padding: '16px 18px' }}>
+        <div style={{ background: 'rgba(26,18,48,0.65)', border: '1px solid rgba(167,139,250,0.18)', borderRadius: 12, padding: '16px 18px' }}>
           <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.65rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Solde total</p>
           <p style={{ color: '#a78bfa', fontSize: '1.6rem', fontWeight: 800, lineHeight: 1 }}>{totalBalance.toLocaleString('fr-FR')} €</p>
           <p style={{ color: 'rgba(240,235,227,0.25)', fontSize: '0.68rem', marginTop: 4 }}>gagné depuis le début</p>
@@ -102,8 +102,8 @@ export default async function FreelancerDashboard() {
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: 14 }}>
         {/* Active tasks */}
-        <div style={{ background: '#141414', border: '1px solid #222', borderRadius: 14, overflow: 'hidden' }}>
-          <div style={{ padding: '13px 18px', borderBottom: '1px solid #1e1e1e', display: 'flex', justifyContent: 'space-between' }}>
+        <div style={{ background: 'rgba(26,18,48,0.65)', border: '1px solid rgba(167,139,250,0.18)', borderRadius: 14, overflow: 'hidden' }}>
+          <div style={{ padding: '13px 18px', borderBottom: '1px solid rgba(167,139,250,0.12)', display: 'flex', justifyContent: 'space-between' }}>
             <p style={{ color: '#f0ebe3', fontSize: '0.82rem', fontWeight: 600 }}>Mes prestations</p>
             <Link href="/espace/prestations" style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.72rem', textDecoration: 'none' }}>Tout voir →</Link>
           </div>
@@ -113,7 +113,7 @@ export default async function FreelancerDashboard() {
             activeList.slice(0, 6).map((p: any) => {
               const isOverdue = p.deadline && new Date(p.deadline) < startToday
               return (
-                <Link key={p.id} href="/espace/prestations" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 18px', borderBottom: '1px solid #191919', textDecoration: 'none' }}>
+                <Link key={p.id} href="/espace/prestations" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 18px', borderBottom: '1px solid rgba(167,139,250,0.06)', textDecoration: 'none' }}>
                   <div style={{ flex: 1 }}>
                     <p style={{ color: '#f0ebe3', fontSize: '0.8rem', fontWeight: 600 }}>{p.title}</p>
                     <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.68rem', marginTop: 1 }}>{p.client} · {fmt(p.deadline)}</p>
@@ -128,15 +128,15 @@ export default async function FreelancerDashboard() {
         </div>
 
         {/* Notifications */}
-        <div style={{ background: '#141414', border: '1px solid #222', borderRadius: 14, overflow: 'hidden', alignSelf: 'start' }}>
-          <div style={{ padding: '13px 16px', borderBottom: '1px solid #1e1e1e' }}>
+        <div style={{ background: 'rgba(26,18,48,0.65)', border: '1px solid rgba(167,139,250,0.18)', borderRadius: 14, overflow: 'hidden', alignSelf: 'start' }}>
+          <div style={{ padding: '13px 16px', borderBottom: '1px solid rgba(167,139,250,0.12)' }}>
             <p style={{ color: '#f0ebe3', fontSize: '0.82rem', fontWeight: 600 }}>Notifications</p>
           </div>
           {(notifications as any[]).length === 0 ? (
             <p style={{ color: 'rgba(240,235,227,0.2)', padding: '20px 16px', fontSize: '0.75rem', textAlign: 'center' }}>Aucune notification</p>
           ) : (
             (notifications as any[]).map((n: any) => (
-              <div key={n.id} style={{ padding: '10px 16px', borderBottom: '1px solid #191919' }}>
+              <div key={n.id} style={{ padding: '10px 16px', borderBottom: '1px solid rgba(167,139,250,0.06)' }}>
                 <p style={{ color: '#f0ebe3', fontSize: '0.75rem' }}>{n.message}</p>
                 <p style={{ color: 'rgba(240,235,227,0.2)', fontSize: '0.65rem', marginTop: 2 }}>{fmt(n.createdAt)}</p>
               </div>

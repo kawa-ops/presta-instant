@@ -154,6 +154,14 @@ export default function PrestatairesPage() {
     load()
   }
 
+  async function grantBonus(id: string) {
+    const xp = prompt('Combien de XP bonus offrir à ce prestataire ? (max 1000)')
+    if (!xp || isNaN(parseInt(xp))) return
+    const reason = prompt('Raison du bonus (visible par le prestataire) :') || ''
+    const res = await fetch('/api/gamify/grant', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: id, xp: parseInt(xp), reason }) })
+    alert(res.ok ? `✓ +${xp} XP offerts !` : 'Erreur')
+  }
+
   async function changePassword(id: string) {
     const pwd = prompt('Nouveau mot de passe pour ce prestataire (min 6 caractères) :')
     if (!pwd) return
@@ -226,6 +234,7 @@ export default function PrestatairesPage() {
                 </button>
                 <button onClick={() => setEditingId(editingId === f.id ? null : f.id)} style={{ background: editingId === f.id ? 'rgba(167,139,250,0.12)' : 'rgba(240,235,227,0.05)', border: `1px solid ${editingId === f.id ? 'rgba(167,139,250,0.3)' : '#2a2a2a'}`, borderRadius: 7, padding: '7px 12px', color: editingId === f.id ? '#a78bfa' : 'rgba(240,235,227,0.5)', cursor: 'pointer', fontSize: '0.72rem' }} title="Modifier le profil">✏️</button>
                 <button onClick={() => changePassword(f.id)} style={{ background: 'rgba(240,235,227,0.05)', border: '1px solid #2a2a2a', borderRadius: 7, padding: '7px 12px', color: 'rgba(240,235,227,0.5)', cursor: 'pointer', fontSize: '0.72rem' }} title="Changer le mot de passe">🔑</button>
+                <button onClick={() => grantBonus(f.id)} style={{ background: 'rgba(167,139,250,0.08)', border: '1px solid rgba(167,139,250,0.3)', borderRadius: 7, padding: '7px 12px', color: '#a78bfa', cursor: 'pointer', fontSize: '0.72rem' }} title="Offrir un bonus XP">🎁</button>
                 <button onClick={() => remove(f.id)} style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 7, padding: '7px 12px', color: '#ef4444', cursor: 'pointer', fontSize: '0.72rem' }}>✕</button>
               </div>
 

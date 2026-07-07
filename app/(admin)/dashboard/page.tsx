@@ -133,11 +133,10 @@ export default function AdminDashboard() {
   const missionsDone = missions.filter(m => m.done).length
 
   const kpis = [
-    { label: 'En cours', value: s.inProgress, color: '#3b82f6', href: '/productions?status=en_cours' },
-    { label: 'En retard', value: s.overdue, color: '#ef4444', href: '/productions?overdue=true' },
-    { label: "Aujourd'hui", value: s.dueToday, color: '#eab308', href: '/semaine' },
-    { label: 'Demain', value: s.dueTomorrow, color: '#f97316', href: '/semaine' },
-    { label: 'Terminés/mois', value: s.completedMonth, color: '#22c55e', href: '/archives' },
+    { label: 'En cours', value: s.inProgress, color: '#818cf8', href: '/productions?status=en_cours' },
+    { label: 'En retard', value: s.overdue, color: '#fb7185', href: '/productions?overdue=true' },
+    { label: "Aujourd'hui", value: s.dueToday, color: '#d9a94e', href: '/semaine' },
+    { label: 'Terminés/mois', value: s.completedMonth, color: '#6ee7b7', href: '/archives' },
     { label: 'Prestataires', value: s.activeFreelancers, color: '#ec4899', href: '/prestataires' },
   ]
 
@@ -156,6 +155,15 @@ export default function AdminDashboard() {
         .dash-fade { animation: fade-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both; }
         .dash-card-hover { transition: transform 0.2s cubic-bezier(0.16,1,0.3,1), box-shadow 0.2s; }
         .dash-card-hover:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(167,139,250,0.18); }
+        .ach-tip { position: relative; cursor: default; }
+        .ach-tip .tipbox {
+          position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%) translateY(4px);
+          background: #1a1230; border: 1px solid rgba(167,139,250,0.4); border-radius: 10px;
+          padding: 8px 12px; width: 190px; z-index: 50; pointer-events: none;
+          opacity: 0; transition: opacity 0.08s ease, transform 0.08s ease;
+          box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+        }
+        .ach-tip:hover .tipbox { opacity: 1; transform: translateX(-50%) translateY(0); }
       `}</style>
 
       {/* ===== Ambient animated background (dashboard only) ===== */}
@@ -169,10 +177,10 @@ export default function AdminDashboard() {
 
       <div style={{ position: 'relative', zIndex: 1 }}>
         {/* ================= HERO — RPG player card ================= */}
-        <div className="dash-fade" style={{ ...glass, padding: '26px 30px', marginBottom: 14, animation: 'fade-up 0.5s both, card-float 6s ease-in-out 1s infinite', background: 'linear-gradient(135deg, rgba(88,28,135,0.35), rgba(22,17,40,0.6))' }}>
+        <div className="dash-fade" style={{ ...glass, padding: '36px 40px', marginBottom: 14, animation: 'fade-up 0.5s both, card-float 6s ease-in-out 1s infinite', background: 'linear-gradient(135deg, rgba(88,28,135,0.35), rgba(22,17,40,0.6))' }}>
           <div style={{ display: 'flex', gap: 24, alignItems: 'center', flexWrap: 'wrap' }}>
             {/* Avatar with animated ring */}
-            <div style={{ position: 'relative', width: 92, height: 92, flexShrink: 0 }}>
+            <div style={{ position: 'relative', width: 112, height: 112, flexShrink: 0 }}>
               <div style={{
                 position: 'absolute', inset: 0, borderRadius: '50%',
                 background: prestige >= 2
@@ -182,8 +190,13 @@ export default function AdminDashboard() {
                     : 'conic-gradient(#a78bfa, #38bdf8, #a78bfa)',
                 animation: 'ring-spin 6s linear infinite',
               }} />
-              <div style={{ position: 'absolute', inset: 4, borderRadius: '50%', background: '#141021', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <span style={{ fontSize: '2rem', fontWeight: 900, background: 'linear-gradient(135deg, #a78bfa, #ec4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{initial}</span>
+              <div style={{ position: 'absolute', inset: 4, borderRadius: '50%', background: '#141021', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                {g?.profilePicUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={g.profilePicUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  <span style={{ fontSize: '2.2rem', fontWeight: 900, background: 'linear-gradient(135deg, #a78bfa, #ec4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{initial}</span>
+                )}
               </div>
               {prestige > 0 && (
                 <span title={`Prestige ${prestige}`} style={{ position: 'absolute', bottom: -4, right: -4, background: '#141021', border: '1px solid rgba(234,179,8,0.5)', borderRadius: 20, padding: '2px 8px', color: '#eab308', fontSize: '0.7rem', fontWeight: 800 }}>
@@ -195,7 +208,7 @@ export default function AdminDashboard() {
             {/* Identity + XP */}
             <div style={{ flex: 1, minWidth: 260 }}>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
-                <h1 style={{ color: '#f0ebe3', fontSize: '1.45rem', fontWeight: 900 }}>Bonjour {firstName} 👋</h1>
+                <h1 style={{ color: '#f0ebe3', fontSize: '1.7rem', fontWeight: 900 }}>Bonjour {firstName} 👋</h1>
                 {g && (
                   <>
                     <span style={{ background: 'linear-gradient(90deg, rgba(167,139,250,0.2), rgba(236,72,153,0.15))', border: '1px solid rgba(167,139,250,0.35)', color: '#c4b5fd', padding: '3px 12px', borderRadius: 20, fontSize: '0.78rem', fontWeight: 800 }}>{g.rank}</span>
@@ -227,11 +240,9 @@ export default function AdminDashboard() {
 
             {/* Player stats */}
             {g && (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, auto)', gap: '10px 26px', textAlign: 'right' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'auto', gap: 14, textAlign: 'right' }}>
                 {[
                   { v: g.validated, l: 'productions terminées' },
-                  { v: g.approvals, l: 'approbations clients' },
-                  { v: `${g.completionRate}%`, l: 'taux de complétion' },
                   { v: `+${g.xpToday}`, l: 'XP aujourd\'hui', hot: g.xpToday > 0 },
                 ].map((st: any, i) => (
                   <div key={i}>
@@ -272,7 +283,7 @@ export default function AdminDashboard() {
         {/* ================= Motivation strip: goal + missions ================= */}
         <div className="dash-fade" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14, animationDelay: '0.06s' }}>
           {/* Weekly goal */}
-          <div style={{ ...glass, padding: '16px 20px' }}>
+          <div style={{ ...glass, padding: '12px 18px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
               <p style={{ color: 'rgba(240,235,227,0.45)', fontSize: '0.66rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>🎯 Objectif de la semaine</p>
               <p style={{ color: s.completedWeek >= 10 ? '#22c55e' : '#c4b5fd', fontSize: '0.85rem', fontWeight: 900 }}>
@@ -294,9 +305,9 @@ export default function AdminDashboard() {
           {/* Daily missions */}
           <div style={{ ...glass, padding: '16px 20px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10 }}>
-              <p style={{ color: 'rgba(240,235,227,0.45)', fontSize: '0.66rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>⚔️ Missions du jour</p>
+              <p style={{ color: 'rgba(240,235,227,0.45)', fontSize: '0.66rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>🎯 Objectifs du moment</p>
               <p style={{ color: missionsDone === missions.length && missions.length > 0 ? '#22c55e' : '#c4b5fd', fontSize: '0.78rem', fontWeight: 900 }}>
-                {missionsDone}/{missions.length}{missionsDone === missions.length && missions.length > 0 ? ' — journée parfaite ! 🏆' : ''}
+                {missionsDone}/{missions.length}{missionsDone === missions.length && missions.length > 0 ? ' — tout est accompli ! 🏆' : ''}
               </p>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
@@ -320,7 +331,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* ================= KPIs — dense row ================= */}
-        <div className="dash-fade" style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 10, marginBottom: 14, animationDelay: '0.12s' }}>
+        <div className="dash-fade" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10, marginBottom: 14, animationDelay: '0.12s' }}>
           {kpis.map(k => (
             <Link key={k.label} href={k.href} className="dash-card-hover" style={{ ...glass, padding: '14px 16px', textDecoration: 'none', borderColor: `${k.color}30` }}>
               <p style={{ color: k.color, fontSize: '1.6rem', fontWeight: 900, lineHeight: 1, textShadow: `0 0 18px ${k.color}50` }}>{k.value}</p>
@@ -333,11 +344,11 @@ export default function AdminDashboard() {
         {stats && (s.overdue > 0 || s.dueToday > 0 || s.dueTomorrow > 0 || s.pendingValidations > 0) && (
           <div className="dash-fade" style={{ ...glass, padding: '9px 18px', marginBottom: 14, display: 'flex', gap: 20, flexWrap: 'wrap', alignItems: 'center', animationDelay: '0.16s' }}>
             <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.64rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Résumé</p>
-            {s.overdue > 0 && <p style={{ color: '#ef4444', fontSize: '0.78rem', fontWeight: 700 }}>⚠ {s.overdue} en retard</p>}
-            {s.dueToday > 0 && <p style={{ color: '#eab308', fontSize: '0.78rem', fontWeight: 700 }}>● {s.dueToday} aujourd&apos;hui</p>}
-            {s.dueTomorrow > 0 && <p style={{ color: '#f97316', fontSize: '0.78rem', fontWeight: 700 }}>◐ {s.dueTomorrow} demain</p>}
+            {s.overdue > 0 && <p style={{ color: '#fb7185', fontSize: '0.78rem', fontWeight: 700 }}>⚠ {s.overdue} en retard</p>}
+            {s.dueToday > 0 && <p style={{ color: '#d9a94e', fontSize: '0.78rem', fontWeight: 700 }}>● {s.dueToday} aujourd&apos;hui</p>}
+            {s.dueTomorrow > 0 && <p style={{ color: '#e0a37a', fontSize: '0.78rem', fontWeight: 700 }}>◐ {s.dueTomorrow} demain</p>}
             {s.pendingValidations > 0 && <p style={{ color: '#a78bfa', fontSize: '0.78rem', fontWeight: 700 }}>🟣 {s.pendingValidations} à valider</p>}
-            {s.retoursClient > 0 && <p style={{ color: '#f43f5e', fontSize: '0.78rem', fontWeight: 700 }}>💬 {s.retoursClient} retours client</p>}
+            {s.retoursClient > 0 && <p style={{ color: '#ec4899', fontSize: '0.78rem', fontWeight: 700 }}>💬 {s.retoursClient} retours client</p>}
             <Link href="/semaine" style={{ color: 'rgba(240,235,227,0.35)', fontSize: '0.7rem', textDecoration: 'none', marginLeft: 'auto' }}>Planning →</Link>
           </div>
         )}
@@ -382,7 +393,7 @@ export default function AdminDashboard() {
               {(s.urgentProds as any[]).length === 0 ? (
                 <p style={{ color: '#22c55e', padding: '18px', textAlign: 'center', fontSize: '0.8rem', fontWeight: 700 }}>✓ Aucune urgence aujourd&apos;hui</p>
               ) : (
-                (s.urgentProds as any[]).map((p: any) => {
+                (s.urgentProds as any[]).slice(0, 3).map((p: any) => {
                   const isOverdue = p.deadline && new Date(p.deadline) < new Date()
                   return (
                     <Link key={p.id} href={`/productions?focus=${encodeURIComponent(p.title)}`} style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 10, padding: '8px 18px', borderBottom: '1px solid rgba(167,139,250,0.07)', textDecoration: 'none', alignItems: 'center' }}>
@@ -398,30 +409,16 @@ export default function AdminDashboard() {
               )}
             </div>
 
-            {/* Dernières prestations + activité — two dense columns */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-              <div style={{ ...glass, overflow: 'hidden' }}>
-                <p style={{ color: '#f0ebe3', fontSize: '0.78rem', fontWeight: 700, padding: '10px 16px', borderBottom: '1px solid rgba(167,139,250,0.12)' }}>Dernières prestations</p>
-                {(s.recentProds as any[]).slice(0, 5).map((p: any) => (
-                  <div key={p.id} style={{ display: 'flex', gap: 8, padding: '7px 16px', borderBottom: '1px solid rgba(167,139,250,0.06)', alignItems: 'center' }}>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ color: '#f0ebe3', fontSize: '0.74rem', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.title}</p>
-                      <p style={{ color: 'rgba(240,235,227,0.28)', fontSize: '0.64rem' }}>{p.assignedTo?.name || '—'}</p>
-                    </div>
-                    <span style={{ background: `${STATUS_COLORS[p.status] || '#6b7280'}18`, color: STATUS_COLORS[p.status] || '#6b7280', padding: '1px 7px', borderRadius: 20, fontSize: '0.6rem', fontWeight: 700, whiteSpace: 'nowrap' }}>{STATUS_LABELS[p.status] || p.status}</span>
-                  </div>
-                ))}
-              </div>
-              <div style={{ ...glass, overflow: 'hidden' }}>
-                <p style={{ color: '#f0ebe3', fontSize: '0.78rem', fontWeight: 700, padding: '10px 16px', borderBottom: '1px solid rgba(167,139,250,0.12)' }}>Activité récente</p>
-                {(s.recentActivity as any[]).slice(0, 5).map((a: any) => (
-                  <div key={a.id} style={{ padding: '7px 16px', borderBottom: '1px solid rgba(167,139,250,0.06)' }}>
-                    <p style={{ color: 'rgba(240,235,227,0.6)', fontSize: '0.72rem', lineHeight: 1.35 }}>
-                      <strong style={{ color: '#f0ebe3' }}>{a.actorName}</strong> {a.action}{a.target ? <span style={{ color: 'rgba(240,235,227,0.35)' }}> — {a.target}</span> : null}
-                    </p>
-                  </div>
-                ))}
-              </div>
+            {/* Activité récente — full width */}
+            <div style={{ ...glass, overflow: 'hidden' }}>
+              <p style={{ color: '#f0ebe3', fontSize: '0.78rem', fontWeight: 700, padding: '10px 16px', borderBottom: '1px solid rgba(167,139,250,0.12)' }}>Activité récente</p>
+              {(s.recentActivity as any[]).slice(0, 6).map((a: any) => (
+                <div key={a.id} style={{ padding: '7px 16px', borderBottom: '1px solid rgba(167,139,250,0.06)' }}>
+                  <p style={{ color: 'rgba(240,235,227,0.6)', fontSize: '0.72rem', lineHeight: 1.35 }}>
+                    <strong style={{ color: '#f0ebe3' }}>{a.actorName}</strong> {a.action}{a.target ? <span style={{ color: 'rgba(240,235,227,0.35)' }}> — {a.target}</span> : null}
+                  </p>
+                </div>
+              ))}
             </div>
           </div>
 
@@ -492,10 +489,16 @@ export default function AdminDashboard() {
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                   {(g.achievements || []).slice(0, 8).map((a: any) => (
-                    <span key={a.key} title={a.label} style={{ fontSize: '1.15rem', background: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.35)', borderRadius: 10, padding: '5px 8px', cursor: 'default' }}>{a.emoji}</span>
+                    <span key={a.key} className="ach-tip" style={{ fontSize: '1.15rem', background: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.35)', borderRadius: 10, padding: '5px 8px', display: 'inline-block' }}>
+                      {a.emoji}
+                      <span className="tipbox"><span style={{ display: 'block', color: '#fde68a', fontSize: '0.68rem', fontWeight: 800 }}>{a.emoji} {a.label}</span><span style={{ display: 'block', color: 'rgba(240,235,227,0.5)', fontSize: '0.62rem', marginTop: 2 }}>Débloqué ✓ (+{a.xp} XP)</span></span>
+                    </span>
                   ))}
                   {(g.locked || []).slice(0, Math.max(0, 8 - (g.achievements || []).length)).map((a: any) => (
-                    <span key={a.key} title={`À débloquer : ${a.label}`} style={{ fontSize: '1.15rem', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(167,139,250,0.12)', borderRadius: 10, padding: '5px 8px', filter: 'grayscale(1)', opacity: 0.4, cursor: 'default' }}>{a.emoji}</span>
+                    <span key={a.key} className="ach-tip" style={{ fontSize: '1.15rem', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(167,139,250,0.12)', borderRadius: 10, padding: '5px 8px', display: 'inline-block', opacity: 0.55 }}>
+                      <span style={{ filter: 'grayscale(1)', opacity: 0.7 }}>{a.emoji}</span>
+                      <span className="tipbox"><span style={{ display: 'block', color: '#c4b5fd', fontSize: '0.68rem', fontWeight: 800 }}>{a.emoji} {a.label}</span><span style={{ display: 'block', color: 'rgba(240,235,227,0.5)', fontSize: '0.62rem', marginTop: 2 }}>À débloquer (+{a.xp} XP)</span></span>
+                    </span>
                   ))}
                 </div>
               </div>

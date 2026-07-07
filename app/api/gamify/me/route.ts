@@ -33,6 +33,7 @@ export async function GET() {
         ? db.production.count()
         : db.production.count({ where: { assignedToId: userId } }),
     ])
+    const me = await db.user.findUnique({ where: { id: userId }, select: { profilePicUrl: true } }).catch(() => null)
 
     const xp = totalAgg._sum.amount || 0
     const level = levelFromXp(xp)
@@ -53,6 +54,7 @@ export async function GET() {
       nextRank: rankFor(level + 1, role) !== rankFor(level, role) ? rankFor(level + 1, role) : null,
       streak,
       prestige,
+      profilePicUrl: me?.profilePicUrl || null,
       xpToday: todayAgg._sum.amount || 0,
       xpWeek: weekAgg._sum.amount || 0,
       approvals,
