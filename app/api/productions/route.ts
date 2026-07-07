@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
   if (!session || (session.user as any).role !== 'admin') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await req.json()
-  const { title, client, brief, sourcesLink, priority, status, price, clientPrice, deadline, productionDate, internalNotes } = body
+  const { title, client, brief, sourcesLink, referenceLink, priority, status, price, clientPrice, deadline, productionDate, internalNotes } = body
   let { assignedToId } = body
 
   if (!title?.trim() || !client?.trim()) {
@@ -76,6 +76,7 @@ export async function POST(req: NextRequest) {
         client: client.trim(),
         brief: brief || null,
         sourcesLink: sourcesLink || null,
+        referenceLink: referenceLink || null,
         priority: priority || 'normal',
         status: status || 'a_faire',
         price: price !== undefined && price !== null && price !== '' ? parseFloat(price) : null,

@@ -37,6 +37,7 @@ model Production {
   client         String
   brief          String?
   sourcesLink    String?
+  referenceLink  String?   // musiques, inspirations, moodboards…
   deliveryLink   String?
   priority       String    @default("normal") // urgent | high | normal | low
   status         String    @default("a_faire") // a_faire | en_cours | en_attente | livre | valide
@@ -133,6 +134,15 @@ model XpEvent {
   amount    Int
   reason    String
   createdAt DateTime @default(now())
+}
+
+model CustomAchievement {
+  id          String   @id @default(cuid())
+  emoji       String
+  label       String
+  description String?
+  xp          Int      @default(25)
+  createdAt   DateTime @default(now())
 }
 
 model Achievement {

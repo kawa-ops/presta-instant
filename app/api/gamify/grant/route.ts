@@ -17,8 +17,21 @@ export async function POST(req: NextRequest) {
 
   try {
     if (achievementKey) {
-      if (!ACHIEVEMENTS[achievementKey]) return NextResponse.json({ error: 'Succès inconnu' }, { status: 400 })
-      await unlockAchievement(userId, achievementKey)
+      if (achievementKey.startsWith('custom_')) {
+        // Admin-created achievement: unlock manually
+        const customId = achievementKey.replace('custom_', '')
+        const def = await db.customAchievement.findUnique({ where: { id: customId } })
+        if (!def) return NextResponse.json({ error: 'Succès inconnu' }, { status: 400 })
+        const existing = await db.achievement.findUnique({ where: { userId_key: { userId, key: achievementKey } } }).catch(() => null)
+        if (!existing) {
+          await db.achievement.create({ data: { userId, key: achievementKey } })
+          await db.xpEvent.create({ data: { userId, amount: def.xp, reason: `Succès : ${def.label}` } }).catch(() => {})
+          await db.notification.create({ data: { userId, type: 'achievement', message: `${def.emoji} Succès débloqué : ${def.label} (+${def.xp} XP)`, link: '/espace/profil' } }).catch(() => {})
+        }
+      } else {
+        if (!ACHIEVEMENTS[achievementKey]) return NextResponse.json({ error: 'Succès inconnu' }, { status: 400 })
+        await unlockAchievement(userId, achievementKey)
+      }
     }
     if (xp && parseInt(xp) !== 0) {
       // Admin adjustment bypasses the daily cap; negative values allowed for corrections

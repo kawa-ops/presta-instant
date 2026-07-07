@@ -15,7 +15,7 @@ export async function GET() {
   try {
     const [xpByUser, users, validatedByUser] = await Promise.all([
       db.xpEvent.groupBy({ by: ['userId'], _sum: { amount: true } }),
-      db.user.findMany({ where: { active: true }, select: { id: true, name: true, role: true } }),
+      db.user.findMany({ where: { active: true }, select: { id: true, name: true, role: true, profilePicUrl: true } }),
       db.production.groupBy({ by: ['assignedToId'], where: { status: 'valide' }, _count: true }),
     ])
 
@@ -32,7 +32,9 @@ export async function GET() {
           id: u.id,
           name: u.name,
           role: u.role,
+          profilePicUrl: u.profilePicUrl || null,
           xp, level,
+          prestige: Math.floor(level / 20),
           rank: rankFor(level, u.role),
           productions: prodMap[u.id] || 0,
           isMe: u.id === (session.user as any).id,

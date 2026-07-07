@@ -55,7 +55,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 
   if (isAdmin) {
-    const fields = ['title', 'client', 'brief', 'sourcesLink', 'deliveryLink', 'priority', 'status', 'internalNotes', 'archived', 'finalLink']
+    const fields = ['title', 'client', 'brief', 'sourcesLink', 'referenceLink', 'deliveryLink', 'priority', 'status', 'internalNotes', 'archived', 'finalLink']
     fields.forEach(f => { if (body[f] !== undefined) data[f] = body[f] })
     // Revision request: store the comments and send the task back to the freelancer
     if (body.feedback) {

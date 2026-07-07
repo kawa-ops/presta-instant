@@ -24,7 +24,7 @@ export default async function SuiviPage({ params }: { params: { token: string } 
     : [[], 0]
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0f0b1e 0%, #1e1338 45%, #170f2e 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
       <div style={{ width: '100%', maxWidth: 560 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 28 }}>
           <svg viewBox="0 0 100 100" width="22" height="22" fill="#f0ebe3">

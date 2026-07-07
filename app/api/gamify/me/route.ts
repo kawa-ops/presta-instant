@@ -61,7 +61,14 @@ export async function GET() {
       validated,
       completionRate: totalAssigned > 0 ? Math.round((validated / totalAssigned) * 100) : 0,
       studioLevel: levelFromXp(studioXp),
-      achievements: achievements.map((a: any) => ({ key: a.key, ...ACHIEVEMENTS[a.key], unlockedAt: a.createdAt })).filter((a: any) => a.label),
+      achievements: await (async () => {
+        const customs = await db.customAchievement.findMany().catch(() => [])
+        const customMap: Record<string, any> = {}
+        customs.forEach((c: any) => { customMap[`custom_${c.id}`] = { label: c.label, emoji: c.emoji, xp: c.xp } })
+        return achievements
+          .map((a: any) => ({ key: a.key, ...(ACHIEVEMENTS[a.key] || customMap[a.key]), unlockedAt: a.createdAt }))
+          .filter((a: any) => a.label)
+      })(),
       locked: Object.entries(ACHIEVEMENTS)
         .filter(([k]) => !achievements.some((a: any) => a.key === k))
         .map(([key, def]) => ({ key, ...def })),

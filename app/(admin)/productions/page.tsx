@@ -157,6 +157,7 @@ function ProdRow({ p, freelancers, onSave, onDelete, onComplete, onQuickStatus, 
   const [shareLabel, setShareLabel] = useState('🔗 Lien client')
   const [form, setForm] = useState({
     title: p.title, client: p.client, brief: p.brief || '', sourcesLink: p.sourcesLink || '',
+    referenceLink: p.referenceLink || '',
     deliveryLink: p.deliveryLink || '', priority: p.priority, status: p.status,
     price: p.price?.toString() || '', clientPrice: p.clientPrice?.toString() || '',
     deadline: p.deadline ? p.deadline.split('T')[0] : '',
@@ -368,6 +369,7 @@ function ProdRow({ p, freelancers, onSave, onDelete, onComplete, onQuickStatus, 
                 )}
               </div>
               <div><label style={LA}>Lien sources</label><F value={form.sourcesLink} onChange={s('sourcesLink')} placeholder="WeTransfer, Drive…" /></div>
+              <div><label style={LA}>Références</label><F value={form.referenceLink} onChange={s('referenceLink')} placeholder="Musiques, inspis, moodboard…" /></div>
               <div><label style={LA}>Lien livraison</label><F value={form.deliveryLink} onChange={s('deliveryLink')} placeholder="Drive, Dropbox…" /></div>
               <div style={{ gridColumn: '1/-1' }}><label style={LA}>Notes internes (admin uniquement)</label><TA value={form.internalNotes} onChange={s('internalNotes')} placeholder="Notes visibles uniquement par les admins" /></div>
               {isFreelancer && <div style={{ gridColumn: '1/-1' }}><label style={LA}>Brief pour le prestataire</label><TA value={form.brief} onChange={s('brief')} placeholder="Instructions pour le prestataire…" /></div>}
@@ -385,7 +387,7 @@ function ProdRow({ p, freelancers, onSave, onDelete, onComplete, onQuickStatus, 
   )
 }
 
-const EMPTY_FORM = { title: '', client: '', brief: '', sourcesLink: '', priority: 'normal', status: 'a_faire', price: '', deadline: '', productionDate: '', internalNotes: '', assignedToId: '' }
+const EMPTY_FORM = { title: '', client: '', brief: '', sourcesLink: '', referenceLink: '', priority: 'normal', status: 'a_faire', price: '', deadline: '', productionDate: '', internalNotes: '', assignedToId: '' }
 
 export default function ProductionsPage() {
   const { data: prodsData, loading, mutate } = useCached<any[]>('productions', '/api/productions')
@@ -640,6 +642,7 @@ export default function ProductionsPage() {
             </div>
             {newFreelancer && <div><label style={LA}>Prix du prestataire (€)</label><PriceSelect freelancer={newFreelancer} price={form.price} onChange={sf('price')} /></div>}
             <div><label style={LA}>Lien sources</label><F value={form.sourcesLink} onChange={sf('sourcesLink')} placeholder="WeTransfer, Drive…" /></div>
+            <div><label style={LA}>Références</label><F value={form.referenceLink} onChange={sf('referenceLink')} placeholder="Musiques, inspis, moodboard…" /></div>
             <div style={{ gridColumn: '1/-1' }}><label style={LA}>Notes internes (admin uniquement)</label><TA value={form.internalNotes} onChange={sf('internalNotes')} placeholder="Notes visibles uniquement par les admins" /></div>
             {newFreelancer && <div style={{ gridColumn: '1/-1' }}><label style={LA}>Brief pour le prestataire</label><TA value={form.brief} onChange={sf('brief')} placeholder="Instructions pour le prestataire…" /></div>}
           </div>

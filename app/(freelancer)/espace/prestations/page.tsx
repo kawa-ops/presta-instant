@@ -103,16 +103,22 @@ export default function MesPrestationsPage() {
                             </div>
                           )}
 
-                          {p.brief && (
-                            <div style={{ marginBottom: 16 }}>
-                              <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.65rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Brief</p>
-                              <p style={{ color: 'rgba(240,235,227,0.7)', fontSize: '0.8rem', whiteSpace: 'pre-wrap' }}>{p.brief}</p>
-                            </div>
-                          )}
                           {p.sourcesLink && (
                             <div style={{ marginBottom: 16 }}>
-                              <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.65rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Sources</p>
+                              <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.65rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>📁 Fichiers sources</p>
                               <a href={p.sourcesLink} target="_blank" rel="noreferrer" style={{ color: '#a5b4fc', fontSize: '0.8rem' }}>{p.sourcesLink}</a>
+                            </div>
+                          )}
+                          {p.referenceLink && (
+                            <div style={{ marginBottom: 16 }}>
+                              <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.65rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>🎵 Références</p>
+                              <a href={p.referenceLink} target="_blank" rel="noreferrer" style={{ color: '#c4b5fd', fontSize: '0.8rem' }}>{p.referenceLink}</a>
+                            </div>
+                          )}
+                          {p.brief && (
+                            <div style={{ marginBottom: 16 }}>
+                              <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.65rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>📝 Brief de Lucas</p>
+                              <p style={{ color: 'rgba(240,235,227,0.7)', fontSize: '0.8rem', whiteSpace: 'pre-wrap' }}>{p.brief}</p>
                             </div>
                           )}
                           <div style={{ marginBottom: 14 }}>

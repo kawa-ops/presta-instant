@@ -29,6 +29,7 @@ export async function ensureSchema() {
     )`,
     `ALTER TABLE "Production" ADD COLUMN IF NOT EXISTS "clientApprovedAt" TIMESTAMP(3)`,
     `ALTER TABLE "Production" ADD COLUMN IF NOT EXISTS "finalLink" TEXT`,
+    `ALTER TABLE "Production" ADD COLUMN IF NOT EXISTS "referenceLink" TEXT`,
     `CREATE TABLE IF NOT EXISTS "ProductionEvent" (
       id TEXT PRIMARY KEY,
       "productionId" TEXT NOT NULL REFERENCES "Production"(id) ON DELETE CASCADE,
@@ -40,6 +41,14 @@ export async function ensureSchema() {
       "userId" TEXT NOT NULL,
       amount INT NOT NULL,
       reason TEXT NOT NULL,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT NOW()
+    )`,
+    `CREATE TABLE IF NOT EXISTS "CustomAchievement" (
+      id TEXT PRIMARY KEY,
+      emoji TEXT NOT NULL,
+      label TEXT NOT NULL,
+      description TEXT,
+      xp INT NOT NULL DEFAULT 25,
       "createdAt" TIMESTAMP(3) NOT NULL DEFAULT NOW()
     )`,
     `CREATE TABLE IF NOT EXISTS "Achievement" (

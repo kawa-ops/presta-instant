@@ -288,8 +288,9 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* ================= Motivation strip: goal + missions ================= */}
+        {/* ================= Goal + KPI 2x2 (left) | Objectives full height (right) ================= */}
         <div className="dash-fade" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14, animationDelay: '0.06s' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {/* Weekly goal */}
           <div style={{ ...glass, padding: '12px 18px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
@@ -310,15 +311,26 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          {/* Daily missions */}
-          <div style={{ ...glass, padding: '16px 20px' }}>
+          {/* KPIs 2x2 under the weekly goal */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10, flex: 1 }}>
+            {kpis.map(k => (
+              <Link key={k.label} href={k.href} className="dash-card-hover" style={{ ...glass, padding: '14px 18px', textDecoration: 'none', borderColor: `${k.color}30`, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 6 }}>
+                <p style={{ color: k.color, fontSize: '1.7rem', fontWeight: 900, lineHeight: 1, textShadow: `0 0 18px ${k.color}50` }}>{k.value}</p>
+                <p style={{ color: 'rgba(240,235,227,0.5)', fontSize: '0.7rem', fontWeight: 700 }}>{k.label}</p>
+              </Link>
+            ))}
+          </div>
+          </div>
+
+          {/* Objectives — full height beside the goal + KPI stack */}
+          <div style={{ ...glass, padding: '18px 22px', display: 'flex', flexDirection: 'column' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10 }}>
               <p style={{ color: 'rgba(240,235,227,0.45)', fontSize: '0.66rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>🎯 Objectifs du moment</p>
               <p style={{ color: missionsDone === missions.length && missions.length > 0 ? '#22c55e' : '#c4b5fd', fontSize: '0.78rem', fontWeight: 900 }}>
                 {missionsDone}/{missions.length}{missionsDone === missions.length && missions.length > 0 ? ' — tout est accompli ! 🏆' : ''}
               </p>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14, flex: 1, justifyContent: 'center' }}>
               {missions.map((m, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <span style={{
@@ -338,15 +350,6 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* ================= KPIs — dense row ================= */}
-        <div className="dash-fade" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10, marginBottom: 14, animationDelay: '0.12s' }}>
-          {kpis.map(k => (
-            <Link key={k.label} href={k.href} className="dash-card-hover" style={{ ...glass, padding: '15px 20px', textDecoration: 'none', borderColor: `${k.color}30`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <p style={{ color: 'rgba(240,235,227,0.55)', fontSize: '0.78rem', fontWeight: 700 }}>{k.label}</p>
-              <p style={{ color: k.color, fontSize: '1.7rem', fontWeight: 900, lineHeight: 1, textShadow: `0 0 18px ${k.color}50` }}>{k.value}</p>
-            </Link>
-          ))}
-        </div>
 
         {/* Operational summary */}
         {stats && (s.overdue > 0 || s.dueToday > 0 || s.dueTomorrow > 0 || s.pendingValidations > 0) && (
@@ -391,7 +394,7 @@ export default function AdminDashboard() {
         )}
 
         {/* ================= Main grid: lists + leaderboard ================= */}
-        <div className="dash-fade" style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 14, animationDelay: '0.24s' }}>
+        <div className="dash-fade" style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: 14, animationDelay: '0.24s' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             {/* Priorités */}
             <div style={{ ...glass, overflow: 'hidden' }}>
@@ -463,8 +466,20 @@ export default function AdminDashboard() {
                         transform: isFirst ? 'translateY(-8px)' : 'none',
                         boxShadow: isFirst ? '0 8px 24px rgba(234,179,8,0.12)' : 'none',
                       }}>
-                        <p style={{ fontSize: isFirst ? '1.5rem' : '1.15rem', marginBottom: 4 }}>{trophy}</p>
-                        <p style={{ color: tColor, fontSize: '0.95rem', fontWeight: 900, lineHeight: 1 }}>{pos + 1}</p>
+                        <p style={{ fontSize: isFirst ? '1.35rem' : '1.05rem', marginBottom: 4 }}>{trophy}</p>
+                        {/* Avatar with prestige ornament ring */}
+                        <div style={{ position: 'relative', width: isFirst ? 44 : 36, height: isFirst ? 44 : 36, margin: '0 auto 5px' }}>
+                          <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: u.prestige >= 1 ? 'conic-gradient(#eab308, #ec4899, #a78bfa, #eab308)' : 'conic-gradient(#a78bfa, #c7d2fe, #a78bfa)' }} />
+                          <div style={{ position: 'absolute', inset: 2, borderRadius: '50%', background: '#141021', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            {u.profilePicUrl ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={u.profilePicUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            ) : (
+                              <span style={{ color: '#c4b5fd', fontSize: isFirst ? '0.95rem' : '0.78rem', fontWeight: 900 }}>{u.name?.charAt(0)?.toUpperCase()}</span>
+                            )}
+                          </div>
+                        </div>
+                        <p style={{ color: tColor, fontSize: '0.85rem', fontWeight: 900, lineHeight: 1 }}>{pos + 1}</p>
                         <p style={{ color: '#f0ebe3', fontSize: '0.68rem', fontWeight: 800, marginTop: 5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{u.name}{u.isMe ? ' ✦' : ''}</p>
                         <p style={{ color: '#c4b5fd', fontSize: '0.62rem', fontWeight: 800 }}>Niv. {u.level}</p>
                         <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.58rem' }}>{u.productions} prod.</p>
