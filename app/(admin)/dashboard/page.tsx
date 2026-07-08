@@ -276,9 +276,9 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* ================= Goal + KPI 2x2 (wide left) | Objectives compact (right) ================= */}
-        <div className="dash-fade" style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: 14, marginBottom: 14, animationDelay: '0.06s', alignItems: 'start' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {/* ================= Single grid: everything in each column stacks with no artificial gap ================= */}
+        <div className="dash-fade" style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: 14, animationDelay: '0.06s', alignItems: 'start' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {/* Weekly goal */}
           <div style={{ ...glass, padding: '12px 18px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
@@ -308,9 +308,96 @@ export default function AdminDashboard() {
               </Link>
             ))}
           </div>
+
+          {/* {t('to_process')} */}
+          {stats && (s.notifications || []).length > 0 && (
+            <div className="dash-fade" style={{ ...glass, padding: '14px 20px', borderColor: 'rgba(167,139,250,0.3)', animationDelay: '0.2s' }}>
+              <p style={{ color: '#c4b5fd', fontSize: '0.68rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>{t('to_process')}</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {(s.notifications as any[]).map((n: any) => {
+                  const popping = poppingNotif === n.id
+                  const title = extractTitle(n.message)
+                  return (
+                    <div key={n.id} style={{
+                      display: 'flex', alignItems: 'center', gap: 8, position: 'relative',
+                      background: popping ? 'rgba(34,197,94,0.12)' : 'transparent',
+                      borderRadius: 8, padding: '3px 6px',
+                      opacity: popping ? 0.4 : 1,
+                      transform: popping ? 'translateX(12px)' : 'none',
+                      transition: 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
+                    }}>
+                      {popping && <MiniConfetti />}
+                      <p style={{ color: '#f0ebe3', fontSize: '0.78rem', flex: 1 }}>{n.message}</p>
+                      <Link href={title ? `/productions?focus=${encodeURIComponent(title)}` : (n.link || '/productions')} style={{ background: 'rgba(199,210,254,0.1)', border: '1px solid rgba(199,210,254,0.3)', borderRadius: 6, padding: '2px 10px', color: '#c7d2fe', fontSize: '0.66rem', textDecoration: 'none', fontWeight: 700 }}>{t('see')}</Link>
+                      <button onClick={() => dismissNotif(n.id)} disabled={popping} style={{ background: popping ? 'rgba(34,197,94,0.25)' : 'rgba(240,235,227,0.06)', border: `1px solid ${popping ? 'rgba(34,197,94,0.5)' : 'rgba(167,139,250,0.2)'}`, borderRadius: 6, padding: '2px 10px', color: popping ? '#22c55e' : 'rgba(240,235,227,0.45)', cursor: 'pointer', fontSize: '0.66rem', fontWeight: 700 }}>✓</button>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Résumé opérationnel — largeur alignée sur les priorités */}
+          {stats && (s.overdue > 0 || s.dueToday > 0 || s.dueTomorrow > 0 || s.pendingValidations > 0) && (
+            <div style={{ ...glass, padding: '9px 18px', display: 'flex', gap: 18, flexWrap: 'wrap', alignItems: 'center' }}>
+              <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.64rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{t('summary')}</p>
+              {s.overdue > 0 && <p style={{ color: '#fb7185', fontSize: '0.76rem', fontWeight: 700 }}>⚠ {s.overdue} {t('late_w')}</p>}
+              {s.dueToday > 0 && <p style={{ color: '#d9a94e', fontSize: '0.76rem', fontWeight: 700 }}>● {s.dueToday} {t('today_w')}</p>}
+              {s.dueTomorrow > 0 && <p style={{ color: '#e0a37a', fontSize: '0.76rem', fontWeight: 700 }}>◐ {s.dueTomorrow} {t('tomorrow_w')}</p>}
+              {s.pendingValidations > 0 && <p style={{ color: '#a78bfa', fontSize: '0.76rem', fontWeight: 700 }}>🟣 {s.pendingValidations} {t('to_validate_w')}</p>}
+              {s.retoursClient > 0 && <p style={{ color: '#ec4899', fontSize: '0.76rem', fontWeight: 700 }}>💬 {s.retoursClient} {t('client_fb_w')}</p>}
+              <Link href="/semaine" style={{ color: 'rgba(240,235,227,0.35)', fontSize: '0.7rem', textDecoration: 'none', marginLeft: 'auto' }}>{t('planning_link')}</Link>
+            </div>
+          )}
+
+          {/* Priorités */}
+          <div style={{ ...glass, overflow: 'hidden' }}>
+            <div style={{ padding: '11px 18px', borderBottom: '1px solid rgba(167,139,250,0.12)', display: 'flex', justifyContent: 'space-between' }}>
+              <p style={{ color: '#f0ebe3', fontSize: '0.8rem', fontWeight: 700 }}>{t('priorities')}</p>
+              <Link href="/productions" style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.7rem', textDecoration: 'none' }}>{t('see_all')}</Link>
+            </div>
+            {(s.urgentProds as any[]).length === 0 ? (
+              <p style={{ color: '#22c55e', padding: '18px', textAlign: 'center', fontSize: '0.8rem', fontWeight: 700 }}>{t('no_urgent')}</p>
+            ) : (
+              (s.urgentProds as any[]).slice(0, 3).map((p: any) => {
+                const isOverdue = p.deadline && new Date(p.deadline) < new Date()
+                return (
+                  <Link key={p.id} href={`/productions?focus=${encodeURIComponent(p.title)}`} style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 10, padding: '8px 18px', borderBottom: '1px solid rgba(167,139,250,0.07)', textDecoration: 'none', alignItems: 'center' }}>
+                    <div>
+                      <p style={{ color: '#f0ebe3', fontSize: '0.78rem', fontWeight: 600 }}>{p.title}</p>
+                      <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.66rem' }}>{p.client} · {p.assignedTo?.name || '—'}</p>
+                    </div>
+                    <span style={{ background: `${STATUS_COLORS[p.status] || '#8b7fb8'}18`, color: STATUS_COLORS[p.status] || '#8b7fb8', padding: '1px 8px', borderRadius: 20, fontSize: '0.64rem', fontWeight: 700, whiteSpace: 'nowrap' }}>{SL[p.status] || p.status}</span>
+                    <span style={{ color: isOverdue ? '#fb7185' : '#eab308', fontSize: '0.68rem', fontWeight: 800, whiteSpace: 'nowrap' }}>{fmt(p.deadline)}</span>
+                  </Link>
+                )
+              })
+            )}
           </div>
 
-          {/* Right column: Objectives compact card + Leaderboard directly below, same column */}
+          {/* Santé de la production — remplaces the old activity feed */}
+          <div style={{ ...glass, padding: '14px 20px' }}>
+            <p style={{ color: '#f0ebe3', fontSize: '0.78rem', fontWeight: 700, marginBottom: 12 }}>{t('health')}</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+              {health.map(h => (
+                <div key={h.label}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+                    <p style={{ color: 'rgba(240,235,227,0.5)', fontSize: '0.7rem', fontWeight: 600 }}>{h.label}</p>
+                    <p style={{ color: h.color, fontSize: '0.72rem', fontWeight: 900 }}>{h.value}</p>
+                  </div>
+                  <div style={{ height: 6, background: 'rgba(0,0,0,0.4)', borderRadius: 5, overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${Math.max(((Number(h.value) || 0) / healthMax) * 100, Number(h.value) > 0 ? 5 : 0)}%`, background: `linear-gradient(90deg, ${h.color}70, ${h.color})`, borderRadius: 5, transition: 'width 0.8s cubic-bezier(0.16,1,0.3,1)' }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+            {s.overdue === 0 && s.retoursClient === 0 && s.pendingValidations === 0 && (
+              <p style={{ color: '#6ee7b7', fontSize: '0.72rem', fontWeight: 700, marginTop: 10 }}>{t('healthy')}</p>
+            )}
+          </div>
+          </div>
+
+          {/* Right column: Objectives compact card + Leaderboard + Achievements, same column */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div style={{ ...glass, padding: '14px 18px', alignSelf: 'start' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10 }}>
@@ -406,126 +493,30 @@ export default function AdminDashboard() {
             )}
             {(!board || board.length === 0) && <p style={{ color: 'rgba(240,235,227,0.2)', fontSize: '0.72rem', padding: '16px', textAlign: 'center' }}>Le classement se remplit avec l&apos;XP gagné.</p>}
           </div>
-          </div>
-        </div>
 
-
-        {/* {t('to_process')} */}
-        {stats && (s.notifications || []).length > 0 && (
-          <div className="dash-fade" style={{ ...glass, padding: '14px 20px', marginBottom: 14, borderColor: 'rgba(167,139,250,0.3)', animationDelay: '0.2s' }}>
-            <p style={{ color: '#c4b5fd', fontSize: '0.68rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>{t('to_process')}</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              {(s.notifications as any[]).map((n: any) => {
-                const popping = poppingNotif === n.id
-                const title = extractTitle(n.message)
-                return (
-                  <div key={n.id} style={{
-                    display: 'flex', alignItems: 'center', gap: 8, position: 'relative',
-                    background: popping ? 'rgba(34,197,94,0.12)' : 'transparent',
-                    borderRadius: 8, padding: '3px 6px',
-                    opacity: popping ? 0.4 : 1,
-                    transform: popping ? 'translateX(12px)' : 'none',
-                    transition: 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
-                  }}>
-                    {popping && <MiniConfetti />}
-                    <p style={{ color: '#f0ebe3', fontSize: '0.78rem', flex: 1 }}>{n.message}</p>
-                    <Link href={title ? `/productions?focus=${encodeURIComponent(title)}` : (n.link || '/productions')} style={{ background: 'rgba(199,210,254,0.1)', border: '1px solid rgba(199,210,254,0.3)', borderRadius: 6, padding: '2px 10px', color: '#c7d2fe', fontSize: '0.66rem', textDecoration: 'none', fontWeight: 700 }}>{t('see')}</Link>
-                    <button onClick={() => dismissNotif(n.id)} disabled={popping} style={{ background: popping ? 'rgba(34,197,94,0.25)' : 'rgba(240,235,227,0.06)', border: `1px solid ${popping ? 'rgba(34,197,94,0.5)' : 'rgba(167,139,250,0.2)'}`, borderRadius: 6, padding: '2px 10px', color: popping ? '#22c55e' : 'rgba(240,235,227,0.45)', cursor: 'pointer', fontSize: '0.66rem', fontWeight: 700 }}>✓</button>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* ================= Main grid: lists + leaderboard ================= */}
-        <div className="dash-fade" style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: 14, animationDelay: '0.24s' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            {/* Résumé opérationnel — largeur alignée sur les priorités */}
-            {stats && (s.overdue > 0 || s.dueToday > 0 || s.dueTomorrow > 0 || s.pendingValidations > 0) && (
-              <div style={{ ...glass, padding: '9px 18px', display: 'flex', gap: 18, flexWrap: 'wrap', alignItems: 'center' }}>
-                <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.64rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{t('summary')}</p>
-                {s.overdue > 0 && <p style={{ color: '#fb7185', fontSize: '0.76rem', fontWeight: 700 }}>⚠ {s.overdue} {t('late_w')}</p>}
-                {s.dueToday > 0 && <p style={{ color: '#d9a94e', fontSize: '0.76rem', fontWeight: 700 }}>● {s.dueToday} {t('today_w')}</p>}
-                {s.dueTomorrow > 0 && <p style={{ color: '#e0a37a', fontSize: '0.76rem', fontWeight: 700 }}>◐ {s.dueTomorrow} {t('tomorrow_w')}</p>}
-                {s.pendingValidations > 0 && <p style={{ color: '#a78bfa', fontSize: '0.76rem', fontWeight: 700 }}>🟣 {s.pendingValidations} {t('to_validate_w')}</p>}
-                {s.retoursClient > 0 && <p style={{ color: '#ec4899', fontSize: '0.76rem', fontWeight: 700 }}>💬 {s.retoursClient} {t('client_fb_w')}</p>}
-                <Link href="/semaine" style={{ color: 'rgba(240,235,227,0.35)', fontSize: '0.7rem', textDecoration: 'none', marginLeft: 'auto' }}>{t('planning_link')}</Link>
+          {/* Achievements showcase */}
+          {g && (
+            <div style={{ ...glass, padding: '12px 16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10 }}>
+                <p style={{ color: '#f0ebe3', fontSize: '0.78rem', fontWeight: 800 }}>{t('achievements')}</p>
+                <Link href="/parametres" style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.66rem', textDecoration: 'none' }}>{(g.achievements || []).length}/{(g.achievements || []).length + (g.locked || []).length} →</Link>
               </div>
-            )}
-
-            {/* Priorités */}
-            <div style={{ ...glass, overflow: 'hidden' }}>
-              <div style={{ padding: '11px 18px', borderBottom: '1px solid rgba(167,139,250,0.12)', display: 'flex', justifyContent: 'space-between' }}>
-                <p style={{ color: '#f0ebe3', fontSize: '0.8rem', fontWeight: 700 }}>{t('priorities')}</p>
-                <Link href="/productions" style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.7rem', textDecoration: 'none' }}>{t('see_all')}</Link>
-              </div>
-              {(s.urgentProds as any[]).length === 0 ? (
-                <p style={{ color: '#22c55e', padding: '18px', textAlign: 'center', fontSize: '0.8rem', fontWeight: 700 }}>{t('no_urgent')}</p>
-              ) : (
-                (s.urgentProds as any[]).slice(0, 3).map((p: any) => {
-                  const isOverdue = p.deadline && new Date(p.deadline) < new Date()
-                  return (
-                    <Link key={p.id} href={`/productions?focus=${encodeURIComponent(p.title)}`} style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 10, padding: '8px 18px', borderBottom: '1px solid rgba(167,139,250,0.07)', textDecoration: 'none', alignItems: 'center' }}>
-                      <div>
-                        <p style={{ color: '#f0ebe3', fontSize: '0.78rem', fontWeight: 600 }}>{p.title}</p>
-                        <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.66rem' }}>{p.client} · {p.assignedTo?.name || '—'}</p>
-                      </div>
-                      <span style={{ background: `${STATUS_COLORS[p.status] || '#8b7fb8'}18`, color: STATUS_COLORS[p.status] || '#8b7fb8', padding: '1px 8px', borderRadius: 20, fontSize: '0.64rem', fontWeight: 700, whiteSpace: 'nowrap' }}>{SL[p.status] || p.status}</span>
-                      <span style={{ color: isOverdue ? '#fb7185' : '#eab308', fontSize: '0.68rem', fontWeight: 800, whiteSpace: 'nowrap' }}>{fmt(p.deadline)}</span>
-                    </Link>
-                  )
-                })
-              )}
-            </div>
-
-            {/* Santé de la production — remplaces the old activity feed */}
-            <div style={{ ...glass, padding: '14px 20px' }}>
-              <p style={{ color: '#f0ebe3', fontSize: '0.78rem', fontWeight: 700, marginBottom: 12 }}>{t('health')}</p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
-                {health.map(h => (
-                  <div key={h.label}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
-                      <p style={{ color: 'rgba(240,235,227,0.5)', fontSize: '0.7rem', fontWeight: 600 }}>{h.label}</p>
-                      <p style={{ color: h.color, fontSize: '0.72rem', fontWeight: 900 }}>{h.value}</p>
-                    </div>
-                    <div style={{ height: 6, background: 'rgba(0,0,0,0.4)', borderRadius: 5, overflow: 'hidden' }}>
-                      <div style={{ height: '100%', width: `${Math.max(((Number(h.value) || 0) / healthMax) * 100, Number(h.value) > 0 ? 5 : 0)}%`, background: `linear-gradient(90deg, ${h.color}70, ${h.color})`, borderRadius: 5, transition: 'width 0.8s cubic-bezier(0.16,1,0.3,1)' }} />
-                    </div>
-                  </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {(g.achievements || []).slice(0, 8).map((a: any) => (
+                  <span key={a.key} className="ach-tip" style={{ fontSize: '1.15rem', background: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.35)', borderRadius: 10, padding: '5px 8px', display: 'inline-block' }}>
+                    {a.emoji}
+                    <span className="tipbox"><span style={{ display: 'block', color: '#fde68a', fontSize: '0.68rem', fontWeight: 800 }}>{a.emoji} {a.label}</span><span style={{ display: 'block', color: 'rgba(240,235,227,0.5)', fontSize: '0.62rem', marginTop: 2 }}>Débloqué ✓ (+{a.xp} XP)</span></span>
+                  </span>
+                ))}
+                {(g.locked || []).slice(0, Math.max(0, 8 - (g.achievements || []).length)).map((a: any) => (
+                  <span key={a.key} className="ach-tip" style={{ fontSize: '1.15rem', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(167,139,250,0.12)', borderRadius: 10, padding: '5px 8px', display: 'inline-block', opacity: 0.55 }}>
+                    <span style={{ filter: 'grayscale(1)', opacity: 0.7 }}>{a.emoji}</span>
+                    <span className="tipbox"><span style={{ display: 'block', color: '#c4b5fd', fontSize: '0.68rem', fontWeight: 800 }}>{a.emoji} {a.label}</span><span style={{ display: 'block', color: 'rgba(240,235,227,0.5)', fontSize: '0.62rem', marginTop: 2 }}>À débloquer (+{a.xp} XP)</span></span>
+                  </span>
                 ))}
               </div>
-              {s.overdue === 0 && s.retoursClient === 0 && s.pendingValidations === 0 && (
-                <p style={{ color: '#6ee7b7', fontSize: '0.72rem', fontWeight: 700, marginTop: 10 }}>{t('healthy')}</p>
-              )}
             </div>
-          </div>
-
-          {/* ===== Sidebar: achievements ===== */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            {/* Achievements showcase */}
-            {g && (
-              <div style={{ ...glass, padding: '12px 16px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10 }}>
-                  <p style={{ color: '#f0ebe3', fontSize: '0.78rem', fontWeight: 800 }}>{t('achievements')}</p>
-                  <Link href="/parametres" style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.66rem', textDecoration: 'none' }}>{(g.achievements || []).length}/{(g.achievements || []).length + (g.locked || []).length} →</Link>
-                </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                  {(g.achievements || []).slice(0, 8).map((a: any) => (
-                    <span key={a.key} className="ach-tip" style={{ fontSize: '1.15rem', background: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.35)', borderRadius: 10, padding: '5px 8px', display: 'inline-block' }}>
-                      {a.emoji}
-                      <span className="tipbox"><span style={{ display: 'block', color: '#fde68a', fontSize: '0.68rem', fontWeight: 800 }}>{a.emoji} {a.label}</span><span style={{ display: 'block', color: 'rgba(240,235,227,0.5)', fontSize: '0.62rem', marginTop: 2 }}>Débloqué ✓ (+{a.xp} XP)</span></span>
-                    </span>
-                  ))}
-                  {(g.locked || []).slice(0, Math.max(0, 8 - (g.achievements || []).length)).map((a: any) => (
-                    <span key={a.key} className="ach-tip" style={{ fontSize: '1.15rem', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(167,139,250,0.12)', borderRadius: 10, padding: '5px 8px', display: 'inline-block', opacity: 0.55 }}>
-                      <span style={{ filter: 'grayscale(1)', opacity: 0.7 }}>{a.emoji}</span>
-                      <span className="tipbox"><span style={{ display: 'block', color: '#c4b5fd', fontSize: '0.68rem', fontWeight: 800 }}>{a.emoji} {a.label}</span><span style={{ display: 'block', color: 'rgba(240,235,227,0.5)', fontSize: '0.62rem', marginTop: 2 }}>À débloquer (+{a.xp} XP)</span></span>
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
+          )}
           </div>
         </div>
       </div>
