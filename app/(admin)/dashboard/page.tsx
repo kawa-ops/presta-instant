@@ -310,7 +310,8 @@ export default function AdminDashboard() {
           </div>
           </div>
 
-          {/* Objectives — compact horizontal card (leaderboard sits right below) */}
+          {/* Right column: Objectives compact card + Leaderboard directly below, same column */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div style={{ ...glass, padding: '14px 18px', alignSelf: 'start' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10 }}>
               <p style={{ color: 'rgba(240,235,227,0.45)', fontSize: '0.66rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{t('objectives')}</p>
@@ -404,6 +405,7 @@ export default function AdminDashboard() {
               <p style={{ color: 'rgba(240,235,227,0.25)', fontSize: '0.7rem', padding: '4px 16px 14px', textAlign: 'center' }}>Le podium se remplit dès que l&apos;équipe gagne de l&apos;XP 💪</p>
             )}
             {(!board || board.length === 0) && <p style={{ color: 'rgba(240,235,227,0.2)', fontSize: '0.72rem', padding: '16px', textAlign: 'center' }}>Le classement se remplit avec l&apos;XP gagné.</p>}
+          </div>
           </div>
         </div>
 
