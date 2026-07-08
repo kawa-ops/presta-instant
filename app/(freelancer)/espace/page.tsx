@@ -123,7 +123,7 @@ export default function FreelancerDashboard() {
       </div>
 
       {/* ===== Goal + KPI 2x2 | Objectives ===== */}
-      <div className="dash-fade" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14, animationDelay: '0.06s' }}>
+      <div className="dash-fade" style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 14, marginBottom: 14, animationDelay: '0.06s' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {/* Weekly goal — 5 for a contractor */}
           <div style={{ ...glass, padding: '12px 18px' }}>
@@ -154,12 +154,12 @@ export default function FreelancerDashboard() {
         </div>
 
         {/* Objectives — full height */}
-        <div style={{ ...glass, padding: '18px 22px', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ ...glass, padding: '14px 18px', alignSelf: 'start' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10 }}>
             <p style={{ color: 'rgba(240,235,227,0.45)', fontSize: '0.66rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{t('objectives')}</p>
             <p style={{ color: missionsDone === missions.length && missions.length > 0 ? '#22c55e' : '#c4b5fd', fontSize: '0.78rem', fontWeight: 900 }}>{missionsDone}/{missions.length}{missionsDone === missions.length && missions.length > 0 ? t('all_done') : ''}</p>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14, flex: 1, justifyContent: 'center' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {missions.map((m, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <span style={{ width: 18, height: 18, borderRadius: 6, flexShrink: 0, background: m.done ? 'linear-gradient(135deg, #16a34a, #22c55e)' : 'rgba(0,0,0,0.4)', border: m.done ? 'none' : '1px solid rgba(167,139,250,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0a0a0a', fontSize: '0.65rem', fontWeight: 900 }}>{m.done ? '✓' : ''}</span>

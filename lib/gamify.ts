@@ -3,14 +3,16 @@ import { prisma } from '@/lib/prisma'
 const db = prisma as any
 
 // ============ Levels & Ranks ============
-// Cumulative XP needed to REACH level n: 100 * n * (n+1) / 2 (level 0 = 0 XP)
+// Cumulative XP needed to REACH level n: BASE * n * (n+1) / 2 (level 0 = 0 XP).
+// BASE lowered from 100 → 60: rewarding early, still months to the top.
+const BASE = 60
 export function levelFromXp(xp: number): number {
   let n = 0
-  while (xp >= 100 * (n + 1) * (n + 2) / 2) n++
+  while (xp >= BASE * (n + 1) * (n + 2) / 2) n++
   return n
 }
 export function thresholdFor(level: number): number {
-  return level <= 0 ? 0 : 100 * level * (level + 1) / 2
+  return level <= 0 ? 0 : BASE * level * (level + 1) / 2
 }
 
 export const FREELANCE_RANKS: [number, string][] = [
@@ -50,21 +52,8 @@ export function rankFor(level: number, role: string): string {
 }
 
 // ============ Achievements ============
-export const ACHIEVEMENTS: Record<string, { label: string; emoji: string; xp: number }> = {
-  first_delivery:    { label: 'Première livraison', emoji: '🏆', xp: 25 },
-  first_approval:    { label: 'Première approbation client', emoji: '❤️', xp: 25 },
-  deliveries_10:     { label: '10 projets livrés', emoji: '📦', xp: 50 },
-  deliveries_50:     { label: '50 projets livrés', emoji: '🚛', xp: 100 },
-  deliveries_100:    { label: '100 projets livrés', emoji: '🏭', xp: 200 },
-  deadline_assassin: { label: 'Deadline Assassin — 10 livraisons en avance', emoji: '🎯', xp: 75 },
-  speed_runner:      { label: 'Speed Runner — livré en moins de 24h', emoji: '⚡', xp: 40 },
-  night_owl:         { label: 'Oiseau de Nuit — livraison entre 2h et 5h', emoji: '🌙', xp: 30 },
-  baguette_dor:      { label: "Baguette d'Or — livré pendant la pause déj'", emoji: '🥖', xp: 20 },
-  onze_onze:         { label: 'Make a wish — validé à 11:11 pile', emoji: '🕚', xp: 30 },
-  client_favorite:   { label: 'Chouchou des Clients — 10 approbations', emoji: '💖', xp: 100 },
-  perfect_v1:        { label: 'Sans-Faute — V1 approuvée sans révision', emoji: '🥇', xp: 40 },
-  inbox_zero:        { label: 'Inbox Zéro — tout traité', emoji: '🧘', xp: 15 },
-}
+import { ACHIEVEMENTS } from '@/lib/achievements'
+export { ACHIEVEMENTS }
 
 const DAILY_CAP = 150
 
@@ -96,6 +85,27 @@ export async function awardXp(userId: string, amount: number, reason: string) {
         data: { userId, type: 'levelup', message: `🆙 Niveau ${after} atteint — tu es maintenant ${rank} !`, link: user?.role === 'admin' ? '/dashboard' : '/espace' },
       }).catch(() => {})
     }
+
+    // Leaderboard overtake detection: did this XP gain improve the position?
+    try {
+      const totalAfter = totalBefore + granted
+      const grouped: any[] = await db.xpEvent.groupBy({ by: ['userId'], _sum: { amount: true } })
+      const posBefore = grouped.filter((r: any) => r.userId !== userId && (r._sum.amount || 0) > totalBefore).length
+      const overtaken = grouped.filter((r: any) => r.userId !== userId && (r._sum.amount || 0) > totalBefore && (r._sum.amount || 0) <= totalAfter)
+      if (overtaken.length > 0) {
+        const posAfter = posBefore - overtaken.length
+        const me = await db.user.findUnique({ where: { id: userId }, select: { name: true } }).catch(() => null)
+        const msg = posAfter === 0
+          ? `👑 Nouveau leader du studio : tu passes 1er au classement !`
+          : `🏆 Tu passes ${posAfter + 1}ᵉ au classement du studio !`
+        await db.notification.create({ data: { userId, type: 'achievement', message: msg, link: user?.role === 'admin' ? '/dashboard' : '/espace' } }).catch(() => {})
+        await db.activityLog.create({ data: { actorName: me?.name || '?', action: posAfter === 0 ? 'devient leader du classement du studio 👑' : `passe ${posAfter + 1}ᵉ au classement du studio` } }).catch(() => {})
+        // Tell the overtaken players too
+        for (const o of overtaken.slice(0, 3)) {
+          db.notification.create({ data: { userId: o.userId, type: 'workflow', message: `📉 ${me?.name || 'Quelqu’un'} vient de te dépasser au classement du studio !`, link: '/espace' } }).catch(() => {})
+        }
+      }
+    } catch {}
   } catch {}
 }
 

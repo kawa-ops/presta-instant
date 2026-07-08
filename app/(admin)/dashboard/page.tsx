@@ -276,8 +276,8 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* ================= Goal + KPI 2x2 (left) | Objectives full height (right) ================= */}
-        <div className="dash-fade" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14, animationDelay: '0.06s' }}>
+        {/* ================= Goal + KPI 2x2 (wide left) | Objectives compact (right) ================= */}
+        <div className="dash-fade" style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: 14, marginBottom: 14, animationDelay: '0.06s' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {/* Weekly goal */}
           <div style={{ ...glass, padding: '12px 18px' }}>
@@ -310,15 +310,15 @@ export default function AdminDashboard() {
           </div>
           </div>
 
-          {/* Objectives — full height beside the goal + KPI stack */}
-          <div style={{ ...glass, padding: '18px 22px', display: 'flex', flexDirection: 'column' }}>
+          {/* Objectives — compact horizontal card (leaderboard sits right below) */}
+          <div style={{ ...glass, padding: '14px 18px', alignSelf: 'start' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10 }}>
               <p style={{ color: 'rgba(240,235,227,0.45)', fontSize: '0.66rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{t('objectives')}</p>
               <p style={{ color: missionsDone === missions.length && missions.length > 0 ? '#22c55e' : '#c4b5fd', fontSize: '0.78rem', fontWeight: 900 }}>
                 {missionsDone}/{missions.length}{missionsDone === missions.length && missions.length > 0 ? t('all_done') : ''}
               </p>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14, flex: 1, justifyContent: 'center' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {missions.map((m, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <span style={{
@@ -338,20 +338,6 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-
-        {/* Operational summary */}
-        {stats && (s.overdue > 0 || s.dueToday > 0 || s.dueTomorrow > 0 || s.pendingValidations > 0) && (
-          <div className="dash-fade" style={{ ...glass, padding: '9px 18px', marginBottom: 14, display: 'flex', gap: 20, flexWrap: 'wrap', alignItems: 'center', animationDelay: '0.16s' }}>
-            <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.64rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{t('summary')}</p>
-            {s.overdue > 0 && <p style={{ color: '#fb7185', fontSize: '0.78rem', fontWeight: 700 }}>⚠ {s.overdue} en retard</p>}
-            {s.dueToday > 0 && <p style={{ color: '#d9a94e', fontSize: '0.78rem', fontWeight: 700 }}>● {s.dueToday} aujourd&apos;hui</p>}
-            {s.dueTomorrow > 0 && <p style={{ color: '#e0a37a', fontSize: '0.78rem', fontWeight: 700 }}>◐ {s.dueTomorrow} demain</p>}
-            {s.pendingValidations > 0 && <p style={{ color: '#a78bfa', fontSize: '0.78rem', fontWeight: 700 }}>🟣 {s.pendingValidations} à valider</p>}
-            {s.retoursClient > 0 && <p style={{ color: '#ec4899', fontSize: '0.78rem', fontWeight: 700 }}>💬 {s.retoursClient} retours client</p>}
-            <p style={{ color: 'rgba(240,235,227,0.4)', fontSize: '0.78rem', fontWeight: 600 }}>👥 {s.activeFreelancers} prestataire{s.activeFreelancers > 1 ? 's' : ''} actif{s.activeFreelancers > 1 ? 's' : ''}</p>
-            <Link href="/semaine" style={{ color: 'rgba(240,235,227,0.35)', fontSize: '0.7rem', textDecoration: 'none', marginLeft: 'auto' }}>{t('planning_link')}</Link>
-          </div>
-        )}
 
         {/* {t('to_process')} */}
         {stats && (s.notifications || []).length > 0 && (
@@ -384,6 +370,19 @@ export default function AdminDashboard() {
         {/* ================= Main grid: lists + leaderboard ================= */}
         <div className="dash-fade" style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: 14, animationDelay: '0.24s' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {/* Résumé opérationnel — largeur alignée sur les priorités */}
+            {stats && (s.overdue > 0 || s.dueToday > 0 || s.dueTomorrow > 0 || s.pendingValidations > 0) && (
+              <div style={{ ...glass, padding: '9px 18px', display: 'flex', gap: 18, flexWrap: 'wrap', alignItems: 'center' }}>
+                <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.64rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{t('summary')}</p>
+                {s.overdue > 0 && <p style={{ color: '#fb7185', fontSize: '0.76rem', fontWeight: 700 }}>⚠ {s.overdue} {t('late_w')}</p>}
+                {s.dueToday > 0 && <p style={{ color: '#d9a94e', fontSize: '0.76rem', fontWeight: 700 }}>● {s.dueToday} {t('today_w')}</p>}
+                {s.dueTomorrow > 0 && <p style={{ color: '#e0a37a', fontSize: '0.76rem', fontWeight: 700 }}>◐ {s.dueTomorrow} {t('tomorrow_w')}</p>}
+                {s.pendingValidations > 0 && <p style={{ color: '#a78bfa', fontSize: '0.76rem', fontWeight: 700 }}>🟣 {s.pendingValidations} {t('to_validate_w')}</p>}
+                {s.retoursClient > 0 && <p style={{ color: '#ec4899', fontSize: '0.76rem', fontWeight: 700 }}>💬 {s.retoursClient} {t('client_fb_w')}</p>}
+                <Link href="/semaine" style={{ color: 'rgba(240,235,227,0.35)', fontSize: '0.7rem', textDecoration: 'none', marginLeft: 'auto' }}>{t('planning_link')}</Link>
+              </div>
+            )}
+
             {/* Priorités */}
             <div style={{ ...glass, overflow: 'hidden' }}>
               <div style={{ padding: '11px 18px', borderBottom: '1px solid rgba(167,139,250,0.12)', display: 'flex', justifyContent: 'space-between' }}>

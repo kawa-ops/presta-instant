@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { awardXp, unlockAchievement, ACHIEVEMENTS } from '@/lib/gamify'
+import { awardXp, unlockAchievement, ACHIEVEMENTS, thresholdFor } from '@/lib/gamify'
 
 export const dynamic = 'force-dynamic'
 const db = prisma as any
@@ -12,8 +12,20 @@ export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session || (session.user as any).role !== 'admin') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { userId, xp, reason, achievementKey } = await req.json()
+  const { userId, xp, reason, achievementKey, setLevel } = await req.json()
   if (!userId) return NextResponse.json({ error: 'userId requis' }, { status: 400 })
+
+  // Set an exact level (level & prestige management): adjusts XP to the level's floor
+  if (setLevel !== undefined && setLevel !== null) {
+    const target = Math.max(0, Math.min(parseInt(setLevel), 99))
+    const agg = await db.xpEvent.aggregate({ _sum: { amount: true }, where: { userId } })
+    const current = agg._sum.amount || 0
+    const delta = thresholdFor(target) - current
+    if (delta !== 0) {
+      await db.xpEvent.create({ data: { userId, amount: delta, reason: `Ajustement de niveau par ${session.user?.name || 'Admin'} (Niv. ${target})` } })
+    }
+    return NextResponse.json({ ok: true, level: target })
+  }
 
   try {
     if (achievementKey) {

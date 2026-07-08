@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Badges from '@/components/Badges'
 import AvatarUpload from '@/components/AvatarUpload'
+import Avatar from '@/components/Avatar'
+import { ACHIEVEMENTS } from '@/lib/achievements'
 
 const PIN: React.CSSProperties = { background: 'rgba(12,8,26,0.8)', border: '1px solid rgba(167,139,250,0.22)', borderRadius: 8, padding: '8px 12px', color: '#f0ebe3', fontSize: '0.8rem' }
 
@@ -27,11 +29,20 @@ function RankingManager() {
   }
   useEffect(() => { load() }, [])
 
-  async function applyXp(userId: string) {
-    if (!delta || isNaN(parseInt(delta))) return
-    const res = await fetch('/api/gamify/grant', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId, xp: parseInt(delta), reason }) })
-    setMsg(res.ok ? `✓ XP appliqués` : 'Erreur')
-    setDelta(''); setReason(''); setEditing(null)
+  async function applyLevel(userId: string) {
+    if (delta === '' || isNaN(parseInt(delta))) return
+    const res = await fetch('/api/gamify/grant', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId, setLevel: parseInt(delta) }) })
+    setMsg(res.ok ? `✓ Niveau ${delta} appliqué` : 'Erreur')
+    setDelta(''); setEditing(null)
+    setTimeout(() => setMsg(''), 2500)
+    load()
+    window.dispatchEvent(new CustomEvent('live-refresh'))
+  }
+
+  async function applyPrestige(userId: string, prestige: number) {
+    const res = await fetch('/api/gamify/grant', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId, setLevel: prestige * 20 }) })
+    setMsg(res.ok ? `✓ Prestige ${prestige} appliqué (Niv. ${prestige * 20})` : 'Erreur')
+    setEditing(null)
     setTimeout(() => setMsg(''), 2500)
     load()
     window.dispatchEvent(new CustomEvent('live-refresh'))
@@ -56,17 +67,7 @@ function RankingManager() {
         {users.map(u => (
           <div key={u.id}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 10px', background: 'rgba(0,0,0,0.25)', borderRadius: 10, border: '1px solid rgba(167,139,250,0.1)' }}>
-              <div style={{ position: 'relative', width: 34, height: 34, flexShrink: 0 }}>
-                <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: u.prestige >= 1 ? 'conic-gradient(#eab308, #ec4899, #a78bfa, #eab308)' : 'conic-gradient(#a78bfa, #c7d2fe, #a78bfa)' }} />
-                <div style={{ position: 'absolute', inset: 2, borderRadius: '50%', background: '#141021', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  {u.profilePicUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={u.profilePicUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  ) : (
-                    <span style={{ color: '#c4b5fd', fontSize: '0.75rem', fontWeight: 900 }}>{u.name?.charAt(0)?.toUpperCase()}</span>
-                  )}
-                </div>
-              </div>
+              <Avatar url={u.profilePicUrl} name={u.name} level={u.level} size={46} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p style={{ color: '#f0ebe3', fontSize: '0.78rem', fontWeight: 700 }}>{u.name} <span style={{ color: 'rgba(240,235,227,0.3)', fontWeight: 400, fontSize: '0.66rem' }}>({u.role === 'admin' ? 'admin' : 'prestataire'})</span></p>
                 <p style={{ color: 'rgba(240,235,227,0.35)', fontSize: '0.64rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{u.rank}</p>
@@ -79,16 +80,50 @@ function RankingManager() {
             </div>
 
             {editing === u.id && (
-              <div style={{ padding: '10px 12px', background: 'rgba(167,139,250,0.04)', borderRadius: 10, marginTop: 4, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  <input type="number" style={{ ...PIN, width: 90 }} value={delta} onChange={e => setDelta(e.target.value)} placeholder="± XP" />
-                  <input style={{ ...PIN, flex: 1, minWidth: 120 }} value={reason} onChange={e => setReason(e.target.value)} placeholder="Raison" />
-                  <button onClick={() => applyXp(u.id)} style={{ background: 'linear-gradient(135deg, #a78bfa, #ec4899)', color: '#0a0a0a', border: 'none', borderRadius: 8, padding: '8px 14px', fontWeight: 800, cursor: 'pointer', fontSize: '0.72rem' }}>Appliquer XP</button>
+              <div style={{ padding: '12px 14px', background: 'rgba(167,139,250,0.04)', borderRadius: 10, marginTop: 4, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {/* Level control */}
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <p style={{ color: 'rgba(240,235,227,0.4)', fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', width: 70 }}>Niveau</p>
+                  <input type="number" min="0" max="99" style={{ ...PIN, width: 80 }} value={delta} onChange={e => setDelta(e.target.value)} placeholder={`${u.level}`} />
+                  <button onClick={() => applyLevel(u.id)} style={{ background: 'linear-gradient(135deg, #a78bfa, #ec4899)', color: '#0a0a0a', border: 'none', borderRadius: 8, padding: '8px 14px', fontWeight: 800, cursor: 'pointer', fontSize: '0.72rem' }}>Définir le niveau</button>
                 </div>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  <select style={{ ...PIN, flex: 1, minWidth: 160 }} value={badgeKey} onChange={e => setBadgeKey(e.target.value)}>
-                    <option value="">— Attribuer un succès —</option>
-                    {customs.map(c => <option key={c.id} value={`custom_${c.id}`}>{c.emoji} {c.label} (+{c.xp} XP)</option>)}
+
+                {/* Prestige control with real ornament thumbnails */}
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <p style={{ color: 'rgba(240,235,227,0.4)', fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', width: 70 }}>Prestige</p>
+                  {[0, 1, 2, 3].map(pr => {
+                    const tier = Math.min(10, Math.floor((pr * 20) / 2))
+                    const file = tier === 1 ? 0 : tier
+                    const active = u.prestige === pr
+                    return (
+                      <button key={pr} onClick={() => applyPrestige(u.id, pr)} title={`Prestige ${pr} (Niv. ${pr * 20})`} style={{
+                        background: active ? 'rgba(234,179,8,0.15)' : 'rgba(0,0,0,0.3)',
+                        border: `1px solid ${active ? 'rgba(234,179,8,0.5)' : 'rgba(167,139,250,0.2)'}`,
+                        borderRadius: 10, padding: 6, cursor: 'pointer', textAlign: 'center',
+                      }}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={`/ornaments/Prestige_${String(file).padStart(2, '0')}.png`} alt="" style={{ width: 40, height: 40, objectFit: 'contain', display: 'block' }} />
+                        <span style={{ color: active ? '#eab308' : 'rgba(240,235,227,0.4)', fontSize: '0.6rem', fontWeight: 800 }}>P{pr}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+
+                {/* Achievement grant — every built-in + custom achievement */}
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <p style={{ color: 'rgba(240,235,227,0.4)', fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', width: 70 }}>Succès</p>
+                  <select style={{ ...PIN, flex: 1, minWidth: 180 }} value={badgeKey} onChange={e => setBadgeKey(e.target.value)}>
+                    <option value="">— Choisir un succès —</option>
+                    <optgroup label="Succès du système">
+                      {Object.entries(ACHIEVEMENTS).map(([key, a]) => (
+                        <option key={key} value={key}>{a.emoji} {a.label} (+{a.xp} XP)</option>
+                      ))}
+                    </optgroup>
+                    {customs.length > 0 && (
+                      <optgroup label="Succès personnalisés">
+                        {customs.map(c => <option key={c.id} value={`custom_${c.id}`}>{c.emoji} {c.label} (+{c.xp} XP)</option>)}
+                      </optgroup>
+                    )}
                   </select>
                   <button onClick={() => grantBadge(u.id)} disabled={!badgeKey} style={{ background: badgeKey ? 'rgba(234,179,8,0.15)' : 'rgba(240,235,227,0.04)', border: '1px solid rgba(234,179,8,0.35)', borderRadius: 8, padding: '8px 14px', color: badgeKey ? '#eab308' : 'rgba(240,235,227,0.25)', cursor: badgeKey ? 'pointer' : 'default', fontWeight: 800, fontSize: '0.72rem' }}>🏅 Attribuer</button>
                 </div>
