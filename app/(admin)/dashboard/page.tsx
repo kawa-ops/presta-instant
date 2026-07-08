@@ -336,6 +336,75 @@ export default function AdminDashboard() {
               ))}
             </div>
           </div>
+
+          {/* Leaderboard — Arentreal-style podium then list, right under Objectives */}
+          <div style={{ ...glass, overflow: 'hidden', alignSelf: 'start' }}>
+            <p style={{ color: '#f0ebe3', fontSize: '0.78rem', fontWeight: 800, padding: '11px 16px', borderBottom: '1px solid rgba(167,139,250,0.12)' }}>{t('leaderboard')}</p>
+
+            {(board || []).length >= 2 && (
+              <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: 8, padding: '18px 12px 14px' }}>
+                {[1, 0, 2].map(pos => {
+                  const u = (board || [])[pos]
+                  if (!u) return <div key={pos} style={{ width: 76 }} />
+                  const isFirst = pos === 0
+                  const trophy = pos === 0 ? '🏆' : pos === 1 ? '🥈' : '🥉'
+                  const tColor = pos === 0 ? '#eab308' : pos === 1 ? '#c0c8d4' : '#b45309'
+                  return (
+                    <div key={u.id} style={{
+                      width: isFirst ? 96 : 78, textAlign: 'center',
+                      background: isFirst ? 'linear-gradient(180deg, rgba(234,179,8,0.1), rgba(26,18,48,0.4))' : 'rgba(0,0,0,0.25)',
+                      border: `1px solid ${isFirst ? 'rgba(234,179,8,0.35)' : 'rgba(167,139,250,0.15)'}`,
+                      borderRadius: 14, padding: isFirst ? '14px 8px' : '10px 6px',
+                      transform: isFirst ? 'translateY(-8px)' : 'none',
+                      boxShadow: isFirst ? '0 8px 24px rgba(234,179,8,0.12)' : 'none',
+                    }}>
+                      <p style={{ fontSize: isFirst ? '1.35rem' : '1.05rem', marginBottom: 4 }}>{trophy}</p>
+                      {/* Avatar with prestige ornament ring */}
+                      <div style={{ position: 'relative', width: isFirst ? 44 : 36, height: isFirst ? 44 : 36, margin: '0 auto 5px' }}>
+                        <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: u.prestige >= 1 ? 'conic-gradient(#eab308, #ec4899, #a78bfa, #eab308)' : 'conic-gradient(#a78bfa, #c7d2fe, #a78bfa)' }} />
+                        <div style={{ position: 'absolute', inset: 2, borderRadius: '50%', background: '#141021', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          {u.profilePicUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={u.profilePicUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          ) : (
+                            <span style={{ color: '#c4b5fd', fontSize: isFirst ? '0.95rem' : '0.78rem', fontWeight: 900 }}>{u.name?.charAt(0)?.toUpperCase()}</span>
+                          )}
+                        </div>
+                      </div>
+                      <p style={{ color: tColor, fontSize: '0.85rem', fontWeight: 900, lineHeight: 1 }}>{pos + 1}</p>
+                      <p style={{ color: '#f0ebe3', fontSize: '0.68rem', fontWeight: 800, marginTop: 5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{u.name}{u.isMe ? ' ✦' : ''}</p>
+                      <p style={{ color: '#c4b5fd', fontSize: '0.62rem', fontWeight: 800 }}>Niv. {u.level}</p>
+                      <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.58rem' }}>{u.productions} prod.</p>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+
+            {(board || []).slice(3).map((u: any, i: number) => (
+              <div key={u.id} style={{
+                display: 'flex', alignItems: 'center', gap: 10, padding: '7px 14px',
+                borderTop: '1px solid rgba(167,139,250,0.06)',
+                background: u.isMe ? 'rgba(167,139,250,0.1)' : 'transparent',
+                borderLeft: u.isMe ? '2px solid #a78bfa' : '2px solid transparent',
+              }}>
+                <span style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.72rem', fontWeight: 900, width: 18, textAlign: 'center' }}>{i + 4}</span>
+                <Avatar url={u.profilePicUrl} name={u.name} level={u.level} size={44} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ color: '#f0ebe3', fontSize: '0.72rem', fontWeight: 700 }}>{u.name}{u.isMe ? ' (toi)' : ''}</p>
+                  <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.58rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{u.rank}</p>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <p style={{ color: '#c4b5fd', fontSize: '0.7rem', fontWeight: 900 }}>Niv. {u.level}</p>
+                  <p style={{ color: 'rgba(240,235,227,0.25)', fontSize: '0.56rem' }}>{u.productions} prod.</p>
+                </div>
+              </div>
+            ))}
+            {(board || []).length === 1 && (
+              <p style={{ color: 'rgba(240,235,227,0.25)', fontSize: '0.7rem', padding: '4px 16px 14px', textAlign: 'center' }}>Le podium se remplit dès que l&apos;équipe gagne de l&apos;XP 💪</p>
+            )}
+            {(!board || board.length === 0) && <p style={{ color: 'rgba(240,235,227,0.2)', fontSize: '0.72rem', padding: '16px', textAlign: 'center' }}>Le classement se remplit avec l&apos;XP gagné.</p>}
+          </div>
         </div>
 
 
@@ -430,77 +499,8 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          {/* ===== Sidebar: leaderboard + achievements ===== */}
+          {/* ===== Sidebar: achievements ===== */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            {/* Leaderboard — Arentreal-style podium then list */}
-            <div style={{ ...glass, overflow: 'hidden' }}>
-              <p style={{ color: '#f0ebe3', fontSize: '0.78rem', fontWeight: 800, padding: '11px 16px', borderBottom: '1px solid rgba(167,139,250,0.12)' }}>{t('leaderboard')}</p>
-
-              {(board || []).length >= 2 && (
-                <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: 8, padding: '18px 12px 14px' }}>
-                  {[1, 0, 2].map(pos => {
-                    const u = (board || [])[pos]
-                    if (!u) return <div key={pos} style={{ width: 76 }} />
-                    const isFirst = pos === 0
-                    const trophy = pos === 0 ? '🏆' : pos === 1 ? '🥈' : '🥉'
-                    const tColor = pos === 0 ? '#eab308' : pos === 1 ? '#c0c8d4' : '#b45309'
-                    return (
-                      <div key={u.id} style={{
-                        width: isFirst ? 96 : 78, textAlign: 'center',
-                        background: isFirst ? 'linear-gradient(180deg, rgba(234,179,8,0.1), rgba(26,18,48,0.4))' : 'rgba(0,0,0,0.25)',
-                        border: `1px solid ${isFirst ? 'rgba(234,179,8,0.35)' : 'rgba(167,139,250,0.15)'}`,
-                        borderRadius: 14, padding: isFirst ? '14px 8px' : '10px 6px',
-                        transform: isFirst ? 'translateY(-8px)' : 'none',
-                        boxShadow: isFirst ? '0 8px 24px rgba(234,179,8,0.12)' : 'none',
-                      }}>
-                        <p style={{ fontSize: isFirst ? '1.35rem' : '1.05rem', marginBottom: 4 }}>{trophy}</p>
-                        {/* Avatar with prestige ornament ring */}
-                        <div style={{ position: 'relative', width: isFirst ? 44 : 36, height: isFirst ? 44 : 36, margin: '0 auto 5px' }}>
-                          <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: u.prestige >= 1 ? 'conic-gradient(#eab308, #ec4899, #a78bfa, #eab308)' : 'conic-gradient(#a78bfa, #c7d2fe, #a78bfa)' }} />
-                          <div style={{ position: 'absolute', inset: 2, borderRadius: '50%', background: '#141021', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            {u.profilePicUrl ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img src={u.profilePicUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            ) : (
-                              <span style={{ color: '#c4b5fd', fontSize: isFirst ? '0.95rem' : '0.78rem', fontWeight: 900 }}>{u.name?.charAt(0)?.toUpperCase()}</span>
-                            )}
-                          </div>
-                        </div>
-                        <p style={{ color: tColor, fontSize: '0.85rem', fontWeight: 900, lineHeight: 1 }}>{pos + 1}</p>
-                        <p style={{ color: '#f0ebe3', fontSize: '0.68rem', fontWeight: 800, marginTop: 5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{u.name}{u.isMe ? ' ✦' : ''}</p>
-                        <p style={{ color: '#c4b5fd', fontSize: '0.62rem', fontWeight: 800 }}>Niv. {u.level}</p>
-                        <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.58rem' }}>{u.productions} prod.</p>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-
-              {(board || []).slice(3).map((u: any, i: number) => (
-                <div key={u.id} style={{
-                  display: 'flex', alignItems: 'center', gap: 10, padding: '7px 14px',
-                  borderTop: '1px solid rgba(167,139,250,0.06)',
-                  background: u.isMe ? 'rgba(167,139,250,0.1)' : 'transparent',
-                  borderLeft: u.isMe ? '2px solid #a78bfa' : '2px solid transparent',
-                }}>
-                  <span style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.72rem', fontWeight: 900, width: 18, textAlign: 'center' }}>{i + 4}</span>
-                  <Avatar url={u.profilePicUrl} name={u.name} level={u.level} size={44} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ color: '#f0ebe3', fontSize: '0.72rem', fontWeight: 700 }}>{u.name}{u.isMe ? ' (toi)' : ''}</p>
-                    <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.58rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{u.rank}</p>
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <p style={{ color: '#c4b5fd', fontSize: '0.7rem', fontWeight: 900 }}>Niv. {u.level}</p>
-                    <p style={{ color: 'rgba(240,235,227,0.25)', fontSize: '0.56rem' }}>{u.productions} prod.</p>
-                  </div>
-                </div>
-              ))}
-              {(board || []).length === 1 && (
-                <p style={{ color: 'rgba(240,235,227,0.25)', fontSize: '0.7rem', padding: '4px 16px 14px', textAlign: 'center' }}>Le podium se remplit dès que l&apos;équipe gagne de l&apos;XP 💪</p>
-              )}
-              {(!board || board.length === 0) && <p style={{ color: 'rgba(240,235,227,0.2)', fontSize: '0.72rem', padding: '16px', textAlign: 'center' }}>Le classement se remplit avec l&apos;XP gagné.</p>}
-            </div>
-
             {/* Achievements showcase */}
             {g && (
               <div style={{ ...glass, padding: '12px 16px' }}>
