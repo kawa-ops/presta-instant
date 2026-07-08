@@ -277,7 +277,7 @@ export default function AdminDashboard() {
         )}
 
         {/* ================= Goal + KPI 2x2 (wide left) | Objectives compact (right) ================= */}
-        <div className="dash-fade" style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: 14, marginBottom: 14, animationDelay: '0.06s' }}>
+        <div className="dash-fade" style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: 14, marginBottom: 14, animationDelay: '0.06s', alignItems: 'start' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {/* Weekly goal */}
           <div style={{ ...glass, padding: '12px 18px' }}>
@@ -300,9 +300,9 @@ export default function AdminDashboard() {
           </div>
 
           {/* KPIs 2x2 under the weekly goal — hero-toned, they carry the key info */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10, flex: 1 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
             {kpis.map(k => (
-              <Link key={k.label} href={k.href} className="dash-card-hover" style={{ ...glass, background: 'linear-gradient(135deg, rgba(88,28,135,0.45), rgba(46,28,86,0.55))', padding: '14px 18px', textDecoration: 'none', borderColor: `${k.color}40`, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 6 }}>
+              <Link key={k.label} href={k.href} className="dash-card-hover" style={{ ...glass, background: 'linear-gradient(135deg, rgba(88,28,135,0.45), rgba(46,28,86,0.55))', padding: '14px 18px', textDecoration: 'none', borderColor: `${k.color}40`, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 6, minHeight: 78 }}>
                 <p style={{ color: k.color, fontSize: '1.7rem', fontWeight: 900, lineHeight: 1, textShadow: `0 0 18px ${k.color}50` }}>{k.value}</p>
                 <p style={{ color: 'rgba(240,235,227,0.5)', fontSize: '0.7rem', fontWeight: 700 }}>{k.label}</p>
               </Link>
