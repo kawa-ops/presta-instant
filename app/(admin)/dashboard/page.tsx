@@ -4,6 +4,7 @@ import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 import { useCached } from '@/lib/useCached'
 import Avatar from '@/components/Avatar'
+import { useLang, statusLabels } from '@/lib/i18n'
 
 // ============================================================================
 // DASHBOARD — immersive gamified command center (this page only).
@@ -79,6 +80,8 @@ function Particles() {
 
 export default function AdminDashboard() {
   const { data: session } = useSession()
+  const [, , t] = useLang()
+  const SL = statusLabels(t)
   const { data: stats, refresh, mutate } = useCached<any>('stats', '/api/stats')
   const { data: g, refresh: refreshG } = useCached<any>('gamify', '/api/gamify/me')
   const { data: board, refresh: refreshBoard } = useCached<any[]>('leaderboard', '/api/gamify/leaderboard')
@@ -126,26 +129,26 @@ export default function AdminDashboard() {
 
   // Objectives generated from real production data — never manually checkable
   const missions = stats ? [
-    { label: 'Aucun projet en retard', done: s.overdue === 0, progress: s.overdue > 0 ? `${s.overdue} en retard` : '✓', xp: 15 },
-    { label: 'Livrer les projets du jour', done: s.dueToday === 0, progress: s.dueToday > 0 ? `${s.dueToday} restant${s.dueToday > 1 ? 's' : ''}` : '✓', xp: 25 },
-    { label: 'Valider les livraisons prestataires', done: s.pendingValidations === 0, progress: s.pendingValidations > 0 ? `${s.pendingValidations} en attente` : '✓', xp: 20 },
-    { label: 'Traiter les retours clients', done: s.retoursClient === 0, progress: s.retoursClient > 0 ? `${s.retoursClient} à traiter` : '✓', xp: 20 },
+    { label: t('obj_no_overdue'), done: s.overdue === 0, progress: s.overdue > 0 ? `${s.overdue}` : '✓', xp: 15 },
+    { label: t('obj_deliver_today'), done: s.dueToday === 0, progress: s.dueToday > 0 ? `${s.dueToday}` : '✓', xp: 25 },
+    { label: t('obj_validate'), done: s.pendingValidations === 0, progress: s.pendingValidations > 0 ? `${s.pendingValidations}` : '✓', xp: 20 },
+    { label: t('obj_feedback'), done: s.retoursClient === 0, progress: s.retoursClient > 0 ? `${s.retoursClient}` : '✓', xp: 20 },
   ] : []
   const missionsDone = missions.filter(m => m.done).length
 
   const kpis = [
-    { label: 'Projets en cours', value: s.inProgress, color: '#a78bfa', href: '/productions?status=en_cours' },
-    { label: 'En retard', value: s.overdue, color: '#fb7185', href: '/productions?overdue=true' },
-    { label: "À rendre aujourd'hui", value: s.dueToday, color: '#e879f9', href: '/semaine' },
-    { label: 'Terminés ce mois', value: s.completedMonth, color: '#6ee7b7', href: '/archives' },
+    { label: t('kpi_inprogress'), value: s.inProgress, color: '#a78bfa', href: '/productions?status=en_cours' },
+    { label: t('kpi_overdue'), value: s.overdue, color: '#fb7185', href: '/productions?overdue=true' },
+    { label: t('kpi_today'), value: s.dueToday, color: '#e879f9', href: '/semaine' },
+    { label: t('kpi_month'), value: s.completedMonth, color: '#6ee7b7', href: '/archives' },
   ]
 
   // Production health — replaces the old activity feed with something actionable
   const health = stats ? [
-    { label: 'En cours', value: s.inProgress, color: '#a78bfa' },
-    { label: 'À valider', value: s.pendingValidations, color: '#d8b4fe' },
-    { label: 'Retours clients', value: s.retoursClient, color: '#ec4899' },
-    { label: 'En retard', value: s.overdue, color: '#fb7185' },
+    { label: SL.en_cours, value: s.inProgress, color: '#a78bfa' },
+    { label: SL.livre, value: s.pendingValidations, color: '#d8b4fe' },
+    { label: SL.retours_client, value: s.retoursClient, color: '#ec4899' },
+    { label: t('kpi_overdue'), value: s.overdue, color: '#fb7185' },
   ] : []
   const healthMax = Math.max(1, ...health.map(h => Number(h.value) || 0))
 
@@ -190,7 +193,7 @@ export default function AdminDashboard() {
           <div style={{ display: 'flex', gap: 24, alignItems: 'center', flexWrap: 'wrap' }}>
             {/* Avatar with level ornament frame */}
             <div style={{ position: 'relative', flexShrink: 0 }}>
-              <Avatar url={g?.profilePicUrl} name={firstName} level={g?.level || 0} size={112} ringSpeed={6} />
+              <Avatar url={g?.profilePicUrl} name={firstName} level={g?.level || 0} size={170} ringSpeed={6} />
               {prestige > 0 && (
                 <span title={`Prestige ${prestige}`} style={{ position: 'absolute', bottom: -4, right: -4, background: '#141021', border: '1px solid rgba(234,179,8,0.5)', borderRadius: 20, padding: '2px 8px', color: '#eab308', fontSize: '0.7rem', fontWeight: 800, zIndex: 2 }}>
                   {PRESTIGE_ICONS[Math.min(prestige, 4)]}
@@ -201,7 +204,7 @@ export default function AdminDashboard() {
             {/* Identity + XP */}
             <div style={{ flex: 1, minWidth: 260 }}>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
-                <h1 style={{ color: '#f0ebe3', fontSize: '1.7rem', fontWeight: 900 }}>Bonjour {firstName} 👋</h1>
+                <h1 style={{ color: '#f0ebe3', fontSize: '1.7rem', fontWeight: 900 }}>{t('hello')} {firstName} 👋</h1>
                 {g && (
                   <>
                     <span style={{ background: 'linear-gradient(90deg, rgba(167,139,250,0.2), rgba(236,72,153,0.15))', border: '1px solid rgba(167,139,250,0.35)', color: '#c4b5fd', padding: '3px 12px', borderRadius: 20, fontSize: '0.78rem', fontWeight: 800 }}>{g.rank}</span>
@@ -247,7 +250,7 @@ export default function AdminDashboard() {
             )}
 
             <button onClick={toggleBrief} className="dash-card-hover" style={{ background: briefOpen ? 'linear-gradient(135deg, #a78bfa, #ec4899)' : 'rgba(167,139,250,0.12)', border: '1px solid rgba(167,139,250,0.4)', borderRadius: 12, padding: '12px 20px', color: briefOpen ? '#0a0a0a' : '#c4b5fd', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 800, animation: 'glow-pulse 3s ease-in-out infinite' }}>
-              ✨ Brief du jour
+              {t('brief')}
             </button>
           </div>
         </div>
@@ -257,15 +260,15 @@ export default function AdminDashboard() {
           <div className="dash-fade" style={{ ...glass, padding: '18px 24px', marginBottom: 14 }}>
             <p style={{ color: '#c4b5fd', fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>✨ Assistant de production</p>
             {briefLoading && !brief ? (
-              <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.8rem' }}>Analyse de la production en cours…</p>
+              <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.8rem' }}>{t('analyzing')}</p>
             ) : brief ? (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
                 <div>
-                  <p style={{ color: 'rgba(240,235,227,0.45)', fontSize: '0.66rem', fontWeight: 700, textTransform: 'uppercase', marginBottom: 8 }}>Priorités du jour</p>
+                  <p style={{ color: 'rgba(240,235,227,0.45)', fontSize: '0.66rem', fontWeight: 700, textTransform: 'uppercase', marginBottom: 8 }}>{t('priorities')}</p>
                   {brief.priorities.map((p: string, i: number) => <p key={i} style={{ color: 'rgba(240,235,227,0.8)', fontSize: '0.78rem', lineHeight: 1.5, marginBottom: 5 }}>{p}</p>)}
                 </div>
                 <div>
-                  <p style={{ color: 'rgba(240,235,227,0.45)', fontSize: '0.66rem', fontWeight: 700, textTransform: 'uppercase', marginBottom: 8 }}>Actions recommandées</p>
+                  <p style={{ color: 'rgba(240,235,227,0.45)', fontSize: '0.66rem', fontWeight: 700, textTransform: 'uppercase', marginBottom: 8 }}>{t('actions_reco')}</p>
                   {brief.actions.map((a: string, i: number) => <p key={i} style={{ color: 'rgba(240,235,227,0.8)', fontSize: '0.78rem', lineHeight: 1.5, marginBottom: 5 }}><span style={{ color: '#ec4899', fontWeight: 800 }}>→</span> {a}</p>)}
                 </div>
               </div>
@@ -279,7 +282,7 @@ export default function AdminDashboard() {
           {/* Weekly goal */}
           <div style={{ ...glass, padding: '12px 18px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
-              <p style={{ color: 'rgba(240,235,227,0.45)', fontSize: '0.66rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>🎯 Objectif de la semaine</p>
+              <p style={{ color: 'rgba(240,235,227,0.45)', fontSize: '0.66rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{t('week_goal')}</p>
               <p style={{ color: s.completedWeek >= 10 ? '#22c55e' : '#c4b5fd', fontSize: '0.85rem', fontWeight: 900 }}>
                 {s.completedWeek}/10{s.completedWeek >= 10 ? ' 🎉' : ''}
               </p>
@@ -290,9 +293,9 @@ export default function AdminDashboard() {
               </div>
             </div>
             <div style={{ display: 'flex', gap: 18, marginTop: 12 }}>
-              <div><p style={{ color: '#22c55e', fontSize: '1.05rem', fontWeight: 900, lineHeight: 1 }}>{s.completedToday}</p><p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.62rem' }}>terminés aujourd&apos;hui</p></div>
-              <div><p style={{ color: '#c4b5fd', fontSize: '1.05rem', fontWeight: 900, lineHeight: 1 }}>+{g?.xpWeek ?? 0}</p><p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.62rem' }}>XP cette semaine</p></div>
-              <div><p style={{ color: '#e879f9', fontSize: '1.05rem', fontWeight: 900, lineHeight: 1 }}>{g?.streak ?? 0}j</p><p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.62rem' }}>streak d&apos;activité</p></div>
+              <div><p style={{ color: '#22c55e', fontSize: '1.05rem', fontWeight: 900, lineHeight: 1 }}>{s.completedToday}</p><p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.62rem' }}>{t('done_today')}</p></div>
+              <div><p style={{ color: '#c4b5fd', fontSize: '1.05rem', fontWeight: 900, lineHeight: 1 }}>+{g?.xpWeek ?? 0}</p><p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.62rem' }}>{t('xp_week')}</p></div>
+              <div><p style={{ color: '#e879f9', fontSize: '1.05rem', fontWeight: 900, lineHeight: 1 }}>{g?.streak ?? 0}j</p><p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.62rem' }}>{t('streak')}</p></div>
             </div>
           </div>
 
@@ -310,9 +313,9 @@ export default function AdminDashboard() {
           {/* Objectives — full height beside the goal + KPI stack */}
           <div style={{ ...glass, padding: '18px 22px', display: 'flex', flexDirection: 'column' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10 }}>
-              <p style={{ color: 'rgba(240,235,227,0.45)', fontSize: '0.66rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>🎯 Objectifs du moment</p>
+              <p style={{ color: 'rgba(240,235,227,0.45)', fontSize: '0.66rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{t('objectives')}</p>
               <p style={{ color: missionsDone === missions.length && missions.length > 0 ? '#22c55e' : '#c4b5fd', fontSize: '0.78rem', fontWeight: 900 }}>
-                {missionsDone}/{missions.length}{missionsDone === missions.length && missions.length > 0 ? ' — tout est accompli ! 🏆' : ''}
+                {missionsDone}/{missions.length}{missionsDone === missions.length && missions.length > 0 ? t('all_done') : ''}
               </p>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14, flex: 1, justifyContent: 'center' }}>
@@ -339,21 +342,21 @@ export default function AdminDashboard() {
         {/* Operational summary */}
         {stats && (s.overdue > 0 || s.dueToday > 0 || s.dueTomorrow > 0 || s.pendingValidations > 0) && (
           <div className="dash-fade" style={{ ...glass, padding: '9px 18px', marginBottom: 14, display: 'flex', gap: 20, flexWrap: 'wrap', alignItems: 'center', animationDelay: '0.16s' }}>
-            <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.64rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Résumé</p>
+            <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.64rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{t('summary')}</p>
             {s.overdue > 0 && <p style={{ color: '#fb7185', fontSize: '0.78rem', fontWeight: 700 }}>⚠ {s.overdue} en retard</p>}
             {s.dueToday > 0 && <p style={{ color: '#d9a94e', fontSize: '0.78rem', fontWeight: 700 }}>● {s.dueToday} aujourd&apos;hui</p>}
             {s.dueTomorrow > 0 && <p style={{ color: '#e0a37a', fontSize: '0.78rem', fontWeight: 700 }}>◐ {s.dueTomorrow} demain</p>}
             {s.pendingValidations > 0 && <p style={{ color: '#a78bfa', fontSize: '0.78rem', fontWeight: 700 }}>🟣 {s.pendingValidations} à valider</p>}
             {s.retoursClient > 0 && <p style={{ color: '#ec4899', fontSize: '0.78rem', fontWeight: 700 }}>💬 {s.retoursClient} retours client</p>}
             <p style={{ color: 'rgba(240,235,227,0.4)', fontSize: '0.78rem', fontWeight: 600 }}>👥 {s.activeFreelancers} prestataire{s.activeFreelancers > 1 ? 's' : ''} actif{s.activeFreelancers > 1 ? 's' : ''}</p>
-            <Link href="/semaine" style={{ color: 'rgba(240,235,227,0.35)', fontSize: '0.7rem', textDecoration: 'none', marginLeft: 'auto' }}>Planning →</Link>
+            <Link href="/semaine" style={{ color: 'rgba(240,235,227,0.35)', fontSize: '0.7rem', textDecoration: 'none', marginLeft: 'auto' }}>{t('planning_link')}</Link>
           </div>
         )}
 
-        {/* 🔔 À traiter */}
+        {/* {t('to_process')} */}
         {stats && (s.notifications || []).length > 0 && (
           <div className="dash-fade" style={{ ...glass, padding: '14px 20px', marginBottom: 14, borderColor: 'rgba(167,139,250,0.3)', animationDelay: '0.2s' }}>
-            <p style={{ color: '#c4b5fd', fontSize: '0.68rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>🔔 À traiter</p>
+            <p style={{ color: '#c4b5fd', fontSize: '0.68rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>{t('to_process')}</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
               {(s.notifications as any[]).map((n: any) => {
                 const popping = poppingNotif === n.id
@@ -369,7 +372,7 @@ export default function AdminDashboard() {
                   }}>
                     {popping && <MiniConfetti />}
                     <p style={{ color: '#f0ebe3', fontSize: '0.78rem', flex: 1 }}>{n.message}</p>
-                    <Link href={title ? `/productions?focus=${encodeURIComponent(title)}` : (n.link || '/productions')} style={{ background: 'rgba(199,210,254,0.1)', border: '1px solid rgba(199,210,254,0.3)', borderRadius: 6, padding: '2px 10px', color: '#c7d2fe', fontSize: '0.66rem', textDecoration: 'none', fontWeight: 700 }}>👁 Voir</Link>
+                    <Link href={title ? `/productions?focus=${encodeURIComponent(title)}` : (n.link || '/productions')} style={{ background: 'rgba(199,210,254,0.1)', border: '1px solid rgba(199,210,254,0.3)', borderRadius: 6, padding: '2px 10px', color: '#c7d2fe', fontSize: '0.66rem', textDecoration: 'none', fontWeight: 700 }}>{t('see')}</Link>
                     <button onClick={() => dismissNotif(n.id)} disabled={popping} style={{ background: popping ? 'rgba(34,197,94,0.25)' : 'rgba(240,235,227,0.06)', border: `1px solid ${popping ? 'rgba(34,197,94,0.5)' : 'rgba(167,139,250,0.2)'}`, borderRadius: 6, padding: '2px 10px', color: popping ? '#22c55e' : 'rgba(240,235,227,0.45)', cursor: 'pointer', fontSize: '0.66rem', fontWeight: 700 }}>✓</button>
                   </div>
                 )
@@ -384,11 +387,11 @@ export default function AdminDashboard() {
             {/* Priorités */}
             <div style={{ ...glass, overflow: 'hidden' }}>
               <div style={{ padding: '11px 18px', borderBottom: '1px solid rgba(167,139,250,0.12)', display: 'flex', justifyContent: 'space-between' }}>
-                <p style={{ color: '#f0ebe3', fontSize: '0.8rem', fontWeight: 700 }}>Priorités du jour</p>
-                <Link href="/productions" style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.7rem', textDecoration: 'none' }}>Tout voir →</Link>
+                <p style={{ color: '#f0ebe3', fontSize: '0.8rem', fontWeight: 700 }}>{t('priorities')}</p>
+                <Link href="/productions" style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.7rem', textDecoration: 'none' }}>{t('see_all')}</Link>
               </div>
               {(s.urgentProds as any[]).length === 0 ? (
-                <p style={{ color: '#22c55e', padding: '18px', textAlign: 'center', fontSize: '0.8rem', fontWeight: 700 }}>✓ Aucune urgence aujourd&apos;hui</p>
+                <p style={{ color: '#22c55e', padding: '18px', textAlign: 'center', fontSize: '0.8rem', fontWeight: 700 }}>{t('no_urgent')}</p>
               ) : (
                 (s.urgentProds as any[]).slice(0, 3).map((p: any) => {
                   const isOverdue = p.deadline && new Date(p.deadline) < new Date()
@@ -398,7 +401,7 @@ export default function AdminDashboard() {
                         <p style={{ color: '#f0ebe3', fontSize: '0.78rem', fontWeight: 600 }}>{p.title}</p>
                         <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.66rem' }}>{p.client} · {p.assignedTo?.name || '—'}</p>
                       </div>
-                      <span style={{ background: `${STATUS_COLORS[p.status] || '#8b7fb8'}18`, color: STATUS_COLORS[p.status] || '#8b7fb8', padding: '1px 8px', borderRadius: 20, fontSize: '0.64rem', fontWeight: 700, whiteSpace: 'nowrap' }}>{STATUS_LABELS[p.status] || p.status}</span>
+                      <span style={{ background: `${STATUS_COLORS[p.status] || '#8b7fb8'}18`, color: STATUS_COLORS[p.status] || '#8b7fb8', padding: '1px 8px', borderRadius: 20, fontSize: '0.64rem', fontWeight: 700, whiteSpace: 'nowrap' }}>{SL[p.status] || p.status}</span>
                       <span style={{ color: isOverdue ? '#fb7185' : '#eab308', fontSize: '0.68rem', fontWeight: 800, whiteSpace: 'nowrap' }}>{fmt(p.deadline)}</span>
                     </Link>
                   )
@@ -408,7 +411,7 @@ export default function AdminDashboard() {
 
             {/* Santé de la production — remplaces the old activity feed */}
             <div style={{ ...glass, padding: '14px 20px' }}>
-              <p style={{ color: '#f0ebe3', fontSize: '0.78rem', fontWeight: 700, marginBottom: 12 }}>📊 Santé de la production</p>
+              <p style={{ color: '#f0ebe3', fontSize: '0.78rem', fontWeight: 700, marginBottom: 12 }}>{t('health')}</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
                 {health.map(h => (
                   <div key={h.label}>
@@ -423,7 +426,7 @@ export default function AdminDashboard() {
                 ))}
               </div>
               {s.overdue === 0 && s.retoursClient === 0 && s.pendingValidations === 0 && (
-                <p style={{ color: '#6ee7b7', fontSize: '0.72rem', fontWeight: 700, marginTop: 10 }}>✓ Production parfaitement saine</p>
+                <p style={{ color: '#6ee7b7', fontSize: '0.72rem', fontWeight: 700, marginTop: 10 }}>{t('healthy')}</p>
               )}
             </div>
           </div>
@@ -432,7 +435,7 @@ export default function AdminDashboard() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             {/* Leaderboard — Arentreal-style podium then list */}
             <div style={{ ...glass, overflow: 'hidden' }}>
-              <p style={{ color: '#f0ebe3', fontSize: '0.78rem', fontWeight: 800, padding: '11px 16px', borderBottom: '1px solid rgba(167,139,250,0.12)' }}>🏆 Classement du studio</p>
+              <p style={{ color: '#f0ebe3', fontSize: '0.78rem', fontWeight: 800, padding: '11px 16px', borderBottom: '1px solid rgba(167,139,250,0.12)' }}>{t('leaderboard')}</p>
 
               {(board || []).length >= 2 && (
                 <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: 8, padding: '18px 12px 14px' }}>
@@ -482,7 +485,7 @@ export default function AdminDashboard() {
                   borderLeft: u.isMe ? '2px solid #a78bfa' : '2px solid transparent',
                 }}>
                   <span style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.72rem', fontWeight: 900, width: 18, textAlign: 'center' }}>{i + 4}</span>
-                  <Avatar url={u.profilePicUrl} name={u.name} level={u.level} size={28} />
+                  <Avatar url={u.profilePicUrl} name={u.name} level={u.level} size={44} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ color: '#f0ebe3', fontSize: '0.72rem', fontWeight: 700 }}>{u.name}{u.isMe ? ' (toi)' : ''}</p>
                     <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.58rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{u.rank}</p>
@@ -503,7 +506,7 @@ export default function AdminDashboard() {
             {g && (
               <div style={{ ...glass, padding: '12px 16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10 }}>
-                  <p style={{ color: '#f0ebe3', fontSize: '0.78rem', fontWeight: 800 }}>🏅 Succès</p>
+                  <p style={{ color: '#f0ebe3', fontSize: '0.78rem', fontWeight: 800 }}>{t('achievements')}</p>
                   <Link href="/parametres" style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.66rem', textDecoration: 'none' }}>{(g.achievements || []).length}/{(g.achievements || []).length + (g.locked || []).length} →</Link>
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>

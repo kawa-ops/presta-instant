@@ -3,6 +3,7 @@ import { authOptions } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import FreelancerSidebar from '@/components/freelancer/Sidebar'
 import LiveNotifications from '@/components/LiveNotifications'
+import TopLangBar from '@/components/TopLangBar'
 
 export default async function FreelancerLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerSession(authOptions)
@@ -15,6 +16,7 @@ export default async function FreelancerLayout({ children }: { children: React.R
         {children}
       </main>
       <LiveNotifications />
+      <TopLangBar />
     </div>
   )
 }

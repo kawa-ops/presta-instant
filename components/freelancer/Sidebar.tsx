@@ -2,7 +2,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { signOut, useSession } from 'next-auth/react'
-import { useLang, LangSwitcher } from '@/lib/i18n'
+import { useLang } from '@/lib/i18n'
 import { useEffect, useState } from 'react'
 
 const NAV = [
@@ -42,7 +42,6 @@ export default function FreelancerSidebar() {
         <p style={{ color: 'rgba(240,235,227,0.25)', fontSize: '0.65rem', marginTop: 3, marginLeft: 26 }}>{t('contractor_space')}</p>
       </div>
 
-      <div style={{ padding: '10px 14px 0' }}><LangSwitcher /></div>
 
       <nav style={{ flex: 1, padding: '12px 10px' }}>
         {NAV.map(item => {

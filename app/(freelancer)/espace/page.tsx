@@ -63,7 +63,7 @@ export default function FreelancerDashboard() {
   const missions = stats ? [
     { label: t('obj_no_overdue'), done: s.overdue === 0, progress: s.overdue > 0 ? `${s.overdue}` : '✓', xp: 15 },
     { label: t('obj_deliver_today'), done: s.dueToday === 0, progress: s.dueToday > 0 ? `${s.dueToday}` : '✓', xp: 25 },
-    { label: 'Répondre aux retours', done: !prods.some(p => p.status === 'revisions'), progress: prods.filter(p => p.status === 'revisions').length || '✓', xp: 20 },
+    { label: t('obj_answer_feedback'), done: !prods.some(p => p.status === 'revisions'), progress: prods.filter(p => p.status === 'revisions').length || '✓', xp: 20 },
   ] : []
   const missionsDone = missions.filter(m => m.done).length
 
@@ -80,7 +80,7 @@ export default function FreelancerDashboard() {
       {/* ===== Hero ===== */}
       <div className="dash-fade" style={{ ...glass, padding: '30px 34px', marginBottom: 14, animation: 'fade-up 0.5s both, card-float 6s ease-in-out 1s infinite', background: 'linear-gradient(135deg, rgba(88,28,135,0.35), rgba(22,17,40,0.6))' }}>
         <div style={{ display: 'flex', gap: 22, alignItems: 'center', flexWrap: 'wrap' }}>
-          <Avatar url={g?.profilePicUrl} name={firstName} level={g?.level || 0} size={96} ringSpeed={6} />
+          <Avatar url={g?.profilePicUrl} name={firstName} level={g?.level || 0} size={150} ringSpeed={6} />
           <div style={{ flex: 1, minWidth: 240 }}>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
               <h1 style={{ color: '#f0ebe3', fontSize: '1.55rem', fontWeight: 900 }}>{t('hello')} {firstName} 👋</h1>
@@ -219,7 +219,7 @@ export default function FreelancerDashboard() {
           {(board || []).map((u: any, i: number) => (
             <div key={u.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', borderBottom: '1px solid rgba(167,139,250,0.06)', background: u.isMe ? 'rgba(167,139,250,0.1)' : 'transparent', borderLeft: u.isMe ? '2px solid #a78bfa' : '2px solid transparent' }}>
               <span style={{ fontSize: i < 3 ? '0.95rem' : '0.72rem', fontWeight: 900, width: 22, textAlign: 'center', color: 'rgba(240,235,227,0.3)' }}>{i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1}</span>
-              <Avatar url={u.profilePicUrl} name={u.name} level={u.level} size={32} />
+              <Avatar url={u.profilePicUrl} name={u.name} level={u.level} size={48} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p style={{ color: '#f0ebe3', fontSize: '0.74rem', fontWeight: 700 }}>{u.name}{u.isMe ? ' ✦' : ''}</p>
                 <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.58rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{u.rank}</p>

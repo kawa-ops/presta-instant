@@ -30,6 +30,12 @@ const DICT: Record<Lang, Record<string, string>> = {
     obj_validate: 'Valider les livraisons prestataires', obj_feedback: 'Traiter les retours clients',
     pending_amount: 'Montant en attente', validated_amount: 'Montant validé', total_balance: 'Solde total',
     this_month: 'ce mois-ci', since_start: 'gagné depuis le début', delivered_waiting: 'livré, en attente de validation',
+    obj_answer_feedback: 'Répondre aux retours', assistant: 'Assistant de production', actions_reco: 'Actions recommandées',
+    analyzing: 'Analyse de la production en cours…', late_w: 'en retard', today_w: "aujourd'hui", tomorrow_w: 'demain',
+    to_validate_w: 'à valider', client_fb_w: 'retours client', active_contractors: 'prestataires actifs',
+    planning_link: 'Planning →', see: '👁 Voir', prod_short: 'prod.',
+    st_a_faire: 'À faire', st_en_cours: 'En cours', st_en_attente: 'En attente', st_revisions: 'Retours à faire',
+    st_livre: 'À valider', st_envoye_client: 'Envoyé client', st_retours_client: 'Retours client', st_valide: 'Terminé',
   },
   en: {
     nav_dashboard: 'Dashboard', nav_week: 'My week', nav_prods: 'Post-production',
@@ -51,6 +57,12 @@ const DICT: Record<Lang, Record<string, string>> = {
     obj_validate: 'Validate contractor deliveries', obj_feedback: 'Process client feedback',
     pending_amount: 'Pending amount', validated_amount: 'Validated amount', total_balance: 'Total balance',
     this_month: 'this month', since_start: 'earned since the start', delivered_waiting: 'delivered, awaiting validation',
+    obj_answer_feedback: 'Answer revision requests', assistant: 'Production assistant', actions_reco: 'Recommended actions',
+    analyzing: 'Analyzing production…', late_w: 'overdue', today_w: 'today', tomorrow_w: 'tomorrow',
+    to_validate_w: 'to validate', client_fb_w: 'client feedback', active_contractors: 'active contractors',
+    planning_link: 'Planning →', see: '👁 View', prod_short: 'prod.',
+    st_a_faire: 'To do', st_en_cours: 'In progress', st_en_attente: 'Waiting', st_revisions: 'Revisions needed',
+    st_livre: 'To validate', st_envoye_client: 'Sent to client', st_retours_client: 'Client feedback', st_valide: 'Completed',
   },
   es: {
     nav_dashboard: 'Panel', nav_week: 'Mi semana', nav_prods: 'Postproducción',
@@ -72,7 +84,22 @@ const DICT: Record<Lang, Record<string, string>> = {
     obj_validate: 'Validar las entregas', obj_feedback: 'Tratar los comentarios de clientes',
     pending_amount: 'Importe pendiente', validated_amount: 'Importe validado', total_balance: 'Saldo total',
     this_month: 'este mes', since_start: 'ganado desde el inicio', delivered_waiting: 'entregado, esperando validación',
+    obj_answer_feedback: 'Responder a los comentarios', assistant: 'Asistente de producción', actions_reco: 'Acciones recomendadas',
+    analyzing: 'Analizando la producción…', late_w: 'atrasados', today_w: 'hoy', tomorrow_w: 'mañana',
+    to_validate_w: 'por validar', client_fb_w: 'comentarios de clientes', active_contractors: 'colaboradores activos',
+    planning_link: 'Planificación →', see: '👁 Ver', prod_short: 'prod.',
+    st_a_faire: 'Por hacer', st_en_cours: 'En curso', st_en_attente: 'En espera', st_revisions: 'Cambios pedidos',
+    st_livre: 'Por validar', st_envoye_client: 'Enviado al cliente', st_retours_client: 'Comentarios cliente', st_valide: 'Terminado',
   },
+}
+
+// Translated status labels for any component
+export function statusLabels(t: (k: string) => string): Record<string, string> {
+  return {
+    a_faire: t('st_a_faire'), en_cours: t('st_en_cours'), en_attente: t('st_en_attente'),
+    revisions: t('st_revisions'), livre: t('st_livre'), envoye_client: t('st_envoye_client'),
+    retours_client: t('st_retours_client'), valide: t('st_valide'),
+  }
 }
 
 export function useLang(): [Lang, (l: Lang) => void, (k: string) => string] {
