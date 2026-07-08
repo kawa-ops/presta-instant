@@ -183,6 +183,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
             data: { freelancerId: prod.assignedToId, month, validatedAmount: prod.price, projectCount: 1 },
           }).catch(() => {})
         }
+        // Remember which payout month this production was credited to,
+        // so the billing page can list/edit/remove individual jobs
+        db.production.update({ where: { id: prod.id }, data: { payoutMonth: month } }).catch(() => {})
         db.notification.create({ data: { userId: prod.assignedToId, type: 'task_validated', message: `Prestation validée : ${prod.title} (+${prod.price.toLocaleString('fr-FR')} €)`, link: '/espace/facturation' } }).catch(() => {})
       }
     }

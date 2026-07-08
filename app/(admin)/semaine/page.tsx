@@ -22,6 +22,7 @@ export default function SemainePage() {
   const [justMoved, setJustMoved] = useState<string | null>(null)
 
   const today = new Date(); today.setHours(0, 0, 0, 0)
+  const todayKey = dayKey(today)
 
   const byDay: Record<string, any[]> = {}
   ;[...thisWeek, ...upcoming].forEach(p => {
@@ -30,12 +31,26 @@ export default function SemainePage() {
     if (!byDay[k]) byDay[k] = []
     byDay[k].push(p)
   })
+  // Overdue productions carry over into today's column as red reminders.
+  // Their REAL deadline is untouched — this is only a planning visualization.
+  overdue.forEach(p => {
+    if (!p.deadline) return
+    const k = p.deadline.slice(0, 10)
+    if (k < todayKey) {
+      if (!byDay[todayKey]) byDay[todayKey] = []
+      byDay[todayKey].unshift({ ...p, _overdue: true })
+    } else {
+      // deadline was moved forward (optimistic drag) — render on its normal day
+      if (!byDay[k]) byDay[k] = []
+      byDay[k].push(p)
+    }
+  })
 
   // Drop a card on a day → move the deadline (optimistic, server sync in background)
   function moveTo(prodId: string, dateKey: string) {
     setDragOverDay(null)
     setDragId(null)
-    const all = [...thisWeek, ...upcoming]
+    const all = [...thisWeek, ...upcoming, ...overdue]
     const prod = all.find(p => p.id === prodId)
     if (!prod || prod.deadline?.slice(0, 10) === dateKey) return
 
@@ -43,7 +58,7 @@ export default function SemainePage() {
     mutate(prev => {
       if (!prev) return prev
       const update = (list: any[]) => list.map((p: any) => p.id === prodId ? { ...p, deadline: `${dateKey}T00:00:00.000Z` } : p)
-      return { ...prev, thisWeek: update(prev.thisWeek || []), upcoming: update(prev.upcoming || []) }
+      return { ...prev, thisWeek: update(prev.thisWeek || []), upcoming: update(prev.upcoming || []), overdue: update(prev.overdue || []) }
     })
     setJustMoved(prodId)
     setTimeout(() => setJustMoved(null), 900)
@@ -59,6 +74,8 @@ export default function SemainePage() {
   function Card({ p, dimmed }: { p: any; dimmed?: boolean }) {
     const isDragging = dragId === p.id
     const moved = justMoved === p.id
+    const late = p._overdue === true
+    const origDeadline = late && p.deadline ? new Date(p.deadline) : null
     return (
       <div
         draggable
@@ -71,15 +88,21 @@ export default function SemainePage() {
         }}
         onDragEnd={() => { setDragId(null); setDragOverDay(null) }}
         style={{
-          background: moved ? 'rgba(34,197,94,0.12)' : '#191919',
-          border: `1px solid ${moved ? 'rgba(34,197,94,0.4)' : '#232323'}`,
-          borderLeft: `3px solid ${STATUS_COLORS[p.status] || '#8b7fb8'}`,
+          background: moved ? 'rgba(34,197,94,0.12)' : late ? 'rgba(251,113,133,0.1)' : '#191919',
+          border: `1px solid ${moved ? 'rgba(34,197,94,0.4)' : late ? 'rgba(251,113,133,0.5)' : '#232323'}`,
+          borderLeft: `3px solid ${late ? '#fb7185' : STATUS_COLORS[p.status] || '#8b7fb8'}`,
           borderRadius: 8, padding: '9px 11px', marginBottom: 6,
           opacity: isDragging ? 0.35 : dimmed ? 0.8 : 1,
           cursor: 'grab',
+          boxShadow: late ? '0 0 14px rgba(251,113,133,0.15)' : 'none',
           transition: 'background 0.4s, border-color 0.4s, opacity 0.15s',
         }}
       >
+        {late && (
+          <span style={{ display: 'inline-block', background: '#fb7185', color: '#1a0a0e', padding: '1px 7px', borderRadius: 20, fontSize: '0.58rem', fontWeight: 900, letterSpacing: '0.04em', marginBottom: 4 }}>
+            ⚠ EN RETARD{origDeadline ? ` · ${origDeadline.getDate()} ${MONTHS[origDeadline.getMonth()]}` : ''}
+          </span>
+        )}
         <p style={{ color: '#f0ebe3', fontSize: '0.76rem', fontWeight: 600, lineHeight: 1.3 }}>{p.title}</p>
         <p style={{ color: 'rgba(240,235,227,0.35)', fontSize: '0.66rem', marginTop: 2 }}>{p.client}</p>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 5 }}>
@@ -160,17 +183,9 @@ export default function SemainePage() {
       </div>
 
       {overdue.length > 0 && (
-        <div style={{ background: 'rgba(251,113,133,0.06)', border: '1px solid rgba(251,113,133,0.2)', borderRadius: 12, padding: '14px 18px', marginBottom: 20 }}>
-          <p style={{ color: '#fb7185', fontSize: '0.82rem', fontWeight: 700, marginBottom: 10 }}>⚠ {overdue.length} prestation{overdue.length > 1 ? 's' : ''} en retard</p>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {overdue.map(p => (
-              <div key={p.id} style={{ background: 'rgba(251,113,133,0.08)', border: '1px solid rgba(251,113,133,0.2)', borderRadius: 8, padding: '7px 11px' }}>
-                <span style={{ color: '#f0ebe3', fontSize: '0.74rem', fontWeight: 600 }}>{p.title}</span>
-                <span style={{ color: 'rgba(240,235,227,0.35)', fontSize: '0.66rem', marginLeft: 6 }}>{p.assignedTo?.name || 'Lucas'}</span>
-              </div>
-            ))}
-          </div>
-        </div>
+        <p style={{ color: '#fb7185', fontSize: '0.76rem', fontWeight: 700, marginBottom: 12 }}>
+          ⚠ {overdue.length} prestation{overdue.length > 1 ? 's' : ''} en retard — reportée{overdue.length > 1 ? 's' : ''} automatiquement sur aujourd&apos;hui (deadline réelle inchangée)
+        </p>
       )}
 
       {[0, 1, 2, 3, 4].map(w => <WeekGrid key={w} weekIndex={w} />)}

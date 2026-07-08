@@ -50,6 +50,7 @@ model Production {
   shareToken     String?   @unique // public client-tracking link
   clientApprovedAt DateTime? // client clicked "approve" on the portal
   finalLink      String?   // final downloadable delivery sent to the client
+  payoutMonth    String?   // "2026-07" — which monthly payout this production was credited to ("none" = removed from billing)
   archived       Boolean   @default(false)
   assignedToId   String?
   assignedTo     User?     @relation("AssignedTo", fields: [assignedToId], references: [id])

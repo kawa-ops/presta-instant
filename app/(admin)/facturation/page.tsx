@@ -1,7 +1,8 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useCached } from '@/lib/useCached'
 import Avatar from '@/components/Avatar'
+import { STATUS_COLORS, STATUS_LABELS } from '@/lib/statuses'
 
 // Admin billing — global payment management, monthly timeline UX
 // (same interaction model as the contractor billing page).
@@ -13,12 +14,87 @@ const glass: React.CSSProperties = {
   border: '1px solid rgba(167,139,250,0.18)', borderRadius: 16,
 }
 
+// Per-production breakdown of one provider's month, with inline
+// amount editing and removal (recalculates all totals server-side).
+function PayoutDetail({ freelancerId, month, onTotalsChanged }: { freelancerId: string; month: string; onTotalsChanged: () => void }) {
+  const [prods, setProds] = useState<any[] | null>(null)
+  const [editing, setEditing] = useState<string | null>(null)
+  const [editValue, setEditValue] = useState('')
+  const [busy, setBusy] = useState<string | null>(null)
+
+  async function load() {
+    const d = await fetch(`/api/facturation/details?freelancerId=${freelancerId}&month=${month}`, { cache: 'no-store' }).then(r => r.json()).catch(() => null)
+    setProds(d?.productions || [])
+  }
+  useEffect(() => { load() }, [freelancerId, month]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function act(productionId: string, action: 'amount' | 'remove', price?: number) {
+    setBusy(productionId)
+    const res = await fetch('/api/facturation/details', {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ productionId, action, price }),
+    })
+    setBusy(null)
+    if (res.ok) {
+      setEditing(null)
+      if (action === 'remove') setProds(p => (p || []).filter(x => x.id !== productionId))
+      else setProds(p => (p || []).map(x => x.id === productionId ? { ...x, price } : x))
+      onTotalsChanged()
+    } else {
+      const d = await res.json().catch(() => null)
+      alert(d?.error || 'Erreur')
+    }
+  }
+
+  if (prods === null) return <p style={{ color: 'rgba(240,235,227,0.25)', fontSize: '0.72rem', padding: '10px 14px' }}>Chargement…</p>
+  if (prods.length === 0) return <p style={{ color: 'rgba(240,235,227,0.25)', fontSize: '0.72rem', padding: '10px 14px' }}>Aucune prestation rattachée à ce mois.</p>
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 5, padding: '4px 8px 10px' }}>
+      {prods.map(p => (
+        <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 12px', background: 'rgba(0,0,0,0.3)', borderRadius: 9, border: '1px solid rgba(167,139,250,0.08)' }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ color: '#f0ebe3', fontSize: '0.76rem', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.title}</p>
+            <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.64rem' }}>{p.client} · {new Date(p.updatedAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}</p>
+          </div>
+          <span style={{ background: `${STATUS_COLORS[p.status] || '#8b7fb8'}18`, color: STATUS_COLORS[p.status] || '#8b7fb8', padding: '1px 8px', borderRadius: 20, fontSize: '0.6rem', fontWeight: 700, whiteSpace: 'nowrap' }}>{STATUS_LABELS[p.status] || p.status}</span>
+
+          {editing === p.id ? (
+            <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+              <input
+                autoFocus type="number" min="0" value={editValue}
+                onChange={e => setEditValue(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') act(p.id, 'amount', parseFloat(editValue)); if (e.key === 'Escape') setEditing(null) }}
+                style={{ width: 76, background: 'rgba(12,8,26,0.9)', border: '1px solid rgba(167,139,250,0.4)', borderRadius: 7, padding: '4px 8px', color: '#f0ebe3', fontSize: '0.76rem', fontWeight: 800 }}
+              />
+              <button onClick={() => act(p.id, 'amount', parseFloat(editValue))} disabled={busy === p.id} style={{ background: '#22c55e', color: '#0a0a0a', border: 'none', borderRadius: 7, padding: '4px 9px', fontWeight: 900, cursor: 'pointer', fontSize: '0.7rem' }}>✓</button>
+              <button onClick={() => setEditing(null)} style={{ background: 'transparent', border: '1px solid rgba(167,139,250,0.25)', borderRadius: 7, padding: '4px 8px', color: 'rgba(240,235,227,0.4)', cursor: 'pointer', fontSize: '0.7rem' }}>✕</button>
+            </span>
+          ) : (
+            <>
+              <p style={{ color: '#c4b5fd', fontSize: '0.82rem', fontWeight: 900, minWidth: 62, textAlign: 'right' }}>{(p.price || 0).toLocaleString('fr-FR')} €</p>
+              <button title="Modifier le montant" onClick={() => { setEditing(p.id); setEditValue(String(p.price || 0)) }} style={{ background: 'rgba(167,139,250,0.1)', border: '1px solid rgba(167,139,250,0.3)', borderRadius: 7, padding: '4px 9px', color: '#c4b5fd', cursor: 'pointer', fontSize: '0.7rem' }}>✎</button>
+              <button
+                title="Retirer de la facturation"
+                disabled={busy === p.id}
+                onClick={() => { if (confirm(`Retirer "${p.title}" de la facturation de ce mois ?\n\nLa production n'est pas supprimée — seul le paiement est retiré et les totaux sont recalculés.`)) act(p.id, 'remove') }}
+                style={{ background: 'rgba(251,113,133,0.08)', border: '1px solid rgba(251,113,133,0.3)', borderRadius: 7, padding: '4px 9px', color: '#fb7185', cursor: 'pointer', fontSize: '0.7rem', opacity: busy === p.id ? 0.5 : 1 }}
+              >🗑</button>
+            </>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export default function AdminFacturationPage() {
   const { data: payoutsData, loading, refresh } = useCached<any[]>('apayouts', '/api/monthly-payouts')
   const payouts = Array.isArray(payoutsData) ? payoutsData : []
   const currentMonth = new Date().toISOString().slice(0, 7)
   const [openMonth, setOpenMonth] = useState<string>(currentMonth)
   const [paying, setPaying] = useState<string | null>(null)
+  const [openProvider, setOpenProvider] = useState<string | null>(null)
 
   const byMonth: Record<string, any[]> = {}
   payouts.forEach(p => { if (!byMonth[p.month]) byMonth[p.month] = []; byMonth[p.month].push(p) })
@@ -125,18 +201,22 @@ export default function AdminFacturationPage() {
                 </p>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {open.rows.map(p => (
-                    <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '10px 14px', background: 'rgba(0,0,0,0.25)', borderRadius: 12, border: '1px solid rgba(167,139,250,0.1)' }}>
+                  {open.rows.map(p => {
+                    const expanded = openProvider === p.id
+                    return (
+                    <div key={p.id} style={{ background: 'rgba(0,0,0,0.25)', borderRadius: 12, border: `1px solid ${expanded ? 'rgba(167,139,250,0.3)' : 'rgba(167,139,250,0.1)'}` }}>
+                    <div onClick={() => setOpenProvider(expanded ? null : p.id)} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '10px 14px', cursor: 'pointer' }}>
+                      <span style={{ color: 'rgba(240,235,227,0.35)', fontSize: '0.7rem', transform: expanded ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s', width: 12 }}>▶</span>
                       <Avatar url={p.freelancer?.profilePicUrl} name={p.freelancer?.name} level={0} size={44} />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <p style={{ color: '#f0ebe3', fontSize: '0.85rem', fontWeight: 800 }}>{p.freelancer?.name || '—'}</p>
-                        <p style={{ color: 'rgba(240,235,227,0.35)', fontSize: '0.7rem' }}>{p.projectCount} prestation{p.projectCount > 1 ? 's' : ''} validée{p.projectCount > 1 ? 's' : ''}</p>
+                        <p style={{ color: 'rgba(240,235,227,0.35)', fontSize: '0.7rem' }}>{p.projectCount} prestation{p.projectCount > 1 ? 's' : ''} validée{p.projectCount > 1 ? 's' : ''} — cliquer pour le détail</p>
                       </div>
 
                       <p style={{ color: '#f0ebe3', fontSize: '0.95rem', fontWeight: 900 }}>{(p.validatedAmount || 0).toLocaleString('fr-FR')} €</p>
 
                       {p.invoiceUrl ? (
-                        <a href={p.invoiceUrl} target="_blank" rel="noreferrer" style={{ background: 'rgba(165,180,252,0.1)', border: '1px solid rgba(165,180,252,0.25)', borderRadius: 8, padding: '6px 12px', color: '#a5b4fc', fontSize: '0.72rem', textDecoration: 'none', fontWeight: 700 }}>📄 Facture ↗</a>
+                        <a href={p.invoiceUrl} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} style={{ background: 'rgba(165,180,252,0.1)', border: '1px solid rgba(165,180,252,0.25)', borderRadius: 8, padding: '6px 12px', color: '#a5b4fc', fontSize: '0.72rem', textDecoration: 'none', fontWeight: 700 }}>📄 Facture ↗</a>
                       ) : p.invoiceStatus === 'uploaded' ? (
                         <span style={{ color: '#e879f9', fontSize: '0.7rem', fontWeight: 700 }}>Sans facture</span>
                       ) : (
@@ -149,12 +229,16 @@ export default function AdminFacturationPage() {
                           {p.paidAt && <p style={{ color: 'rgba(240,235,227,0.25)', fontSize: '0.62rem', marginTop: 4 }}>le {new Date(p.paidAt).toLocaleDateString('fr-FR')}</p>}
                         </div>
                       ) : (
-                        <button onClick={() => markPaid(p.id)} disabled={paying === p.id} style={{ background: 'linear-gradient(135deg, #16a34a, #22c55e)', color: '#0a0a0a', border: 'none', borderRadius: 8, padding: '8px 16px', fontWeight: 800, cursor: 'pointer', fontSize: '0.74rem', minWidth: 108, opacity: paying === p.id ? 0.6 : 1 }}>
+                        <button onClick={e => { e.stopPropagation(); markPaid(p.id) }} disabled={paying === p.id} style={{ background: 'linear-gradient(135deg, #16a34a, #22c55e)', color: '#0a0a0a', border: 'none', borderRadius: 8, padding: '8px 16px', fontWeight: 800, cursor: 'pointer', fontSize: '0.74rem', minWidth: 108, opacity: paying === p.id ? 0.6 : 1 }}>
                           {paying === p.id ? '…' : '✓ Marquer payé'}
                         </button>
                       )}
                     </div>
-                  ))}
+                    {expanded && (
+                      <PayoutDetail freelancerId={p.freelancerId || p.freelancer?.id} month={p.month} onTotalsChanged={refresh} />
+                    )}
+                    </div>
+                  )})}
                 </div>
               )}
             </div>

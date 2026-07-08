@@ -122,9 +122,9 @@ export default function FreelancerDashboard() {
         </div>
       </div>
 
-      {/* ===== Goal + KPI 2x2 | Objectives ===== */}
-      <div className="dash-fade" style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 14, marginBottom: 14, animationDelay: '0.06s' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {/* ===== Single grid — mirrors the admin dashboard density ===== */}
+      <div className="dash-fade" style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 14, animationDelay: '0.06s', alignItems: 'start' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {/* Weekly goal — 5 for a contractor */}
           <div style={{ ...glass, padding: '12px 18px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
@@ -142,14 +142,80 @@ export default function FreelancerDashboard() {
             </div>
           </div>
 
-          {/* KPI 2x2 — hero-toned */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10, flex: 1 }}>
+          {/* KPI 2x2 — hero-toned, same compact size as the admin dashboard */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
             {kpis.map(k => (
-              <Link key={k.label} href={k.href} style={{ ...glass, background: 'linear-gradient(135deg, rgba(88,28,135,0.45), rgba(46,28,86,0.55))', padding: '14px 18px', textDecoration: 'none', borderColor: `${k.color}40`, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 6 }}>
+              <Link key={k.label} href={k.href} style={{ ...glass, background: 'linear-gradient(135deg, rgba(88,28,135,0.45), rgba(46,28,86,0.55))', padding: '14px 18px', textDecoration: 'none', borderColor: `${k.color}40`, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 6, minHeight: 78 }}>
                 <p style={{ color: k.color, fontSize: '1.7rem', fontWeight: 900, lineHeight: 1, textShadow: `0 0 18px ${k.color}50` }}>{k.value}</p>
                 <p style={{ color: 'rgba(240,235,227,0.5)', fontSize: '0.7rem', fontWeight: 700 }}>{k.label}</p>
               </Link>
             ))}
+          </div>
+
+          {/* Financial — compact, directly under the KPIs */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+            {[
+              { l: t('pending_amount'), v: pendingAmount, c: '#c4b5fd', sub: t('delivered_waiting') },
+              { l: t('validated_amount'), v: validatedAmount, c: '#22c55e', sub: t('this_month') },
+              { l: t('total_balance'), v: totalBalance, c: '#a78bfa', sub: t('since_start') },
+            ].map(f => (
+              <div key={f.l} style={{ ...glass, padding: '10px 14px' }}>
+                <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>{f.l}</p>
+                <p style={{ color: f.c, fontSize: '1.15rem', fontWeight: 900, lineHeight: 1 }}>{f.v.toLocaleString('fr-FR')} €</p>
+                <p style={{ color: 'rgba(240,235,227,0.25)', fontSize: '0.62rem', marginTop: 3 }}>{f.sub}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Priorities */}
+          <div style={{ ...glass, overflow: 'hidden' }}>
+            <div style={{ padding: '11px 18px', borderBottom: '1px solid rgba(167,139,250,0.12)', display: 'flex', justifyContent: 'space-between' }}>
+              <p style={{ color: '#f0ebe3', fontSize: '0.8rem', fontWeight: 700 }}>{t('priorities')}</p>
+              <Link href="/espace/prestations" style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.7rem', textDecoration: 'none' }}>{t('see_all')}</Link>
+            </div>
+            {(s.urgentProds as any[]).length === 0 ? (
+              <p style={{ color: '#22c55e', padding: '18px', textAlign: 'center', fontSize: '0.8rem', fontWeight: 700 }}>{t('no_urgent')}</p>
+            ) : (
+              (s.urgentProds as any[]).slice(0, 3).map((p: any) => {
+                const isOverdue = p.deadline && new Date(p.deadline) < new Date()
+                return (
+                  <Link key={p.id} href="/espace/prestations" style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 10, padding: '9px 18px', borderBottom: '1px solid rgba(167,139,250,0.07)', textDecoration: 'none', alignItems: 'center' }}>
+                    <div>
+                      <p style={{ color: '#f0ebe3', fontSize: '0.78rem', fontWeight: 600 }}>{p.title}</p>
+                      <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.66rem' }}>{p.client}</p>
+                    </div>
+                    <span style={{ background: `${STATUS_COLORS[p.status] || '#8b7fb8'}18`, color: STATUS_COLORS[p.status] || '#8b7fb8', padding: '1px 8px', borderRadius: 20, fontSize: '0.64rem', fontWeight: 700 }}>{STATUS_LABELS[p.status] || p.status}</span>
+                    <span style={{ color: isOverdue ? '#fb7185' : '#c4b5fd', fontSize: '0.68rem', fontWeight: 800 }}>{fmt(p.deadline)}</span>
+                  </Link>
+                )
+              })
+            )}
+          </div>
+
+          {/* Production health — scoped to the contractor's own projects */}
+          <div style={{ ...glass, padding: '14px 20px' }}>
+            <p style={{ color: '#f0ebe3', fontSize: '0.78rem', fontWeight: 700, marginBottom: 12 }}>{t('health')}</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+              {[
+                { label: STATUS_LABELS.en_cours, value: Number(s.inProgress) || 0, color: '#a78bfa' },
+                { label: STATUS_LABELS.livre, value: s.pendingValidations, color: '#d8b4fe' },
+                { label: STATUS_LABELS.revisions, value: prods.filter(p => p.status === 'revisions').length, color: '#e879f9' },
+                { label: t('kpi_overdue'), value: s.overdue, color: '#fb7185' },
+              ].map(h => {
+                const max = Math.max(1, Number(s.inProgress) || 0, s.pendingValidations, s.overdue)
+                return (
+                  <div key={h.label}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+                      <p style={{ color: 'rgba(240,235,227,0.5)', fontSize: '0.7rem', fontWeight: 600 }}>{h.label}</p>
+                      <p style={{ color: h.color, fontSize: '0.72rem', fontWeight: 900 }}>{h.value}</p>
+                    </div>
+                    <div style={{ height: 6, background: 'rgba(0,0,0,0.4)', borderRadius: 5, overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: `${Math.max((h.value / max) * 100, h.value > 0 ? 5 : 0)}%`, background: `linear-gradient(90deg, ${h.color}70, ${h.color})`, borderRadius: 5, transition: 'width 0.8s cubic-bezier(0.16,1,0.3,1)' }} />
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
           </div>
         </div>
 
@@ -220,80 +286,9 @@ export default function FreelancerDashboard() {
             </div>
           ))}
         </div>
-        </div>
-      </div>
 
-      {/* Financial */}
-      <div className="dash-fade" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 14, animationDelay: '0.1s' }}>
-        {[
-          { l: t('pending_amount'), v: pendingAmount, c: '#c4b5fd', sub: t('delivered_waiting') },
-          { l: t('validated_amount'), v: validatedAmount, c: '#22c55e', sub: t('this_month') },
-          { l: t('total_balance'), v: totalBalance, c: '#a78bfa', sub: t('since_start') },
-        ].map(f => (
-          <div key={f.l} style={{ ...glass, padding: '14px 18px' }}>
-            <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.64rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>{f.l}</p>
-            <p style={{ color: f.c, fontSize: '1.5rem', fontWeight: 900, lineHeight: 1 }}>{f.v.toLocaleString('fr-FR')} €</p>
-            <p style={{ color: 'rgba(240,235,227,0.25)', fontSize: '0.66rem', marginTop: 4 }}>{f.sub}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* ===== Priorities | Leaderboard ===== */}
-      <div className="dash-fade" style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 14, animationDelay: '0.16s' }}>
-        <div style={{ ...glass, overflow: 'hidden', alignSelf: 'start' }}>
-          <div style={{ padding: '11px 18px', borderBottom: '1px solid rgba(167,139,250,0.12)', display: 'flex', justifyContent: 'space-between' }}>
-            <p style={{ color: '#f0ebe3', fontSize: '0.8rem', fontWeight: 700 }}>{t('priorities')}</p>
-            <Link href="/espace/prestations" style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.7rem', textDecoration: 'none' }}>{t('see_all')}</Link>
-          </div>
-          {(s.urgentProds as any[]).length === 0 ? (
-            <p style={{ color: '#22c55e', padding: '18px', textAlign: 'center', fontSize: '0.8rem', fontWeight: 700 }}>{t('no_urgent')}</p>
-          ) : (
-            (s.urgentProds as any[]).slice(0, 3).map((p: any) => {
-              const isOverdue = p.deadline && new Date(p.deadline) < new Date()
-              return (
-                <Link key={p.id} href="/espace/prestations" style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 10, padding: '9px 18px', borderBottom: '1px solid rgba(167,139,250,0.07)', textDecoration: 'none', alignItems: 'center' }}>
-                  <div>
-                    <p style={{ color: '#f0ebe3', fontSize: '0.78rem', fontWeight: 600 }}>{p.title}</p>
-                    <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.66rem' }}>{p.client}</p>
-                  </div>
-                  <span style={{ background: `${STATUS_COLORS[p.status] || '#8b7fb8'}18`, color: STATUS_COLORS[p.status] || '#8b7fb8', padding: '1px 8px', borderRadius: 20, fontSize: '0.64rem', fontWeight: 700 }}>{STATUS_LABELS[p.status] || p.status}</span>
-                  <span style={{ color: isOverdue ? '#fb7185' : '#c4b5fd', fontSize: '0.68rem', fontWeight: 800 }}>{fmt(p.deadline)}</span>
-                </Link>
-              )
-            })
-          )}
-        </div>
-
-        {/* Right column: health + achievements — same as admin */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          {/* Production health — scoped to the contractor's own projects */}
-          <div style={{ ...glass, padding: '14px 20px' }}>
-            <p style={{ color: '#f0ebe3', fontSize: '0.78rem', fontWeight: 700, marginBottom: 12 }}>{t('health')}</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
-              {[
-                { label: STATUS_LABELS.en_cours, value: Number(s.inProgress) || 0, color: '#a78bfa' },
-                { label: STATUS_LABELS.livre, value: s.pendingValidations, color: '#d8b4fe' },
-                { label: STATUS_LABELS.revisions, value: prods.filter(p => p.status === 'revisions').length, color: '#e879f9' },
-                { label: t('kpi_overdue'), value: s.overdue, color: '#fb7185' },
-              ].map(h => {
-                const max = Math.max(1, Number(s.inProgress) || 0, s.pendingValidations, s.overdue)
-                return (
-                  <div key={h.label}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
-                      <p style={{ color: 'rgba(240,235,227,0.5)', fontSize: '0.7rem', fontWeight: 600 }}>{h.label}</p>
-                      <p style={{ color: h.color, fontSize: '0.72rem', fontWeight: 900 }}>{h.value}</p>
-                    </div>
-                    <div style={{ height: 6, background: 'rgba(0,0,0,0.4)', borderRadius: 5, overflow: 'hidden' }}>
-                      <div style={{ height: '100%', width: `${Math.max((h.value / max) * 100, h.value > 0 ? 5 : 0)}%`, background: `linear-gradient(90deg, ${h.color}70, ${h.color})`, borderRadius: 5, transition: 'width 0.8s cubic-bezier(0.16,1,0.3,1)' }} />
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-
-          {/* Achievements — same showcase as admin, instant tooltips */}
-          {g && (
+        {/* Achievements — same showcase as admin, instant tooltips */}
+        {g && (
             <div style={{ ...glass, padding: '12px 16px' }}>
               <style>{`
                 .ach-tip { position: relative; cursor: default; }
