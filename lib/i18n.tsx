@@ -130,7 +130,7 @@ export function LangSwitcher() {
         <button key={l} onClick={() => setLang(l)} style={{
           background: lang === l ? 'rgba(167,139,250,0.2)' : 'transparent',
           border: `1px solid ${lang === l ? 'rgba(167,139,250,0.5)' : 'rgba(167,139,250,0.12)'}`,
-          borderRadius: 7, padding: '2px 6px', cursor: 'pointer', fontSize: '0.8rem',
+          borderRadius: 9, padding: '4px 9px', cursor: 'pointer', fontSize: '1.15rem', lineHeight: 1,
           opacity: lang === l ? 1 : 0.5, transition: 'all 0.15s',
         }}>{l === 'fr' ? '🇫🇷' : l === 'en' ? '🇬🇧' : '🇪🇸'}</button>
       ))}

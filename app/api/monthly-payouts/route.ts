@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
     const rows = await db.monthlyPayout.findMany({
       where: freelancerId ? { freelancerId } : {},
       orderBy: { month: 'desc' },
-      include: { freelancer: { select: { id: true, name: true } } },
+      include: { freelancer: { select: { id: true, name: true, profilePicUrl: true } } },
     })
     return NextResponse.json(rows)
   } catch (e: any) {
