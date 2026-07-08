@@ -8,7 +8,11 @@ const db = prisma as any
 
 export async function GET() {
   const session = await getServerSession(authOptions)
-  if (!session || (session.user as any).role !== 'admin') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const isAdmin = (session.user as any).role === 'admin'
+  const meId = (session.user as any).id
+  // Freelancers get the same dashboard shape, scoped to their own productions
+  const scope = isAdmin ? {} : { assignedToId: meId }
 
   const now = new Date()
   const startToday = new Date(now); startToday.setHours(0, 0, 0, 0)
@@ -20,8 +24,7 @@ export async function GET() {
   const startWeek = new Date(startToday)
   startWeek.setDate(startWeek.getDate() - ((startWeek.getDay() + 6) % 7))
 
-  const activeWhere = { archived: false, status: { notIn: ['valide'] } }
-  const adminId = (session.user as any).id
+  const activeWhere = { ...scope, archived: false, status: { notIn: ['valide'] } }
 
   try {
     const [
@@ -32,24 +35,25 @@ export async function GET() {
       db.production.count({ where: { ...activeWhere, deadline: { lt: startToday } } }),
       db.production.count({ where: { ...activeWhere, deadline: { gte: startToday, lte: endToday } } }),
       db.production.count({ where: { ...activeWhere, deadline: { gte: startTomorrow, lte: endTomorrow } } }),
-      db.production.count({ where: { status: 'valide', updatedAt: { gte: startMonth } } }),
+      db.production.count({ where: { ...scope, status: 'valide', updatedAt: { gte: startMonth } } }),
       db.user.count({ where: { role: 'freelancer', active: true } }),
-      db.production.count({ where: { archived: false } }),
-      db.activityLog.findMany({ orderBy: { createdAt: 'desc' }, take: 6 }),
+      db.production.count({ where: { ...scope, archived: false } }),
+      isAdmin ? db.activityLog.findMany({ orderBy: { createdAt: 'desc' }, take: 6 }) : Promise.resolve([]),
       db.production.findMany({ where: { ...activeWhere, deadline: { lte: endToday } }, orderBy: { deadline: 'asc' }, take: 6, include: { assignedTo: { select: { id: true, name: true } } } }),
-      db.production.findMany({ where: { archived: false }, orderBy: { createdAt: 'desc' }, take: 5, include: { assignedTo: { select: { id: true, name: true } } } }),
-      db.notification.findMany({ where: { userId: adminId, read: false }, orderBy: { createdAt: 'desc' }, take: 8 }),
+      db.production.findMany({ where: { ...scope, archived: false }, orderBy: { createdAt: 'desc' }, take: 5, include: { assignedTo: { select: { id: true, name: true } } } }),
+      db.notification.findMany({ where: { userId: meId, read: false }, orderBy: { createdAt: 'desc' }, take: 8 }),
     ])
 
-    const [completedWeek, completedToday, pendingValidations, retoursClient] = await Promise.all([
-      db.production.count({ where: { status: 'valide', updatedAt: { gte: startWeek } } }).catch(() => 0),
-      db.production.count({ where: { status: 'valide', updatedAt: { gte: startToday } } }).catch(() => 0),
-      db.production.count({ where: { archived: false, status: 'livre' } }).catch(() => 0),
-      db.production.count({ where: { archived: false, status: 'retours_client' } }).catch(() => 0),
+    const [completedWeek, completedToday, pendingValidations, retoursClient, validated] = await Promise.all([
+      db.production.count({ where: { ...scope, status: 'valide', updatedAt: { gte: startWeek } } }).catch(() => 0),
+      db.production.count({ where: { ...scope, status: 'valide', updatedAt: { gte: startToday } } }).catch(() => 0),
+      db.production.count({ where: { ...scope, archived: false, status: 'livre' } }).catch(() => 0),
+      db.production.count({ where: { ...scope, archived: false, status: 'retours_client' } }).catch(() => 0),
+      db.production.count({ where: { ...scope, status: 'valide' } }).catch(() => 0),
     ])
 
     return NextResponse.json(
-      { inProgress, overdue, dueToday, dueTomorrow, completedMonth, completedWeek, completedToday, pendingValidations, retoursClient, activeFreelancers, totalProds, recentActivity, urgentProds, recentProds, notifications },
+      { inProgress, overdue, dueToday, dueTomorrow, completedMonth, completedWeek, completedToday, pendingValidations, retoursClient, validated, activeFreelancers, totalProds, recentActivity, urgentProds, recentProds, notifications },
       { headers: { 'Cache-Control': 'no-store' } }
     )
   } catch (e: any) {

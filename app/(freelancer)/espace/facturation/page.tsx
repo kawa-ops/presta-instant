@@ -143,7 +143,7 @@ export default function FreelancerFacturationPage() {
         </div>
         <div style={{ background: 'rgba(26,18,48,0.6)', border: '1px solid rgba(167,139,250,0.16)', borderRadius: 12, padding: '14px 16px' }}>
           <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>En attente</p>
-          <p style={{ color: '#eab308', fontSize: '1.4rem', fontWeight: 800 }}>{(totalEarned - totalPaid).toLocaleString('fr-FR')} €</p>
+          <p style={{ color: '#c4b5fd', fontSize: '1.4rem', fontWeight: 800 }}>{(totalEarned - totalPaid).toLocaleString('fr-FR')} €</p>
         </div>
       </div>
 

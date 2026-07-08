@@ -56,6 +56,25 @@ function EditProfileForm({ freelancer, onSaved, onCancel }: { freelancer: any; o
     <div style={{ borderTop: 'rgba(167,139,250,0.12) 1px solid', paddingTop: 12, marginTop: 12 }}>
       <p style={{ color: 'rgba(240,235,227,0.35)', fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Modifier le profil</p>
       {error && <p style={{ color: '#fb7185', fontSize: '0.72rem', marginBottom: 8 }}>{error}</p>}
+
+      {/* Contractor avatar managed by the admin */}
+      <label style={{ display: 'inline-block', background: 'rgba(167,139,250,0.1)', border: '1px solid rgba(167,139,250,0.3)', borderRadius: 8, padding: '6px 14px', color: '#c4b5fd', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 700, marginBottom: 10 }}>
+        📷 {freelancer.profilePicUrl ? 'Changer la photo de profil' : 'Ajouter une photo de profil'}
+        <input type="file" accept="image/png,image/jpeg" style={{ display: 'none' }} onChange={async e => {
+          const f = e.target.files?.[0]; e.target.value = ''
+          if (!f) return
+          setError('')
+          try {
+            const fd = new FormData(); fd.append('file', f)
+            const res = await fetch('/api/upload', { method: 'POST', body: fd })
+            const d = await res.json()
+            if (!res.ok) { setError(d.error || 'Erreur upload'); return }
+            await fetch(`/api/freelancers/${freelancer.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ profilePicUrl: d.url }) })
+            onSaved()
+          } catch { setError('Erreur réseau') }
+        }} />
+      </label>
+
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         <div><label style={LA}>Nom</label><NameInput value={form.name} onChange={s('name')} /></div>
         <div><label style={LA}>Email (identifiant de connexion)</label><EmailInput value={form.email} onChange={s('email')} /></div>

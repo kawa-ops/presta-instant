@@ -53,9 +53,9 @@ export default function AdminFacturationPage() {
 
       {/* Summary */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 24 }}>
-        <div style={{ background: 'rgba(234,179,8,0.06)', border: '1px solid rgba(234,179,8,0.18)', borderRadius: 12, padding: '14px 18px' }}>
+        <div style={{ background: 'rgba(196,181,253,0.06)', border: '1px solid rgba(196,181,253,0.18)', borderRadius: 12, padding: '14px 18px' }}>
           <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>À payer</p>
-          <p style={{ color: '#eab308', fontSize: '1.5rem', fontWeight: 800 }}>{totalPending.toLocaleString('fr-FR')} €</p>
+          <p style={{ color: '#c4b5fd', fontSize: '1.5rem', fontWeight: 800 }}>{totalPending.toLocaleString('fr-FR')} €</p>
         </div>
         <div style={{ background: 'rgba(165,180,252,0.06)', border: '1px solid rgba(165,180,252,0.18)', borderRadius: 12, padding: '14px 18px' }}>
           <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>Factures reçues en attente</p>

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 import { useCached } from '@/lib/useCached'
+import Avatar from '@/components/Avatar'
 
 // ============================================================================
 // DASHBOARD — immersive gamified command center (this page only).
@@ -187,27 +188,11 @@ export default function AdminDashboard() {
         {/* ================= HERO — RPG player card ================= */}
         <div className="dash-fade" style={{ ...glass, padding: '36px 40px', marginBottom: 14, animation: 'fade-up 0.5s both, card-float 6s ease-in-out 1s infinite', background: 'linear-gradient(135deg, rgba(88,28,135,0.35), rgba(22,17,40,0.6))' }}>
           <div style={{ display: 'flex', gap: 24, alignItems: 'center', flexWrap: 'wrap' }}>
-            {/* Avatar with animated ring */}
-            <div style={{ position: 'relative', width: 112, height: 112, flexShrink: 0 }}>
-              <div style={{
-                position: 'absolute', inset: 0, borderRadius: '50%',
-                background: prestige >= 2
-                  ? 'conic-gradient(#eab308, #ec4899, #a78bfa, #eab308)'
-                  : prestige >= 1
-                    ? 'conic-gradient(#ec4899, #a78bfa, #38bdf8, #ec4899)'
-                    : 'conic-gradient(#a78bfa, #38bdf8, #a78bfa)',
-                animation: 'ring-spin 6s linear infinite',
-              }} />
-              <div style={{ position: 'absolute', inset: 4, borderRadius: '50%', background: '#141021', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                {g?.profilePicUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={g.profilePicUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                ) : (
-                  <span style={{ fontSize: '2.2rem', fontWeight: 900, background: 'linear-gradient(135deg, #a78bfa, #ec4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{initial}</span>
-                )}
-              </div>
+            {/* Avatar with level ornament frame */}
+            <div style={{ position: 'relative', flexShrink: 0 }}>
+              <Avatar url={g?.profilePicUrl} name={firstName} level={g?.level || 0} size={112} ringSpeed={6} />
               {prestige > 0 && (
-                <span title={`Prestige ${prestige}`} style={{ position: 'absolute', bottom: -4, right: -4, background: '#141021', border: '1px solid rgba(234,179,8,0.5)', borderRadius: 20, padding: '2px 8px', color: '#eab308', fontSize: '0.7rem', fontWeight: 800 }}>
+                <span title={`Prestige ${prestige}`} style={{ position: 'absolute', bottom: -4, right: -4, background: '#141021', border: '1px solid rgba(234,179,8,0.5)', borderRadius: 20, padding: '2px 8px', color: '#eab308', fontSize: '0.7rem', fontWeight: 800, zIndex: 2 }}>
                   {PRESTIGE_ICONS[Math.min(prestige, 4)]}
                 </span>
               )}
@@ -311,10 +296,10 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          {/* KPIs 2x2 under the weekly goal */}
+          {/* KPIs 2x2 under the weekly goal — hero-toned, they carry the key info */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10, flex: 1 }}>
             {kpis.map(k => (
-              <Link key={k.label} href={k.href} className="dash-card-hover" style={{ ...glass, padding: '14px 18px', textDecoration: 'none', borderColor: `${k.color}30`, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 6 }}>
+              <Link key={k.label} href={k.href} className="dash-card-hover" style={{ ...glass, background: 'linear-gradient(135deg, rgba(88,28,135,0.45), rgba(46,28,86,0.55))', padding: '14px 18px', textDecoration: 'none', borderColor: `${k.color}40`, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 6 }}>
                 <p style={{ color: k.color, fontSize: '1.7rem', fontWeight: 900, lineHeight: 1, textShadow: `0 0 18px ${k.color}50` }}>{k.value}</p>
                 <p style={{ color: 'rgba(240,235,227,0.5)', fontSize: '0.7rem', fontWeight: 700 }}>{k.label}</p>
               </Link>
@@ -497,6 +482,7 @@ export default function AdminDashboard() {
                   borderLeft: u.isMe ? '2px solid #a78bfa' : '2px solid transparent',
                 }}>
                   <span style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.72rem', fontWeight: 900, width: 18, textAlign: 'center' }}>{i + 4}</span>
+                  <Avatar url={u.profilePicUrl} name={u.name} level={u.level} size={28} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ color: '#f0ebe3', fontSize: '0.72rem', fontWeight: 700 }}>{u.name}{u.isMe ? ' (toi)' : ''}</p>
                     <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.58rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{u.rank}</p>

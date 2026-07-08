@@ -2,21 +2,23 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { signOut, useSession } from 'next-auth/react'
+import { useLang, LangSwitcher } from '@/lib/i18n'
 import { useEffect, useState } from 'react'
 
 const NAV = [
-  { href: '/dashboard', label: 'Dashboard', icon: '◎' },
-  { href: '/semaine', label: 'Ma semaine', icon: '🗓️' },
-  { href: '/productions', label: 'Post-productions', icon: '🎬' },
-  { href: '/prestataires', label: 'Prestataires', icon: '👥' },
-  { href: '/archives', label: 'Archives', icon: '📁' },
-  { href: '/facturation', label: 'Facturation', icon: '💶' },
-  { href: '/parametres', label: 'Paramètres', icon: '⚙️' },
+  { href: '/dashboard', label: 'nav_dashboard', icon: '◎' },
+  { href: '/semaine', label: 'nav_week', icon: '🗓️' },
+  { href: '/productions', label: 'nav_prods', icon: '🎬' },
+  { href: '/prestataires', label: 'nav_contractors', icon: '👥' },
+  { href: '/archives', label: 'nav_archives', icon: '📁' },
+  { href: '/facturation', label: 'nav_billing', icon: '💶' },
+  { href: '/parametres', label: 'nav_settings', icon: '⚙️' },
 ]
 
 export default function AdminSidebar() {
   const pathname = usePathname()
   const { data: session } = useSession()
+  const [, , t] = useLang()
   const [notifCount, setNotifCount] = useState(0)
 
   useEffect(() => {
@@ -39,8 +41,10 @@ export default function AdminSidebar() {
           </svg>
           <span style={{ color: '#f0ebe3', fontWeight: 800, fontSize: '1rem', fontFamily: 'var(--font-syne), sans-serif' }}>instant.</span>
         </div>
-        <p style={{ color: 'rgba(240,235,227,0.25)', fontSize: '0.65rem', marginTop: 3, marginLeft: 26 }}>post-production</p>
+        <p style={{ color: 'rgba(240,235,227,0.25)', fontSize: '0.65rem', marginTop: 3, marginLeft: 26 }}>{t('postprod')}</p>
       </div>
+
+      <div style={{ padding: '10px 14px 0' }}><LangSwitcher /></div>
 
       <nav style={{ flex: 1, padding: '12px 10px', overflowY: 'auto' }}>
         {NAV.map(item => {
@@ -55,7 +59,7 @@ export default function AdminSidebar() {
               fontSize: '0.82rem', fontWeight: active ? 600 : 400, transition: 'all 0.15s',
             }}>
               <span style={{ fontSize: '0.9rem', width: 18, textAlign: 'center' }}>{item.icon}</span>
-              <span style={{ flex: 1 }}>{item.label}</span>
+              <span style={{ flex: 1 }}>{t(item.label)}</span>
               {item.href === '/dashboard' && notifCount > 0 && (
                 <span style={{ background: '#fb7185', color: '#fff', borderRadius: '50%', width: 18, height: 18, fontSize: '0.6rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   {notifCount > 9 ? '9+' : notifCount}
@@ -69,11 +73,11 @@ export default function AdminSidebar() {
       <div style={{ padding: '12px 10px', borderTop: 'rgba(167,139,250,0.12) 1px solid' }}>
         <div style={{ padding: '8px 12px', marginBottom: 4 }}>
           <p style={{ color: '#f0ebe3', fontSize: '0.78rem', fontWeight: 600 }}>{session?.user?.name}</p>
-          <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.68rem' }}>Administrateur</p>
+          <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.68rem' }}>{t('admin_role')}</p>
         </div>
         <button onClick={() => signOut({ callbackUrl: '/login' })} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'none', border: 'none', color: 'rgba(240,235,227,0.3)', cursor: 'pointer', fontSize: '0.75rem', borderRadius: 6 }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-          Déconnexion
+          {t('logout')}
         </button>
       </div>
     </aside>

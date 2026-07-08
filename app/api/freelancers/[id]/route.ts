@@ -18,6 +18,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (body.siret !== undefined) data.siret = body.siret
   if (body.specialty !== undefined) data.specialty = body.specialty
   if (body.address !== undefined) data.address = body.address
+  if (body.profilePicUrl !== undefined) data.profilePicUrl = body.profilePicUrl
   if (body.active !== undefined) data.active = body.active
   // Email change: also the login — checked for uniqueness first
   if (body.email !== undefined && body.email.trim()) {
