@@ -4,6 +4,7 @@ import { useCached } from '@/lib/useCached'
 import Timeline from '@/components/Timeline'
 import Thread from '@/components/Thread'
 import ValidationQueue from '@/components/ValidationQueue'
+import ClientMessageWriter from '@/components/ClientMessageWriter'
 
 import { STATUSES as BASE_STATUSES, PRIORITIES } from '@/lib/statuses'
 
@@ -269,7 +270,8 @@ function ProdRow({ p, freelancers, onSave, onDelete, onComplete, onQuickStatus, 
           <td colSpan={10} style={{ padding: '18px 20px', borderBottom: '1px solid rgba(167,139,250,0.08)' }}>
             {/* Production timeline + client link */}
             <div style={{ background: 'rgba(26,18,48,0.5)', border: '1px solid rgba(167,139,250,0.12)', borderRadius: 10, padding: '14px 18px', marginBottom: 16 }}>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 8 }}>
+                <ClientMessageWriter productionId={p.id} />
                 <button onClick={copyShareLink} title="Copier le lien de suivi public à envoyer au client" style={{ background: 'rgba(199,210,254,0.08)', border: '1px solid rgba(199,210,254,0.25)', borderRadius: 7, padding: '5px 12px', color: '#c7d2fe', cursor: 'pointer', fontSize: '0.7rem', fontWeight: 600 }}>
                   {shareLabel}
                 </button>
