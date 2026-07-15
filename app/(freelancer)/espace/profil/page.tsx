@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Badges from '@/components/Badges'
 import AvatarUpload from '@/components/AvatarUpload'
 import CalendarSubscribe from '@/components/CalendarSubscribe'
+import UnavailabilityPicker from '@/components/UnavailabilityPicker'
 
 const IN: React.CSSProperties = { background: 'rgba(12,8,26,0.8)', border: '1px solid rgba(167,139,250,0.22)', borderRadius: 8, padding: '9px 12px', color: '#f0ebe3', fontSize: '0.82rem', width: '100%', boxSizing: 'border-box' as const }
 const LA: React.CSSProperties = { display: 'block', color: 'rgba(240,235,227,0.4)', fontSize: '0.65rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' as const, marginBottom: 4 }
@@ -52,6 +53,7 @@ export default function ProfilPage() {
       <div style={{ marginBottom: 12 }}>
         <AvatarUpload />
         <CalendarSubscribe />
+        <UnavailabilityPicker />
       </div>
 
       <div style={{ background: 'rgba(26,18,48,0.6)', border: '1px solid rgba(167,139,250,0.16)', borderRadius: 14, padding: 24 }}>

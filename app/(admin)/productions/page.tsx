@@ -36,6 +36,12 @@ function parseRates(f: any): Record<string, number> {
   try { return f?.rates ? JSON.parse(f.rates) : {} } catch { return {} }
 }
 
+// Provider marked off on the (deadline) day?
+function isOffOn(f: any, deadline: string): boolean {
+  if (!f?.unavailableDates || !deadline) return false
+  try { return JSON.parse(f.unavailableDates).includes(deadline.slice(0, 10)) } catch { return false }
+}
+
 const IN: React.CSSProperties = { background: 'rgba(12,8,26,0.8)', border: '1px solid rgba(167,139,250,0.22)', borderRadius: 8, padding: '8px 12px', color: '#f0ebe3', fontSize: '0.82rem', width: '100%', boxSizing: 'border-box' }
 const LA: React.CSSProperties = { display: 'block', color: 'rgba(240,235,227,0.4)', fontSize: '0.65rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' as const, marginBottom: 4 }
 
@@ -375,8 +381,11 @@ function ProdRow({ p, freelancers, onSave, onDelete, onComplete, onQuickStatus, 
                 <label style={LA}>Assigné à</label>
                 <select style={IN} value={form.assignedToId} onChange={e => setForm(f => ({ ...f, assignedToId: e.target.value }))}>
                   <option value="">Lucas (par défaut)</option>
-                  {freelancers.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
+                  {freelancers.map(f => <option key={f.id} value={f.id}>{f.name}{isOffOn(f, form.deadline) ? ' — 🏖 off le jour de la deadline' : ''}</option>)}
                 </select>
+                {isOffOn(assignedFreelancer, form.deadline) && (
+                  <p style={{ color: '#fb7185', fontSize: '0.68rem', marginTop: 4, fontWeight: 700 }}>🏖 {assignedFreelancer?.name} est off le jour de la deadline</p>
+                )}
               </div>
               {isFreelancer && <div><label style={LA}>Prix du prestataire (€)</label><PriceSelect freelancer={assignedFreelancer} price={form.price} onChange={s('price')} /></div>}
               <div>
@@ -660,8 +669,11 @@ export default function ProductionsPage() {
               <label style={LA}>Assigné à</label>
               <select style={IN} value={form.assignedToId} onChange={e => setForm(f => ({ ...f, assignedToId: e.target.value }))}>
                 <option value="">Lucas (par défaut)</option>
-                {freelancers.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
+                {freelancers.map(f => <option key={f.id} value={f.id}>{f.name}{isOffOn(f, form.deadline) ? ' — 🏖 off le jour de la deadline' : ''}</option>)}
               </select>
+              {isOffOn(newFreelancer, form.deadline) && (
+                <p style={{ color: '#fb7185', fontSize: '0.68rem', marginTop: 4, fontWeight: 700 }}>🏖 {newFreelancer?.name} est off le jour de la deadline</p>
+              )}
             </div>
             {newFreelancer && <div><label style={LA}>Prix du prestataire (€)</label><PriceSelect freelancer={newFreelancer} price={form.price} onChange={sf('price')} /></div>}
             <div><label style={LA}>Lien sources</label><F value={form.sourcesLink} onChange={sf('sourcesLink')} placeholder="WeTransfer, Drive…" /></div>

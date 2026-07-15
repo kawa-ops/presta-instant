@@ -76,6 +76,10 @@ export default function SemainePage() {
     const moved = justMoved === p.id
     const late = p._overdue === true
     const origDeadline = late && p.deadline ? new Date(p.deadline) : null
+    // Assignee off on the day this card sits on?
+    const cardDay = late ? todayKey : p.deadline?.slice(0, 10)
+    let assigneeOff = false
+    try { assigneeOff = !!cardDay && JSON.parse(p.assignedTo?.unavailableDates || '[]').includes(cardDay) } catch {}
     return (
       <div
         draggable
@@ -107,7 +111,9 @@ export default function SemainePage() {
         <p style={{ color: 'rgba(240,235,227,0.35)', fontSize: '0.66rem', marginTop: 2 }}>{p.client}</p>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 5 }}>
           <span style={{ background: `${STATUS_COLORS[p.status] || '#8b7fb8'}18`, color: STATUS_COLORS[p.status] || '#8b7fb8', padding: '1px 7px', borderRadius: 20, fontSize: '0.6rem', fontWeight: 600 }}>{STATUS_LABELS[p.status] || p.status}</span>
-          <span style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.62rem' }}>{p.assignedTo?.name || 'Lucas'}</span>
+          <span style={{ color: assigneeOff ? '#fb7185' : 'rgba(240,235,227,0.3)', fontSize: '0.62rem', opacity: assigneeOff ? 0.9 : 1 }}>
+            {p.assignedTo?.name || 'Lucas'}{assigneeOff ? ' 🏖 off' : ''}
+          </span>
         </div>
       </div>
     )

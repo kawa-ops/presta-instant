@@ -23,6 +23,7 @@ model User {
   profilePicUrl String?
   rates         String?   // JSON: negotiated rates per service type
   calendarToken String?   @unique // secret for the personal ICS feed
+  unavailableDates String? // JSON: list of ISO dates the provider is off
   // Relations
   productions   Production[] @relation("AssignedTo")
   invoices      Invoice[]

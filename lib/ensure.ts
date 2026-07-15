@@ -17,6 +17,7 @@ export async function ensureSchema() {
     `ALTER TABLE "User" ADD COLUMN IF NOT EXISTS address TEXT`,
     `ALTER TABLE "User" ADD COLUMN IF NOT EXISTS rates TEXT`,
     `ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "calendarToken" TEXT`,
+    `ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "unavailableDates" TEXT`,
     `CREATE UNIQUE INDEX IF NOT EXISTS "User_calendarToken_key" ON "User"("calendarToken")`,
     `ALTER TABLE "Production" ADD COLUMN IF NOT EXISTS "lastFeedback" TEXT`,
     `ALTER TABLE "Production" ADD COLUMN IF NOT EXISTS "clientPrice" DOUBLE PRECISION`,

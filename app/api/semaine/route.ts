@@ -20,18 +20,18 @@ export async function GET() {
       db.production.findMany({
         where: { archived: false, status: { notIn: ['valide'] }, deadline: { gte: start, lte: end } },
         orderBy: { deadline: 'asc' },
-        include: { assignedTo: { select: { name: true } } },
+        include: { assignedTo: { select: { name: true, unavailableDates: true } } },
       }),
       db.production.findMany({
         where: { archived: false, status: { notIn: ['valide'] }, deadline: { lt: start } },
         orderBy: { deadline: 'asc' },
-        include: { assignedTo: { select: { name: true } } },
+        include: { assignedTo: { select: { name: true, unavailableDates: true } } },
       }),
       // Next 4 weeks after the current one — full detail for the planning grid
       db.production.findMany({
         where: { archived: false, status: { notIn: ['valide'] }, deadline: { gt: end, lte: horizon } },
         orderBy: { deadline: 'asc' },
-        include: { assignedTo: { select: { name: true } } },
+        include: { assignedTo: { select: { name: true, unavailableDates: true } } },
       }),
     ])
     return NextResponse.json({ thisWeek, overdue, upcoming }, { headers: { 'Cache-Control': 'no-store' } })
