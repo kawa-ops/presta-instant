@@ -22,6 +22,7 @@ model User {
   address       String?
   profilePicUrl String?
   rates         String?   // JSON: negotiated rates per service type
+  calendarToken String?   @unique // secret for the personal ICS feed
   // Relations
   productions   Production[] @relation("AssignedTo")
   invoices      Invoice[]

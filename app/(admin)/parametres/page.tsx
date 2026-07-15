@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Badges from '@/components/Badges'
 import AvatarUpload from '@/components/AvatarUpload'
+import CalendarSubscribe from '@/components/CalendarSubscribe'
 import Avatar from '@/components/Avatar'
 import { ACHIEVEMENTS } from '@/lib/achievements'
 
@@ -179,6 +180,7 @@ export default function ParametresPage() {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         <AvatarUpload />
+        <CalendarSubscribe />
 
         <div style={{ background: 'rgba(26,18,48,0.6)', border: '1px solid rgba(167,139,250,0.16)', borderRadius: 14, padding: 20 }}>
           <p style={{ color: '#f0ebe3', fontSize: '0.85rem', fontWeight: 600, marginBottom: 4 }}>Compte</p>
