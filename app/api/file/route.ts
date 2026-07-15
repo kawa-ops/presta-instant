@@ -12,7 +12,16 @@ export async function GET(req: NextRequest) {
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const u = req.nextUrl.searchParams.get('u')
-  if (!u || !u.includes('.blob.vercel-storage.com')) {
+  if (!u) return NextResponse.json({ error: 'URL invalide' }, { status: 400 })
+  // Strict host check — substring matching is SSRF-bypassable
+  // (e.g. https://evil.com/x.blob.vercel-storage.com would leak the token)
+  let parsed: URL
+  try {
+    parsed = new URL(u)
+  } catch {
+    return NextResponse.json({ error: 'URL invalide' }, { status: 400 })
+  }
+  if (parsed.protocol !== 'https:' || !parsed.hostname.endsWith('.blob.vercel-storage.com')) {
     return NextResponse.json({ error: 'URL invalide' }, { status: 400 })
   }
 
