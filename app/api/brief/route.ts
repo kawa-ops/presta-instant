@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { aiAvailable, askClaude, extractJson } from '@/lib/ai'
 
 export const dynamic = 'force-dynamic'
 const db = prisma as any
@@ -83,6 +84,39 @@ export async function GET() {
 
     if (priorities.length === 0) priorities.push('🟢 Aucun retard critique détecté — la production est sous contrôle.')
     if (actions.length === 0) actions.push('Rien d\'urgent : profites-en pour préparer les prochains tournages 🎬')
+
+    // AI layer — if ANTHROPIC_API_KEY is set, Claude rewrites the brief with
+    // real prioritisation and risk analysis. Rules above stay as the fallback.
+    if (aiAvailable()) {
+      const fmtD = (d: any) => d ? new Date(d).toISOString().slice(0, 10) : 'aucune'
+      const context = {
+        aujourdhui: startToday.toISOString().slice(0, 10),
+        productions: active.map((p: any) => ({
+          titre: p.title, client: p.client, statut: p.status, deadline: fmtD(p.deadline),
+          assigne: name(p), livraison_deposee: !!p.deliveryLink,
+          approuve_client: !!p.clientApprovedAt, cree_le: fmtD(p.createdAt),
+          derniers_retours: p.lastFeedback ? String(p.lastFeedback).slice(0, 150) : null,
+        })),
+        factures_en_attente: (pendingInvoices as any[]).map((i: any) => ({ prestataire: i.freelancer?.name, mois: i.month, montant: i.validatedAmount })),
+      }
+      const aiText = await askClaude(
+        `Tu es le directeur de production du studio vidéo "instant." (Toulouse). Chaque matin tu écris le brief opérationnel d'Axel et Lucas, les deux fondateurs.
+Règles :
+- Français, ton direct et concret, tutoiement.
+- "priorities" : 5 à 8 constats classés du plus critique au moins critique, chacun préfixé d'un emoji (🔴 retard critique, 🟡 aujourd'hui, 🟠 demain, 🟣 à valider, 💬 retours client, 🎉 bonne nouvelle, 📄 facturation, 🟢 RAS). Signale les risques non évidents (ex : production en révisions depuis plusieurs jours, prestataire surchargé, deadline proche sans livraison).
+- "actions" : 3 à 6 actions concrètes et immédiates, formulées à l'impératif, les plus rentables en premier.
+- Réponds UNIQUEMENT avec un JSON valide : {"priorities": string[], "actions": string[]}.`,
+        JSON.stringify(context),
+        1800
+      )
+      const ai = extractJson<{ priorities?: string[]; actions?: string[] }>(aiText)
+      if (ai && Array.isArray(ai.priorities) && ai.priorities.length > 0 && Array.isArray(ai.actions)) {
+        return NextResponse.json(
+          { priorities: ai.priorities.slice(0, 8), actions: ai.actions.slice(0, 6), generatedAt: now.toISOString(), ai: true },
+          { headers: { 'Cache-Control': 'no-store' } }
+        )
+      }
+    }
 
     return NextResponse.json(
       { priorities: priorities.slice(0, 8), actions: actions.slice(0, 6), generatedAt: now.toISOString() },
