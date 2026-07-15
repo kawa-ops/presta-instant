@@ -9,6 +9,15 @@ import { STATUSES as BASE_STATUSES, PRIORITIES } from '@/lib/statuses'
 const STATUSES = [{ value: '', label: 'Tous', color: undefined as string | undefined }, ...BASE_STATUSES]
 const PRIORITY_ORDER: Record<string, number> = { urgent: 0, high: 1, normal: 2, low: 3 }
 
+// Phrases types insérées d'un clic dans le champ retours (cumulables)
+const QUICK_FEEDBACK = [
+  'Colorimétrie à revoir',
+  "Couper l'intro",
+  'Sous-titres manquants',
+  'Mixage audio à équilibrer',
+  'Logo/format à corriger',
+]
+
 const RATE_TYPES = [
   { key: 'filming', label: 'Tournage' },
   { key: 'editing', label: 'Montage' },
@@ -294,6 +303,16 @@ function ProdRow({ p, freelancers, onSave, onDelete, onComplete, onQuickStatus, 
                 {feedbackOpen && (
                   <div style={{ background: 'rgba(232,121,249,0.04)', border: '1px solid rgba(232,121,249,0.2)', borderRadius: 10, padding: 14 }}>
                     <label style={LA}>Commentaires pour le prestataire</label>
+                    {/* Quick-feedback library — chips append to the textarea, cumulable */}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+                      {QUICK_FEEDBACK.map(q => (
+                        <button
+                          key={q}
+                          onClick={() => setFeedbackText(t => t ? `${t.replace(/\n?$/, '')}\n— ${q}` : `— ${q}`)}
+                          style={{ background: 'rgba(232,121,249,0.08)', border: '1px solid rgba(232,121,249,0.3)', borderRadius: 20, padding: '3px 11px', color: '#e879f9', cursor: 'pointer', fontSize: '0.68rem', fontWeight: 600 }}
+                        >+ {q}</button>
+                      ))}
+                    </div>
                     <TA value={feedbackText} onChange={setFeedbackText} placeholder="Décris précisément les modifications à faire…" />
                     <button
                       onClick={() => { if (feedbackText.trim()) { onFeedback(feedbackText.trim()); setFeedbackText(''); setFeedbackOpen(false) } }}
