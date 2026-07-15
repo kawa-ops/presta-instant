@@ -88,6 +88,9 @@ export async function PATCH(req: NextRequest) {
       select: { id: true, title: true, assignedToId: true, payoutMonth: true, price: true },
     })
     if (!prod || !prod.assignedToId || !prod.payoutMonth) return NextResponse.json({ error: 'Production introuvable ou hors facturation' }, { status: 404 })
+    // A removed production ("none") must not be editable — syncPayout would
+    // otherwise create a ghost MonthlyPayout row for the month "none"
+    if (prod.payoutMonth === 'none') return NextResponse.json({ error: 'Production retirée de la facturation' }, { status: 400 })
     const { assignedToId, payoutMonth } = prod
 
     if (action === 'amount') {
