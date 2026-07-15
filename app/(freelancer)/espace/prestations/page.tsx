@@ -15,6 +15,43 @@ function DeliveryInput({ value, onChange }: { value: string; onChange: (v: strin
   return <input style={IN} value={value} onChange={e => onChange(e.target.value)} placeholder="Lien Drive, Dropbox, WeTransfer…" />
 }
 
+const CHECKLIST_ITEMS = [
+  'Formats exportés selon le brief (9:16 / 1:1 / 16:9)',
+  'Sous-titres relus',
+  'Musique libre de droits',
+  'Colorimétrie vérifiée',
+]
+
+// Pre-delivery checklist — non-blocking (delivery goes through even with
+// unchecked boxes); the result is logged as an auto comment in the thread.
+function ChecklistModal({ onCancel, onConfirm, sending }: { onCancel: () => void; onConfirm: (checked: string[]) => void; sending: boolean }) {
+  const [checked, setChecked] = useState<Record<string, boolean>>({})
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(10,6,24,0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+      <div style={{ background: 'rgba(26,18,48,0.95)', border: '1px solid rgba(167,139,250,0.3)', borderRadius: 18, padding: 26, maxWidth: 420, width: '100%' }}>
+        <p style={{ color: '#f0ebe3', fontSize: '0.95rem', fontWeight: 800, marginBottom: 4 }}>Dernière vérification avant livraison</p>
+        <p style={{ color: 'rgba(240,235,227,0.35)', fontSize: '0.72rem', marginBottom: 16 }}>Coche ce que tu as vérifié — rien n&apos;est bloquant, mais ça évite un aller-retour de retours.</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
+          {CHECKLIST_ITEMS.map(item => (
+            <label key={item} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+              <input type="checkbox" checked={!!checked[item]} onChange={e => setChecked(c => ({ ...c, [item]: e.target.checked }))} style={{ accentColor: '#a78bfa', width: 16, height: 16 }} />
+              <span style={{ color: checked[item] ? '#f0ebe3' : 'rgba(240,235,227,0.55)', fontSize: '0.8rem' }}>{item}</span>
+            </label>
+          ))}
+        </div>
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+          <button onClick={onCancel} disabled={sending} style={{ background: 'transparent', border: '1px solid rgba(167,139,250,0.25)', borderRadius: 9, padding: '9px 16px', color: 'rgba(240,235,227,0.5)', cursor: 'pointer', fontSize: '0.78rem' }}>Annuler</button>
+          <button
+            onClick={() => onConfirm(CHECKLIST_ITEMS.filter(i => checked[i]))}
+            disabled={sending}
+            style={{ background: '#a78bfa', border: 'none', borderRadius: 9, padding: '9px 20px', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: '0.78rem', opacity: sending ? 0.6 : 1 }}
+          >{sending ? 'Envoi…' : '✓ Livrer'}</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function MesPrestationsPage() {
   const { data: session } = useSession()
   const [prods, setProds] = useState<any[]>([])
@@ -22,6 +59,7 @@ export default function MesPrestationsPage() {
   const [expanded, setExpanded] = useState<string | null>(null)
   const [deliveryLinks, setDeliveryLinks] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState<string | null>(null)
+  const [checklistFor, setChecklistFor] = useState<string | null>(null)
 
   async function load() {
     setLoading(true)
@@ -45,14 +83,24 @@ export default function MesPrestationsPage() {
     load()
   }
 
-  async function saveDelivery(id: string) {
+  function saveDelivery(id: string) {
     if (!deliveryLinks[id]?.trim()) {
       alert('Ajoute le lien de livraison (Drive, Dropbox, WeTransfer…) avant de marquer comme livré.')
       return
     }
+    setChecklistFor(id)
+  }
+
+  async function confirmDelivery(id: string, checkedItems: string[]) {
     setSaving(id + '_d')
     await fetch(`/api/productions/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ deliveryLink: deliveryLinks[id], status: 'livre' }) })
+    // Log the checklist result in the thread (auto comment, best-effort)
+    const summary = checkedItems.length === 0
+      ? '✅ Checklist de livraison : aucun point coché'
+      : `✅ Checklist de livraison :\n${checkedItems.map(i => `✔ ${i}`).join('\n')}`
+    await fetch(`/api/productions/${id}/thread`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ body: summary }) }).catch(() => {})
     setSaving(null)
+    setChecklistFor(null)
     load()
   }
 
@@ -61,6 +109,13 @@ export default function MesPrestationsPage() {
 
   return (
     <div style={{ maxWidth: 900 }}>
+      {checklistFor && (
+        <ChecklistModal
+          sending={saving === checklistFor + '_d'}
+          onCancel={() => setChecklistFor(null)}
+          onConfirm={items => confirmDelivery(checklistFor, items)}
+        />
+      )}
       <h1 style={{ color: '#f0ebe3', fontSize: '1.4rem', fontWeight: 800, marginBottom: 24 }}>Mes prestations</h1>
 
       {loading ? (
