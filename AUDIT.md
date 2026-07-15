@@ -1,6 +1,12 @@
 # presta-instant — Product & Code Audit
 *Fable 5 review — 2026-07-09. No code was modified as part of this audit.*
 
+> **Mise à jour 2026-07-15 — items traités depuis l'audit :**
+> ✅ **1** Index DB (8 index, schema + ensure.ts) · ✅ **5** CRON_SECRET obligatoire · ✅ **9** Paiements source de vérité unique (`lib/payouts.ts`) · ✅ **13** Notifications portail → prestataire (WhatsApp direct) · ✅ **15** Brief IA (Claude haiku + fallback règles).
+> Également corrigés hors liste : SSRF `/api/file`, IDOR notifications, tokens de partage cryptographiques, payout fantôme "none", reset transactionnel.
+> Nouvelles features livrées : accusé de prise en charge, escalades cron (J-1 / retard / relance client 48h), chips de retours, checklist de livraison, flux ICS, recherche ⌘K, file de validation avec lecteur intégré, facture PDF auto, page /clients, disponibilités prestataires, upload fichiers client sur le portail, IA (brief, retours→checklist, messages clients, contrôle facture), suggestion d'assignation.
+> Toujours ouverts : **2** (vraies migrations Prisma), **3-4-6-7-8**, **10** (zod), **11** (mobile), **12** (swimlanes), **14**, **16-18**, et le long terme.
+
 Scope reviewed: all 26 API routes, all admin/freelancer/portal pages, gamification engine, schema, notifications, cron jobs, deps.
 
 ---
