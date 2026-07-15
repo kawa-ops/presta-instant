@@ -21,7 +21,9 @@ export async function GET(req: Request) {
   }
 
   try {
-    const [invoices, payouts, notifications, activity, productions] = await Promise.all([
+    // Sequential transaction (FK order: Invoice references Production) —
+    // all-or-nothing instead of a racy Promise.all partial wipe
+    const [invoices, payouts, notifications, activity, productions] = await prisma.$transaction([
       db.invoice.deleteMany({}),
       db.monthlyPayout.deleteMany({}),
       db.notification.deleteMany({}),
