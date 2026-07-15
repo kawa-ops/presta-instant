@@ -60,6 +60,10 @@ model Production {
   events         ProductionEvent[]
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
+
+  @@index([assignedToId, status])
+  @@index([deadline])
+  @@index([payoutMonth])
 }
 
 model ProductionEvent {
@@ -68,6 +72,8 @@ model ProductionEvent {
   production   Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
   status       String     // the status the production entered
   createdAt    DateTime   @default(now())
+
+  @@index([productionId])
 }
 
 model DeliveryVersion {
@@ -77,6 +83,8 @@ model DeliveryVersion {
   url          String
   version      Int
   createdAt    DateTime   @default(now())
+
+  @@index([productionId])
 }
 
 model Comment {
@@ -87,6 +95,8 @@ model Comment {
   authorRole   String     // admin | freelancer
   body         String
   createdAt    DateTime   @default(now())
+
+  @@index([productionId])
 }
 
 model Invoice {
@@ -127,6 +137,8 @@ model Notification {
   read      Boolean  @default(false)
   link      String?
   createdAt DateTime @default(now())
+
+  @@index([userId, read])
 }
 
 model XpEvent {
@@ -135,6 +147,8 @@ model XpEvent {
   amount    Int
   reason    String
   createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
 }
 
 model CustomAchievement {

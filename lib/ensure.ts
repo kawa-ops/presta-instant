@@ -84,6 +84,15 @@ export async function ensureSchema() {
       "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT NOW(),
       UNIQUE("freelancerId", month)
     )`,
+    // Indexes — every dashboard/list query filters on these
+    `CREATE INDEX IF NOT EXISTS "Production_assignedToId_status_idx" ON "Production"("assignedToId", status)`,
+    `CREATE INDEX IF NOT EXISTS "Production_deadline_idx" ON "Production"(deadline)`,
+    `CREATE INDEX IF NOT EXISTS "Production_payoutMonth_idx" ON "Production"("payoutMonth")`,
+    `CREATE INDEX IF NOT EXISTS "Notification_userId_read_idx" ON "Notification"("userId", read)`,
+    `CREATE INDEX IF NOT EXISTS "XpEvent_userId_createdAt_idx" ON "XpEvent"("userId", "createdAt")`,
+    `CREATE INDEX IF NOT EXISTS "ProductionEvent_productionId_idx" ON "ProductionEvent"("productionId")`,
+    `CREATE INDEX IF NOT EXISTS "Comment_productionId_idx" ON "Comment"("productionId")`,
+    `CREATE INDEX IF NOT EXISTS "DeliveryVersion_productionId_idx" ON "DeliveryVersion"("productionId")`,
   ]
   for (const s of stmts) { try { await db.$executeRawUnsafe(s) } catch {} }
   done = true
