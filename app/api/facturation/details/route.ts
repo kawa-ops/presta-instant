@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { ensureSchema } from '@/lib/ensure'
+import { syncPayout } from '@/lib/payouts'
 
 // Per-production breakdown of a provider's monthly payout, with amount
 // editing and removal. Every mutation recomputes the payout totals from
@@ -37,23 +38,6 @@ async function listMonth(freelancerId: string, month: string) {
     await db.production.updateMany({ where: { id: { in: legacy.map((p: any) => p.id) } }, data: { payoutMonth: month } }).catch(() => {})
   }
   return [...tagged, ...legacy]
-}
-
-// Recompute the payout row from its productions — single source of truth
-async function syncPayout(freelancerId: string, month: string) {
-  const prods = await db.production.findMany({
-    where: { assignedToId: freelancerId, payoutMonth: month },
-    select: { price: true },
-  })
-  const validatedAmount = prods.reduce((a: number, p: any) => a + (p.price || 0), 0)
-  const projectCount = prods.length
-  const existing = await db.monthlyPayout.findUnique({ where: { freelancerId_month: { freelancerId, month } } }).catch(() => null)
-  if (existing) {
-    await db.monthlyPayout.update({ where: { id: existing.id }, data: { validatedAmount, projectCount } })
-  } else if (projectCount > 0) {
-    await db.monthlyPayout.create({ data: { freelancerId, month, validatedAmount, projectCount } })
-  }
-  return { validatedAmount, projectCount }
 }
 
 export async function GET(req: NextRequest) {

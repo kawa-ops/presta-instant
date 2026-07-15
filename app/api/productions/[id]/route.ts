@@ -6,6 +6,7 @@ import { emailTaskCompleted } from '@/lib/mail'
 import { waProduction } from '@/lib/whatsapp'
 import { onDelivery, onValidation, awardXp } from '@/lib/gamify'
 import { getLucasId } from '@/lib/ensure'
+import { syncPayout } from '@/lib/payouts'
 
 export const dynamic = 'force-dynamic'
 const db = prisma as any
@@ -77,7 +78,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   try {
     // Read previous state: status (payout guard + event history), deliveryLink (versions), deadline (reschedule alert)
-    const before = await db.production.findUnique({ where: { id: params.id }, select: { status: true, deliveryLink: true, deadline: true } })
+    const before = await db.production.findUnique({ where: { id: params.id }, select: { status: true, deliveryLink: true, deadline: true, price: true, payoutMonth: true } })
 
     const prod = await db.production.update({
       where: { id: params.id },
@@ -163,31 +164,23 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       waProduction(`💬 Retours client reçus sur "${prod.title}".`).catch(() => {})
     }
 
-    // Accumulate into monthly payout when admin validates a freelancer's paid production
-    // (only on transition to 'valide', never twice)
-    // Payout credit requires an ADMIN validation — never a self-set status
+    // Payout: tag the production with its payout month, then RECOMPUTE the
+    // MonthlyPayout row from the tagged productions (single source of truth —
+    // never incremented, so totals can't drift). Admin validation only.
     if (isAdmin && body.status === 'valide' && before?.status !== 'valide' && prod.assignedToId && prod.price) {
       const lucasId = lucasIdForNotif
       if (prod.assignedToId !== lucasId) {
         const month = new Date().toISOString().slice(0, 7)
-        const existing = await db.monthlyPayout.findUnique({
-          where: { freelancerId_month: { freelancerId: prod.assignedToId, month } },
-        }).catch(() => null)
-        if (existing) {
-          await db.monthlyPayout.update({
-            where: { id: existing.id },
-            data: { validatedAmount: existing.validatedAmount + prod.price, projectCount: existing.projectCount + 1 },
-          }).catch(() => {})
-        } else {
-          await db.monthlyPayout.create({
-            data: { freelancerId: prod.assignedToId, month, validatedAmount: prod.price, projectCount: 1 },
-          }).catch(() => {})
-        }
-        // Remember which payout month this production was credited to,
-        // so the billing page can list/edit/remove individual jobs
-        db.production.update({ where: { id: prod.id }, data: { payoutMonth: month } }).catch(() => {})
+        await db.production.update({ where: { id: prod.id }, data: { payoutMonth: month } }).catch(() => {})
+        await syncPayout(prod.assignedToId, month).catch(() => {})
         db.notification.create({ data: { userId: prod.assignedToId, type: 'task_validated', message: `Prestation validée : ${prod.title} (+${prod.price.toLocaleString('fr-FR')} €)`, link: '/espace/facturation' } }).catch(() => {})
       }
+    }
+
+    // Price changed on a production already credited to a payout → resync that month
+    if (isAdmin && body.price !== undefined && before?.price !== prod.price
+        && prod.assignedToId && prod.payoutMonth && prod.payoutMonth !== 'none') {
+      await syncPayout(prod.assignedToId, prod.payoutMonth).catch(() => {})
     }
 
     return NextResponse.json(prod)
@@ -200,7 +193,12 @@ export async function DELETE(_: NextRequest, { params }: { params: { id: string 
   const session = await getServerSession(authOptions)
   if (!session || (session.user as any).role !== 'admin') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   try {
+    const prod = await db.production.findUnique({ where: { id: params.id }, select: { assignedToId: true, payoutMonth: true } }).catch(() => null)
     await db.production.delete({ where: { id: params.id } })
+    // Deleting a billed production must update the provider's monthly total
+    if (prod?.assignedToId && prod.payoutMonth && prod.payoutMonth !== 'none') {
+      await syncPayout(prod.assignedToId, prod.payoutMonth).catch(() => {})
+    }
     return NextResponse.json({ ok: true })
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 })
