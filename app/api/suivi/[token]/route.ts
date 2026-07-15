@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { waProduction } from '@/lib/whatsapp'
+import { waProduction, waFreelancer } from '@/lib/whatsapp'
 import { getLucasId } from '@/lib/ensure'
 import { onClientApproval } from '@/lib/gamify'
 
@@ -13,7 +13,7 @@ const db = prisma as any
 export async function POST(req: NextRequest, { params }: { params: { token: string } }) {
   const prod = await db.production.findUnique({
     where: { shareToken: params.token },
-    select: { id: true, title: true, client: true, assignedToId: true },
+    select: { id: true, title: true, client: true, assignedToId: true, assignedTo: { select: { name: true, phone: true, email: true } } },
   }).catch(() => null)
   if (!prod) return NextResponse.json({ error: 'Lien invalide' }, { status: 404 })
 
@@ -26,12 +26,20 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
         db.notification.create({ data: { userId: a.id, type: 'workflow', message, link: '/productions' } }).catch(() => {})
       }
     }
+    // Direct WhatsApp to the assigned freelancer (skip Lucas — he gets the studio channel)
+    const lucasIdWa = await getLucasId()
+    const waAssignee = (text: string) => {
+      if (prod.assignedToId && prod.assignedToId !== lucasIdWa && prod.assignedTo?.phone) {
+        waFreelancer(prod.assignedTo.phone, text).catch(() => {})
+      }
+    }
 
     if (action === 'approve') {
       await db.production.update({ where: { id: prod.id }, data: { clientApprovedAt: new Date() } })
       db.comment.create({ data: { productionId: prod.id, authorName: `Client (${prod.client})`, authorRole: 'client', body: '✅ Le client a approuvé cette version.' } }).catch(() => {})
       notifyAdmins(`✅ Le client (${prod.client}) a approuvé "${prod.title}"`)
       waProduction(`✅ Le client a approuvé la vidéo !\n\nProjet : ${prod.title}\nClient : ${prod.client}\n\nÀ confirmer avec le client avant livraison finale.`).catch(() => {})
+      waAssignee(`✅ Bonne nouvelle ${prod.assignedTo?.name || ''} : le client (${prod.client}) a approuvé "${prod.title}" ! 🎉`)
       onClientApproval(prod.assignedToId, admins.map((a: any) => a.id)).catch(() => {})
       return NextResponse.json({ ok: true })
     }
@@ -44,6 +52,7 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
       db.comment.create({ data: { productionId: prod.id, authorName: `Client (${prod.client})`, authorRole: 'client', body } }).catch(() => {})
       notifyAdmins(`💬 Relecture Frame.io terminée sur "${prod.title}"`)
       waProduction(`💬 Relecture terminée sur Frame.io\n\nProjet : ${prod.title}\nClient : ${prod.client}\n\nLes commentaires sont sur la timeline Frame.io.`).catch(() => {})
+      waAssignee(`💬 ${prod.assignedTo?.name || ''}, le client de "${prod.title}" a terminé sa relecture Frame.io — les retours sont sur la timeline.`)
       return NextResponse.json({ ok: true })
     }
 
@@ -60,6 +69,7 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
         db.notification.create({ data: { userId: prod.assignedToId, type: 'workflow', message: `💬 Retours client reçus sur "${prod.title}"`, link: '/espace/prestations' } }).catch(() => {})
       }
       waProduction(`💬 Le client a envoyé ses retours\n\nProjet : ${prod.title}\nClient : ${prod.client}\n\nRetours :\n${body}`).catch(() => {})
+      waAssignee(`💬 ${prod.assignedTo?.name || ''}, retours client reçus sur "${prod.title}" :\n\n${body.slice(0, 600)}\n\nÀ traiter depuis ton espace instant.`)
       return NextResponse.json({ ok: true })
     }
 
