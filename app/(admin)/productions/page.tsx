@@ -43,6 +43,29 @@ function isOffOn(f: any, deadline: string): boolean {
   try { return JSON.parse(f.unavailableDates).includes(deadline.slice(0, 10)) } catch { return false }
 }
 
+// Data-driven assignment suggestion (load + cycle time + availability)
+function AssignSuggestion({ deadline, onPick }: { deadline: string; onPick: (id: string) => void }) {
+  const [top, setTop] = useState<any | null>(null)
+  useEffect(() => {
+    let cancelled = false
+    fetch(`/api/assign-suggest${deadline ? `?deadline=${deadline}` : ''}`)
+      .then(r => r.json())
+      .then(d => { if (!cancelled) setTop((d?.suggestions || []).find((s: any) => !s.off) || null) })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [deadline])
+  if (!top) return null
+  return (
+    <p style={{ color: 'rgba(240,235,227,0.45)', fontSize: '0.68rem', marginTop: 4 }}>
+      💡 Suggestion :{' '}
+      <button onClick={() => onPick(top.id)} style={{ background: 'none', border: 'none', color: '#c4b5fd', cursor: 'pointer', fontSize: '0.68rem', fontWeight: 800, padding: 0, textDecoration: 'underline' }}>
+        {top.name}
+      </button>
+      {' '}<span style={{ color: 'rgba(240,235,227,0.3)' }}>({top.reason})</span>
+    </p>
+  )
+}
+
 const IN: React.CSSProperties = { background: 'rgba(12,8,26,0.8)', border: '1px solid rgba(167,139,250,0.22)', borderRadius: 8, padding: '8px 12px', color: '#f0ebe3', fontSize: '0.82rem', width: '100%', boxSizing: 'border-box' }
 const LA: React.CSSProperties = { display: 'block', color: 'rgba(240,235,227,0.4)', fontSize: '0.65rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' as const, marginBottom: 4 }
 
@@ -676,6 +699,7 @@ export default function ProductionsPage() {
               {isOffOn(newFreelancer, form.deadline) && (
                 <p style={{ color: '#fb7185', fontSize: '0.68rem', marginTop: 4, fontWeight: 700 }}>🏖 {newFreelancer?.name} est off le jour de la deadline</p>
               )}
+              <AssignSuggestion deadline={form.deadline} onPick={id => setForm(f => ({ ...f, assignedToId: id }))} />
             </div>
             {newFreelancer && <div><label style={LA}>Prix du prestataire (€)</label><PriceSelect freelancer={newFreelancer} price={form.price} onChange={sf('price')} /></div>}
             <div><label style={LA}>Lien sources</label><F value={form.sourcesLink} onChange={sf('sourcesLink')} placeholder="WeTransfer, Drive…" /></div>
