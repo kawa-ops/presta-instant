@@ -137,6 +137,16 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       }
     }
 
+    // Freelancer acknowledged the job (a_faire → en_cours) → tell the admins
+    if (!isAdmin && body.status === 'en_cours' && before?.status === 'a_faire') {
+      db.user.findMany({ where: { role: 'admin' } }).then((admins: any[]) => {
+        for (const a of admins) {
+          db.notification.create({ data: { userId: a.id, type: 'workflow', message: `👀 ${prod.assignedTo?.name || 'Un prestataire'} a démarré : ${prod.title}`, link: '/productions' } }).catch(() => {})
+        }
+      }).catch(() => {})
+      db.activityLog.create({ data: { actorName: prod.assignedTo?.name || '?', action: 'a démarré', target: prod.title } }).catch(() => {})
+    }
+
     if (body.status === 'livre') {
       emailTaskCompleted(prod.title, prod.assignedTo?.name || 'Prestataire').catch(() => {})
       waProduction(`🎬 ${prod.assignedTo?.name || 'Un prestataire'} a livré "${prod.title}" — en attente de ta validation.`).catch(() => {})

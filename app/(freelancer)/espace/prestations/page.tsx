@@ -83,6 +83,15 @@ export default function MesPrestationsPage() {
                           <p style={{ color: 'rgba(240,235,227,0.3)', fontSize: '0.72rem', marginTop: 3 }}>{p.client}</p>
                         </div>
                         {p.price ? <span style={{ color: '#f0ebe3', fontSize: '0.82rem', fontWeight: 800 }}>{p.price.toLocaleString('fr-FR')} €</span> : null}
+                        {p.status === 'a_faire' && (
+                          <button
+                            onClick={e => { e.stopPropagation(); updateStatus(p.id, 'en_cours') }}
+                            disabled={saving === p.id}
+                            style={{ background: 'rgba(165,180,252,0.12)', border: '1px solid rgba(165,180,252,0.35)', borderRadius: 8, padding: '5px 12px', color: '#a5b4fc', cursor: 'pointer', fontSize: '0.7rem', fontWeight: 700, whiteSpace: 'nowrap', opacity: saving === p.id ? 0.5 : 1 }}
+                          >
+                            {saving === p.id ? '…' : "👀 Vu, je m'y mets"}
+                          </button>
+                        )}
                         <span style={{ background: `${STATUS_COLORS[p.status]}15`, color: STATUS_COLORS[p.status], padding: '3px 10px', borderRadius: 20, fontSize: '0.72rem', fontWeight: 600 }}>{STATUS_LABELS[p.status] || p.status}</span>
                         <span style={{ color: isOverdue ? '#fb7185' : 'rgba(240,235,227,0.35)', fontSize: '0.75rem', fontWeight: isOverdue ? 600 : 400 }}>{fmt(p.deadline)}</span>
                         <span style={{ color: 'rgba(240,235,227,0.2)', fontSize: '0.75rem' }}>{expanded === p.id ? '▲' : '▼'}</span>
