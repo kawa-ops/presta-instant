@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { emailDeadlineReminder } from '@/lib/mail'
-import { waProduction } from '@/lib/whatsapp'
+import { waProduction, waFreelancer } from '@/lib/whatsapp'
 
 export const dynamic = 'force-dynamic'
 const db = prisma as any
@@ -69,6 +69,67 @@ export async function GET(req: NextRequest) {
         await db.notification.create({
           data: { userId: p.assignedToId, type: 'nudge', message: `Rappel : "${p.title}" n'a pas encore été démarré`, link: '/espace/prestations' },
         }).catch(() => {})
+      }
+    } catch {}
+
+    // Escalation ladder — one alert per production per tier (dedup via the
+    // paired in-app notification, same pattern as the nudge above)
+    try {
+      const startToday = new Date(); startToday.setHours(0, 0, 0, 0)
+      const endTmr = new Date(startToday); endTmr.setDate(endTmr.getDate() + 1); endTmr.setHours(23, 59, 59, 999)
+
+      // Tier 1 — deadline tomorrow, still not delivered → direct WhatsApp to the freelancer
+      const dueSoon = await db.production.findMany({
+        where: { archived: false, status: { in: ['a_faire', 'en_cours'] }, deliveryLink: null, deadline: { gte: startToday, lte: endTmr }, assignedToId: { not: null } },
+        include: { assignedTo: { select: { id: true, name: true, phone: true, email: true } } },
+      })
+      for (const p of dueSoon) {
+        if (p.assignedTo?.email === 'lucas.rawinstant@gmail.com') continue
+        const already = await db.notification.findFirst({ where: { userId: p.assignedToId, type: 'escalade_demain', message: { contains: p.title } } }).catch(() => null)
+        if (already) continue
+        await db.notification.create({
+          data: { userId: p.assignedToId, type: 'escalade_demain', message: `⏰ "${p.title}" doit être livré demain et rien n'a encore été déposé`, link: '/espace/prestations' },
+        }).catch(() => {})
+        if (p.assignedTo?.phone) {
+          waFreelancer(p.assignedTo.phone, `⏰ Bonjour ${p.assignedTo.name}, rappel : "${p.title}" doit être livré demain et aucun lien de livraison n'a encore été déposé. Tu peux livrer depuis ton espace instant.`).catch(() => {})
+        }
+      }
+
+      // Tier 2 — deadline passed, still not delivered → suggest reassignment to the admins
+      const lateProds = await db.production.findMany({
+        where: { archived: false, status: { in: ['a_faire', 'en_cours'] }, deliveryLink: null, deadline: { lt: startToday }, assignedToId: { not: null } },
+        include: { assignedTo: { select: { name: true } } },
+      })
+      const admins = lateProds.length > 0 ? await db.user.findMany({ where: { role: 'admin' }, select: { id: true } }).catch(() => []) : []
+      for (const p of lateProds) {
+        const already = await db.notification.findFirst({ where: { type: 'escalade_retard', message: { contains: p.title } } }).catch(() => null)
+        if (already) continue
+        for (const a of admins) {
+          await db.notification.create({
+            data: { userId: a.id, type: 'escalade_retard', message: `⚠️ "${p.title}" (${p.assignedTo?.name || '—'}) a dépassé sa deadline sans livraison — suggérer une réassignation ?`, link: '/productions' },
+          }).catch(() => {})
+        }
+      }
+
+      // Client follow-up — sent to client 48h+ ago, still no approval → remind the admins
+      const cutoff48 = new Date(Date.now() - 48 * 3600 * 1000)
+      const waitingClient = await db.production.findMany({
+        where: { archived: false, status: 'envoye_client', clientApprovedAt: null, updatedAt: { lt: cutoff48 } },
+        select: { id: true, title: true, client: true },
+      })
+      const admins2 = waitingClient.length > 0 ? await db.user.findMany({ where: { role: 'admin' }, select: { id: true } }).catch(() => []) : []
+      for (const p of waitingClient) {
+        // Max one reminder every 2 days per production
+        const recent = await db.notification.findFirst({
+          where: { type: 'relance_client', message: { contains: p.title }, createdAt: { gte: cutoff48 } },
+        }).catch(() => null)
+        if (recent) continue
+        for (const a of admins2) {
+          await db.notification.create({
+            data: { userId: a.id, type: 'relance_client', message: `📨 Le client de "${p.title}" (${p.client}) n'a pas encore relu — pense à relancer`, link: '/productions' },
+          }).catch(() => {})
+        }
+        waProduction(`📨 Relance client : "${p.title}" (${p.client}) est chez le client depuis 48h+ sans validation — pense à relancer.`).catch(() => {})
       }
     } catch {}
   }
