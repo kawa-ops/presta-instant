@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { randomBytes } from 'crypto'
 
 export const dynamic = 'force-dynamic'
 const db = prisma as any
@@ -17,7 +18,8 @@ export async function POST(_: NextRequest, { params }: { params: { id: string } 
 
     let token = prod.shareToken
     if (!token) {
-      token = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}${Math.random().toString(36).slice(2, 10)}`
+      // Cryptographically secure — Date.now()+Math.random() was guessable
+      token = randomBytes(24).toString('base64url')
       await db.production.update({ where: { id: params.id }, data: { shareToken: token } })
     }
 
