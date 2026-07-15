@@ -10,6 +10,7 @@ const NAV = [
   { href: '/semaine', label: 'nav_week', icon: '🗓️' },
   { href: '/productions', label: 'nav_prods', icon: '🎬' },
   { href: '/prestataires', label: 'nav_contractors', icon: '👥' },
+  { href: '/clients', label: 'nav_clients', icon: '🏢' },
   { href: '/archives', label: 'nav_archives', icon: '📁' },
   { href: '/facturation', label: 'nav_billing', icon: '💶' },
   { href: '/parametres', label: 'nav_settings', icon: '⚙️' },

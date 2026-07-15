@@ -11,7 +11,7 @@ const DICT: Record<Lang, Record<string, string>> = {
   fr: {
     // Nav
     nav_dashboard: 'Dashboard', nav_week: 'Ma semaine', nav_prods: 'Post-productions',
-    nav_contractors: 'Prestataires', nav_archives: 'Archives', nav_billing: 'Facturation',
+    nav_contractors: 'Prestataires', nav_clients: 'Clients', nav_archives: 'Archives', nav_billing: 'Facturation',
     nav_settings: 'Paramètres', nav_tasks: 'Mes prestations', nav_profile: 'Mon profil',
     logout: 'Déconnexion', admin_role: 'Administrateur', contractor_role: 'Prestataire',
     contractor_space: 'espace prestataire', postprod: 'post-production',
@@ -39,7 +39,7 @@ const DICT: Record<Lang, Record<string, string>> = {
   },
   en: {
     nav_dashboard: 'Dashboard', nav_week: 'My week', nav_prods: 'Post-production',
-    nav_contractors: 'Contractors', nav_archives: 'Archives', nav_billing: 'Billing',
+    nav_contractors: 'Contractors', nav_clients: 'Clients', nav_archives: 'Archives', nav_billing: 'Billing',
     nav_settings: 'Settings', nav_tasks: 'My projects', nav_profile: 'My profile',
     logout: 'Log out', admin_role: 'Administrator', contractor_role: 'Contractor',
     contractor_space: 'contractor space', postprod: 'post-production',
@@ -66,7 +66,7 @@ const DICT: Record<Lang, Record<string, string>> = {
   },
   es: {
     nav_dashboard: 'Panel', nav_week: 'Mi semana', nav_prods: 'Postproducción',
-    nav_contractors: 'Colaboradores', nav_archives: 'Archivos', nav_billing: 'Facturación',
+    nav_contractors: 'Colaboradores', nav_clients: 'Clientes', nav_archives: 'Archivos', nav_billing: 'Facturación',
     nav_settings: 'Ajustes', nav_tasks: 'Mis proyectos', nav_profile: 'Mi perfil',
     logout: 'Cerrar sesión', admin_role: 'Administrador', contractor_role: 'Colaborador',
     contractor_space: 'espacio colaborador', postprod: 'postproducción',
