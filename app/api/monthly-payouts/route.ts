@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth'
 import { emailInvoiceUploaded, emailInvoicePaid } from '@/lib/mail'
 import { waAccounting, waFreelancer } from '@/lib/whatsapp'
 import { awardXp } from '@/lib/gamify'
+import { checkInvoiceAmount } from '@/lib/invoice-ai'
 
 export const dynamic = 'force-dynamic'
 const db = prisma as any
@@ -66,6 +67,9 @@ export async function PATCH(req: NextRequest) {
       awardXp((session.user as any).id, 15, 'Facture traitée').catch(() => {})
       waFreelancer(row.freelancer.phone, `💰 Bonjour ${row.freelancer.name}, votre facture de ${row.month} a été payée par instant. (${(row.validatedAmount || 0).toLocaleString('fr-FR')} €).`).catch(() => {})
     }
+
+    // AI: compare the uploaded PDF's total with the expected amount (never blocks)
+    if (invoiceUrl) checkInvoiceAmount(row.id).catch(() => {})
 
     if (!isAdmin && (invoiceUrl || requestPayment)) {
       const label = invoiceUrl
