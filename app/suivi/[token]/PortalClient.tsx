@@ -17,6 +17,8 @@ export default function PortalClient({ prod, events, versionCount, token }: {
   const [mode, setMode] = useState<'idle' | 'feedback' | 'sent-approve' | 'sent-feedback'>(prod.clientApprovedAt ? 'sent-approve' : 'idle')
   const [comments, setComments] = useState('')
   const [sending, setSending] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [uploadMsg, setUploadMsg] = useState<{ ok: boolean; text: string } | null>(null)
 
   useEffect(() => {
     const saved = localStorage.getItem('portal-lang') as Lang | null
@@ -30,6 +32,18 @@ export default function PortalClient({ prod, events, versionCount, token }: {
   const isFrameio = prod.deliveryLink?.includes('frame.io')
   const videoReady = ['envoye_client', 'retours_client'].includes(prod.status) && prod.deliveryLink
   const approved = mode === 'sent-approve' || prod.status === 'valide'
+
+  async function uploadFile(file: File) {
+    setUploadMsg(null)
+    setUploading(true)
+    const fd = new FormData()
+    fd.append('file', file)
+    const res = await fetch(`/api/suivi/${token}/upload`, { method: 'POST', body: fd }).catch(() => null)
+    const d = await res?.json().catch(() => null)
+    setUploading(false)
+    if (res?.ok) setUploadMsg({ ok: true, text: `${t('upload_done')} — ${d?.name || file.name}` })
+    else setUploadMsg({ ok: false, text: d?.error || 'Erreur' })
+  }
 
   async function act(action: 'approve' | 'feedback' | 'frameio_done') {
     setSending(true)
@@ -184,6 +198,25 @@ export default function PortalClient({ prod, events, versionCount, token }: {
       {prod.status === 'retours_client' && mode === 'idle' && !videoReady && (
         <p style={{ color: '#e879f9', fontSize: '0.8rem', marginTop: 20, textAlign: 'center' }}>{t('feedback_pending')}</p>
       )}
+
+      {/* Client file drop — rushes, logos, brief */}
+      <div style={{ marginTop: 24, borderTop: '1px solid rgba(167,139,250,0.12)', paddingTop: 18 }}>
+        <p style={{ color: '#f0ebe3', fontSize: '0.85rem', fontWeight: 700, marginBottom: 4 }}>{t('upload_title')}</p>
+        <p style={{ color: 'rgba(240,235,227,0.35)', fontSize: '0.72rem', marginBottom: 12, lineHeight: 1.5 }}>{t('upload_desc')}</p>
+        {uploadMsg && (
+          <p style={{ color: uploadMsg.ok ? '#22c55e' : '#fb7185', fontSize: '0.76rem', fontWeight: 700, marginBottom: 10 }}>{uploadMsg.text}</p>
+        )}
+        <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(167,139,250,0.12)', border: '1px solid rgba(167,139,250,0.35)', borderRadius: 10, padding: '10px 18px', color: '#c4b5fd', cursor: uploading ? 'default' : 'pointer', fontSize: '0.8rem', fontWeight: 700, opacity: uploading ? 0.6 : 1 }}>
+          {uploading ? t('upload_sending') : `📎 ${t('upload_btn')}`}
+          <input
+            type="file"
+            accept="application/pdf,image/png,image/jpeg,image/webp,application/zip"
+            disabled={uploading}
+            style={{ display: 'none' }}
+            onChange={e => { const f = e.target.files?.[0]; if (f) uploadFile(f); e.target.value = '' }}
+          />
+        </label>
+      </div>
     </div>
   )
 }
