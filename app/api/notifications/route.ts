@@ -34,7 +34,8 @@ export async function PATCH(req: NextRequest) {
 
   try {
     if (id) {
-      await db.notification.update({ where: { id }, data: { read: true } })
+      // updateMany + userId scope: a user can only mark HIS OWN notifications read
+      await db.notification.updateMany({ where: { id, userId }, data: { read: true } })
     } else {
       await db.notification.updateMany({ where: { userId, read: false }, data: { read: true } })
     }
