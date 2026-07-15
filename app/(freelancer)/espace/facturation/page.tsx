@@ -103,6 +103,24 @@ export default function FreelancerFacturationPage() {
     setUploading(false)
   }
 
+  // Auto-generate the month's invoice PDF server-side (attached as invoiceUrl)
+  async function generateInvoice(monthKey: string) {
+    setUploadError(null)
+    setUploading(true)
+    try {
+      await ensurePayout(monthKey)
+      const res = await fetch(`/api/facturation/generate?month=${monthKey}`)
+      const d = await res.json()
+      if (!res.ok) { setUploadError(d.error || 'Erreur de génération'); setUploading(false); return }
+      setSuccess(true)
+      setTimeout(() => setSuccess(false), 3500)
+      await load()
+    } catch (e: any) {
+      setUploadError(e.message || 'Erreur réseau')
+    }
+    setUploading(false)
+  }
+
   // Payment request WITHOUT an invoice (freelancer confirmed they have none)
   async function requestWithoutInvoice(monthKey: string) {
     setUploadError(null)
@@ -209,8 +227,19 @@ export default function FreelancerFacturationPage() {
 
               {openData.status !== 'paid' && (
                 <div>
-                  <p style={{ color: 'rgba(240,235,227,0.4)', fontSize: '0.72rem', marginBottom: 10 }}>Demander le paiement — deux options :</p>
+                  <p style={{ color: 'rgba(240,235,227,0.4)', fontSize: '0.72rem', marginBottom: 10 }}>Demander le paiement :</p>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {/* Option 0: auto-generate a valid French invoice from the validated productions */}
+                    <button
+                      onClick={() => generateInvoice(openData.key)}
+                      disabled={uploading}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'linear-gradient(135deg, #a78bfa, #ec4899)', color: '#0a0a0a', border: 'none', borderRadius: 8, padding: '10px 20px', fontWeight: 800, cursor: uploading ? 'default' : 'pointer', fontSize: '0.8rem', opacity: uploading ? 0.6 : 1, alignSelf: 'flex-start' }}
+                    >
+                      {uploading ? 'Génération…' : openData.payout?.invoiceUrl ? '🧾 Régénérer ma facture' : '🧾 Générer ma facture automatiquement'}
+                    </button>
+                    <p style={{ color: 'rgba(240,235,227,0.25)', fontSize: '0.66rem', marginTop: -4 }}>
+                      PDF conforme (SIRET, adresse, détail des prestations, mention TVA art. 293 B) — pense à compléter ton SIRET et ton adresse dans ton profil.
+                    </p>
                     {/* Option 1: upload the invoice */}
                     <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#f0ebe3', color: '#0a0a0a', borderRadius: 8, padding: '10px 20px', fontWeight: 700, cursor: uploading ? 'default' : 'pointer', fontSize: '0.8rem', opacity: uploading ? 0.6 : 1, alignSelf: 'flex-start' }}>
                       {uploading ? 'Envoi en cours…' : openData.payout?.invoiceUrl ? '📄 Remplacer la facture' : '📄 Déposer une facture (PDF ou image)'}
