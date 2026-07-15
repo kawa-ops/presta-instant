@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { waProduction, waFreelancer } from '@/lib/whatsapp'
 import { getLucasId } from '@/lib/ensure'
 import { onClientApproval } from '@/lib/gamify'
+import { structureFeedback } from '@/lib/feedback-ai'
 
 export const dynamic = 'force-dynamic'
 const db = prisma as any
@@ -62,6 +63,8 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
       await db.production.update({ where: { id: prod.id }, data: { status: 'retours_client', lastFeedback: body } })
       db.productionEvent.create({ data: { productionId: prod.id, status: 'retours_client' } }).catch(() => {})
       db.comment.create({ data: { productionId: prod.id, authorName: `Client (${prod.client})`, authorRole: 'client', body } }).catch(() => {})
+      // AI: structured checklist from the raw feedback (fire-and-forget)
+      structureFeedback(prod.id, body, `client ${prod.client}`).catch(() => {})
       notifyAdmins(`💬 Retours client sur "${prod.title}"`)
       // Notify the assigned freelancer too
       const lucasId = await getLucasId()

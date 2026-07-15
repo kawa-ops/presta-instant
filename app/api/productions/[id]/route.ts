@@ -7,6 +7,7 @@ import { waProduction } from '@/lib/whatsapp'
 import { onDelivery, onValidation, awardXp } from '@/lib/gamify'
 import { getLucasId } from '@/lib/ensure'
 import { syncPayout } from '@/lib/payouts'
+import { structureFeedback } from '@/lib/feedback-ai'
 
 export const dynamic = 'force-dynamic'
 const db = prisma as any
@@ -167,6 +168,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     }
     if (isAdmin && body.feedback) {
       notifyFreelancer(`✎ Retours de Lucas sur "${prod.title}" : ${body.feedback}`)
+      // AI: structured checklist from the raw feedback (fire-and-forget)
+      structureFeedback(prod.id, body.feedback, session.user?.name || 'admin').catch(() => {})
     } else if (isAdmin && body.status === 'envoye_client') {
       notifyFreelancer(`✓ "${prod.title}" a été approuvé et envoyé au client`)
     } else if (isAdmin && body.status === 'retours_client') {
