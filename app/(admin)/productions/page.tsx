@@ -3,6 +3,7 @@ import { useState, useMemo, useEffect } from 'react'
 import { useCached } from '@/lib/useCached'
 import Timeline from '@/components/Timeline'
 import Thread from '@/components/Thread'
+import ValidationQueue from '@/components/ValidationQueue'
 
 import { STATUSES as BASE_STATUSES, PRIORITIES } from '@/lib/statuses'
 
@@ -572,6 +573,9 @@ export default function ProductionsPage() {
           setShowNew(true); setCreateError('')
         }} style={{ background: '#f0ebe3', color: '#0a0a0a', border: 'none', borderRadius: 8, padding: '9px 18px', fontWeight: 700, cursor: 'pointer', fontSize: '0.82rem' }}>+ Nouvelle prestation</button>
       </div>
+
+      {/* Validation queue with embedded players — review without leaving the page */}
+      {!loading && <ValidationQueue />}
 
       {/* Priority Validation Center */}
       {!loading && (
