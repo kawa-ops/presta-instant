@@ -3,6 +3,7 @@ import { authOptions } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import AdminSidebar from '@/components/admin/Sidebar'
 import LiveNotifications from '@/components/LiveNotifications'
+import CommandPalette from '@/components/CommandPalette'
 import TopLangBar from '@/components/TopLangBar'
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -16,6 +17,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         {children}
       </main>
       <LiveNotifications />
+      <CommandPalette isAdmin={true} />
       <TopLangBar />
     </div>
   )
